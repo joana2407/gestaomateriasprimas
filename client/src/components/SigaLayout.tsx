@@ -52,8 +52,8 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
             <ShieldCheck className="w-4.5 h-4.5 text-primary-foreground" />
           </div>
           <div>
-            <div className="text-sm font-bold text-foreground tracking-tight">SIGA</div>
-            <div className="text-[10px] text-muted-foreground leading-tight">Gestão de Alergénios</div>
+            <div className="text-sm font-bold text-foreground tracking-tight">Gestão Matérias Primas A&S</div>
+            <div className="text-[10px] text-muted-foreground leading-tight"></div>
           </div>
         </div>
       </div>

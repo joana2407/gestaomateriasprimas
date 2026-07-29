@@ -102,7 +102,7 @@ export default function FichasTecnicas() {
   const handleDataEmissao = (val: string) => {
     const emissao = new Date(val);
     const validade = new Date(emissao);
-    validade.setFullYear(validade.getFullYear() + 1);
+    validade.setFullYear(validade.getFullYear() + 3);
     setForm(f => ({
       ...f,
       dataEmissao: val,
@@ -404,7 +404,7 @@ export default function FichasTecnicas() {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-2.5">
               <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-              A data de validade é calculada automaticamente como 12 meses após a emissão.
+              A data de validade é calculada automaticamente como 3 anos após a emissão.
             </div>
 
             <div className="space-y-1.5">

@@ -114,3 +114,7 @@
 - [x] Semáforo de validade da FT por fornecedor no painel expandido
 - [x] FT geral (sem fornecedor específico) mostrada quando MP não tem fornecedores associados
 - [x] Tabela de sub-ingredientes para MP compostas com colunas: ingrediente, origem, %, obs.
+
+## Melhorias v1.3
+- [x] Corrigir cálculo de validade das FT de MP para 3 anos (em vez de 1 ano)
+- [x] Atualizar texto de aviso no diálogo de FT para "3 anos após a emissão"
