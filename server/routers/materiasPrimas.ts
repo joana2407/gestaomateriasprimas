@@ -2,7 +2,8 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getMateriasPrimas, getMateriaPrimaById, upsertMateriaPrima,
-  deleteMateriaPrima, addAuditLog, getFornecedores
+  deleteMateriaPrima, addAuditLog, getFornecedores,
+  getMpFornecedores, setMpFornecedores
 } from "../db";
 import { TRPCError } from "@trpc/server";
 
@@ -11,6 +12,20 @@ const AlergenioIdSchema = z.enum([
   "frutos_casca_rija","aipo","mostarda","sesamo","sulfitos","tremoco","moluscos"
 ]);
 
+const FornecedorMpSchema = z.object({
+  fornecedorId: z.number(),
+  referenciaFornecedor: z.string().optional(),
+  paisOrigem: z.string().optional(),
+  preferencial: z.boolean().optional(),
+});
+
+const SubIngredienteSchema = z.object({
+  nome: z.string(),
+  paisOrigem: z.string().optional(),
+  percentagem: z.number().optional(),
+  observacoes: z.string().optional(),
+});
+
 export const materiasPrimasRouter = router({
   list: publicProcedure
     .input(z.object({ fabricaId: z.number().optional() }).optional())
@@ -18,18 +33,26 @@ export const materiasPrimasRouter = router({
 
   byId: publicProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => getMateriaPrimaById(input.id)),
+    .query(async ({ input }) => {
+      const mp = await getMateriaPrimaById(input.id);
+      if (!mp) return null;
+      const fornecedoresMp = await getMpFornecedores(input.id);
+      return { ...mp, fornecedoresMp };
+    }),
 
   upsert: protectedProcedure
     .input(z.object({
       id: z.number().optional(),
       nome: z.string().min(1),
       codigo: z.string().optional(),
-      fornecedorId: z.number().optional(),
       fabricasIds: z.array(z.number()).optional(),
       alergeniosFormulacao: z.array(AlergenioIdSchema).optional(),
       alergeniosContaminacao: z.array(AlergenioIdSchema).optional(),
       observacoes: z.string().optional(),
+      tipo: z.enum(["simples", "composta"]).optional(),
+      paisOrigem: z.string().optional(),
+      subIngredientes: z.array(SubIngredienteSchema).optional(),
+      fornecedoresMp: z.array(FornecedorMpSchema).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Verificar bloqueio de glúten na Fábrica III
@@ -42,13 +65,18 @@ export const materiasPrimasRouter = router({
         }
       }
       const anterior = input.id ? await getMateriaPrimaById(input.id) : null;
-      const id = await upsertMateriaPrima(input);
+      const { fornecedoresMp, ...mpData } = input;
+      const id = await upsertMateriaPrima(mpData);
+      // Atualizar relação N:N com fornecedores
+      if (fornecedoresMp !== undefined) {
+        await setMpFornecedores(id, fornecedoresMp);
+      }
       await addAuditLog({
         entidade: "materia_prima",
         entidadeId: id,
         acao: input.id ? "atualizado" : "criado",
         dadosAnteriores: anterior,
-        dadosNovos: input,
+        dadosNovos: mpData,
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
@@ -69,4 +97,3 @@ export const materiasPrimasRouter = router({
       return { success: true };
     }),
 });
-

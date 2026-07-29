@@ -9,6 +9,7 @@ import {
   ingredientesReceita,
   InsertUser,
   materiasPrimas,
+  mpFornecedores,
   perfilAlergenicoProduto,
   produtos,
   receitas,
@@ -113,6 +114,35 @@ export async function upsertMateriaPrima(data: typeof materiasPrimas.$inferInser
   }
   const result = await db.insert(materiasPrimas).values(data);
   return (result[0] as any).insertId as number;
+}
+
+// ─── MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────────────
+export async function getMpFornecedores(materiaPrimaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(mpFornecedores)
+    .where(and(eq(mpFornecedores.materiaPrimaId, materiaPrimaId), eq(mpFornecedores.ativo, true)));
+}
+
+export async function setMpFornecedores(
+  materiaPrimaId: number,
+  fornecedoresList: Array<{ fornecedorId: number; referenciaFornecedor?: string; paisOrigem?: string; preferencial?: boolean }>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // Soft-delete todos os existentes
+  await db.update(mpFornecedores).set({ ativo: false }).where(eq(mpFornecedores.materiaPrimaId, materiaPrimaId));
+  // Inserir os novos
+  for (const f of fornecedoresList) {
+    await db.insert(mpFornecedores).values({
+      materiaPrimaId,
+      fornecedorId: f.fornecedorId,
+      referenciaFornecedor: f.referenciaFornecedor,
+      paisOrigem: f.paisOrigem,
+      preferencial: f.preferencial ?? false,
+      ativo: true,
+    });
+  }
 }
 
 export async function deleteMateriaPrima(id: number) {

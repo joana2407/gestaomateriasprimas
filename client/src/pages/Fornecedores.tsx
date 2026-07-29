@@ -4,10 +4,15 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
 import { useState } from "react";
-import { Building2, Edit2, Mail, Phone, Plus, Search } from "lucide-react";
+import { Building2, Edit2, Mail, Phone, Plus, Search, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 
 interface FornecedorForm {
   id?: number; nome: string; codigo: string; contacto: string; email: string;
@@ -27,6 +32,7 @@ export default function Fornecedores() {
   });
   const deleteForn = trpc.fornecedores.delete.useMutation({
     onSuccess: () => { toast.success("Fornecedor removido"); refetch(); },
+    onError: (e) => toast.error(e.message),
   });
 
   const filtered = (fornecedores ?? []).filter(f =>
@@ -51,7 +57,12 @@ export default function Fornecedores() {
       <div className="space-y-5">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Pesquisar fornecedores..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder="Pesquisar fornecedores..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -62,12 +73,42 @@ export default function Fornecedores() {
                   <Building2 className="w-4.5 h-4.5 text-violet-600" />
                 </div>
                 {isAuthenticated && (
-                  <button
-                    onClick={() => { setForm({ id: f.id, nome: f.nome, codigo: f.codigo ?? "", contacto: f.contacto ?? "", email: f.email ?? "" }); setDialogOpen(true); }}
-                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => {
+                        setForm({ id: f.id, nome: f.nome, codigo: f.codigo ?? "", contacto: f.contacto ?? "", email: f.email ?? "" });
+                        setDialogOpen(true);
+                      }}
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button className="p-1.5 rounded-md text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Eliminar Fornecedor</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem a certeza que pretende eliminar <strong>{f.nome}</strong>?
+                            O fornecedor ficará inativo mas os dados históricos serão preservados.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => deleteForn.mutate({ id: f.id })}
+                            className="bg-red-500 hover:bg-red-600"
+                          >
+                            Eliminar
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
                 )}
               </div>
               <p className="text-sm font-semibold text-foreground">{f.nome}</p>
@@ -103,21 +144,38 @@ export default function Fornecedores() {
           <div className="space-y-4 pt-2">
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Nome *</label>
-              <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do fornecedor" />
+              <Input
+                value={form.nome}
+                onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                placeholder="Nome do fornecedor"
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Código</label>
-                <Input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="Ex: FORN-001" />
+                <Input
+                  value={form.codigo}
+                  onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
+                  placeholder="Ex: FORN-001"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Contacto</label>
-                <Input value={form.contacto} onChange={e => setForm(f => ({ ...f, contacto: e.target.value }))} placeholder="+351 ..." />
+                <Input
+                  value={form.contacto}
+                  onChange={e => setForm(f => ({ ...f, contacto: e.target.value }))}
+                  placeholder="+351 ..."
+                />
               </div>
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Email</label>
-              <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="email@fornecedor.pt" />
+              <Input
+                type="email"
+                value={form.email}
+                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@fornecedor.pt"
+              />
             </div>
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>

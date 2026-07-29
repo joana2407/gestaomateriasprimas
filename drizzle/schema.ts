@@ -56,21 +56,44 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 200 }).notNull(),
   codigo: varchar("codigo", { length: 50 }),
-  fornecedorId: int("fornecedor_id").references(() => fornecedores.id),
   fabricasIds: json("fabricas_ids"),
   alergeniosFormulacao: json("alergenios_formulacao"),
   alergeniosContaminacao: json("alergenios_contaminacao"),
   observacoes: text("observacoes"),
+  // Tipo: "simples" ou "composta" (MP com sub-ingredientes)
+  tipo: mysqlEnum("tipo", ["simples", "composta"]).default("simples").notNull(),
+  // País/região de origem principal
+  paisOrigem: varchar("pais_origem", { length: 100 }),
+  // Para MP compostas: lista de sub-ingredientes com origem
+  subIngredientes: json("sub_ingredientes"),
   ativa: boolean("ativa").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type MateriaPrima = typeof materiasPrimas.$inferSelect;
 
+// ─── RELAÇÃO MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────
+export const mpFornecedores = mysqlTable("mp_fornecedores", {
+  id: int("id").autoincrement().primaryKey(),
+  materiaPrimaId: int("materia_prima_id").notNull().references(() => materiasPrimas.id),
+  fornecedorId: int("fornecedor_id").notNull().references(() => fornecedores.id),
+  // Referência do fornecedor para esta MP (código interno do fornecedor)
+  referenciaFornecedor: varchar("referencia_fornecedor", { length: 100 }),
+  // País de origem desta MP neste fornecedor específico
+  paisOrigem: varchar("pais_origem", { length: 100 }),
+  // Fornecedor preferencial para esta MP
+  preferencial: boolean("preferencial").default(false).notNull(),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type MpFornecedor = typeof mpFornecedores.$inferSelect;
+
 // ─── FICHAS TÉCNICAS DE FORNECEDOR ────────────────────────────────────────────
 export const fichasTecnicasFornecedor = mysqlTable("fichas_tecnicas_fornecedor", {
   id: int("id").autoincrement().primaryKey(),
   materiaPrimaId: int("materia_prima_id").notNull().references(() => materiasPrimas.id),
+  // Fornecedor específico desta FT (opcional — permite FT por par MP+Fornecedor)
+  fornecedorId: int("fornecedor_id").references(() => fornecedores.id),
   versao: varchar("versao", { length: 20 }).notNull().default("1.0"),
   dataEmissao: timestamp("data_emissao").notNull(),
   dataValidade: timestamp("data_validade").notNull(),

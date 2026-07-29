@@ -89,3 +89,19 @@
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
 - [x] Total: 11/11 testes passados
+
+## Melhorias v1.1
+- [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
+- [x] Eliminar matérias-primas (soft-delete com confirmação AlertDialog)
+- [x] Múltiplos fornecedores por MP (tabela mp_fornecedores N:N)
+- [x] Upload de FT de fornecedor com ficheiro PDF/imagem (S3 via base64)
+- [x] FT associada a par MP+Fornecedor (campo fornecedor_id em fichas_tecnicas_fornecedor)
+- [x] Campo de país/região de origem por fornecedor de MP (pais_origem em mp_fornecedores)
+- [x] Referência interna do fornecedor por MP (referencia_fornecedor em mp_fornecedores)
+- [x] Fornecedor preferencial por MP (flag preferencial)
+- [x] Campos de origem para MP compostas: lista de sub-ingredientes com país de origem e %
+- [x] Indicador visual de MP composta vs. MP simples (ícone Layers + badge "Composta")
+- [x] Campo país de origem principal da MP (pais_origem em materias_primas)
+- [x] Migração SQL aplicada (tabela mp_fornecedores + colunas tipo/pais_origem/sub_ingredientes)
+- [x] Tabs no formulário de MP: Alergénios / Fornecedores / Origem
+- [x] Painel expandível de MP com fornecedores, origem e sub-ingredientes

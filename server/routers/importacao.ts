@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, router } from "../_core/trpc";
-import { getDb, upsertFornecedor, upsertMateriaPrima, upsertProduto, getFabricas } from "../db";
+import { getDb, upsertFornecedor, upsertMateriaPrima, upsertProduto, getFabricas, setMpFornecedores } from "../db";
 import { fornecedores, materiasPrimas, produtos } from "../../drizzle/schema";
 
 // Dados pré-carregados das matrizes Excel das 3 fábricas
@@ -125,37 +125,37 @@ export const importacaoRouter = router({
     // Criar MP da Fábrica I
     for (const mp of DADOS_FAB1.materiasPrimas) {
       const fornId = fornecedorMap.get(mp.fornecedor);
-      await upsertMateriaPrima({
+      const mpId = await upsertMateriaPrima({
         nome: mp.nome,
-        fornecedorId: fornId,
         fabricasIds: [fab1.id],
         alergeniosFormulacao: mp.formulacao,
         alergeniosContaminacao: mp.contaminacao,
       });
+      if (fornId) await setMpFornecedores(mpId, [{ fornecedorId: fornId, preferencial: true }]);
     }
 
     // Criar MP da Fábrica II (verificar duplicados)
     for (const mp of DADOS_FAB2.materiasPrimas) {
       const fornId = fornecedorMap.get(mp.fornecedor);
-      await upsertMateriaPrima({
+      const mpId = await upsertMateriaPrima({
         nome: mp.nome + " (FAB2)",
-        fornecedorId: fornId,
         fabricasIds: [fab2.id],
         alergeniosFormulacao: mp.formulacao,
         alergeniosContaminacao: mp.contaminacao,
       });
+      if (fornId) await setMpFornecedores(mpId, [{ fornecedorId: fornId, preferencial: true }]);
     }
 
     // Criar MP da Fábrica III
     for (const mp of DADOS_FAB3.materiasPrimas) {
       const fornId = fornecedorMap.get(mp.fornecedor);
-      await upsertMateriaPrima({
+      const mpId = await upsertMateriaPrima({
         nome: mp.nome,
-        fornecedorId: fornId,
         fabricasIds: [fab3.id],
         alergeniosFormulacao: mp.formulacao,
         alergeniosContaminacao: mp.contaminacao,
       });
+      if (fornId) await setMpFornecedores(mpId, [{ fornecedorId: fornId, preferencial: true }]);
     }
 
     // Criar alguns produtos de exemplo por fábrica
