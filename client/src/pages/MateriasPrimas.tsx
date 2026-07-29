@@ -11,7 +11,7 @@ import { useState, useMemo, useCallback } from "react";
 import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import {
-  AlertTriangle, ChevronDown, ChevronUp, Edit2, Globe, Layers,
+  AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
   Package, Plus, Search, Star, Trash2, X
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -63,6 +63,7 @@ export default function MateriasPrimas() {
   const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState("");
   const [fabricaFilter, setFabricaFilter] = useState<string>("all");
+  const [fornecedorFilter, setFornecedorFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -93,10 +94,28 @@ export default function MateriasPrimas() {
 
   const fornecedorMap = useMemo(() => new Map((fornecedores ?? []).map(f => [f.id, f])), [fornecedores]);
 
-  const filtered = (mps ?? []).filter(mp =>
-    mp.nome.toLowerCase().includes(search.toLowerCase()) ||
-    (mp.codigo ?? "").toLowerCase().includes(search.toLowerCase())
-  );
+  // Mapa de MP → IDs de fornecedores (para filtro client-side)
+  // Usamos as fichas técnicas para inferir fornecedores associados a cada MP
+  // A relação mp_fornecedores é carregada via byId; para a listagem usamos as fichas como proxy
+  const fichasPorMp = useMemo(() => {
+    const map = new Map<number, typeof fichas>();
+    (fichas ?? []).forEach(ft => {
+      if (!map.has(ft.materiaPrimaId)) map.set(ft.materiaPrimaId, []);
+      map.get(ft.materiaPrimaId)!.push(ft);
+    });
+    return map;
+  }, [fichas]);
+
+  const filtered = useMemo(() => {
+    return (mps ?? []).filter(mp => {
+      const matchSearch = mp.nome.toLowerCase().includes(search.toLowerCase()) ||
+        (mp.codigo ?? "").toLowerCase().includes(search.toLowerCase());
+      // Filtro por fornecedor: verificar nas fichas técnicas se há FT deste fornecedor para esta MP
+      const matchFornecedor = fornecedorFilter === "all" ||
+        (fichasPorMp.get(mp.id) ?? []).some(ft => String(ft.fornecedorId) === fornecedorFilter);
+      return matchSearch && matchFornecedor;
+    });
+  }, [mps, search, fornecedorFilter, fichasPorMp]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
   const openEdit = useCallback(async (mpId: number) => {
@@ -196,7 +215,7 @@ export default function MateriasPrimas() {
     >
       <div className="space-y-5">
         {/* Filtros */}
-        <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 flex-wrap">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
@@ -207,7 +226,7 @@ export default function MateriasPrimas() {
             />
           </div>
           <Select value={fabricaFilter} onValueChange={setFabricaFilter}>
-            <SelectTrigger className="w-full sm:w-52">
+            <SelectTrigger className="w-full sm:w-48">
               <SelectValue placeholder="Todas as fábricas" />
             </SelectTrigger>
             <SelectContent>
@@ -217,7 +236,38 @@ export default function MateriasPrimas() {
               ))}
             </SelectContent>
           </Select>
+          <Select value={fornecedorFilter} onValueChange={setFornecedorFilter}>
+            <SelectTrigger className="w-full sm:w-52">
+              <SelectValue placeholder="Todos os fornecedores" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os fornecedores</SelectItem>
+              {fornecedores?.map(f => (
+                <SelectItem key={f.id} value={String(f.id)}>{f.nome}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all") && (
+            <button
+              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); }}
+              className="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors border border-border/60 shrink-0"
+            >
+              <X className="w-3.5 h-3.5" /> Limpar filtros
+            </button>
+          )}
         </div>
+
+        {/* Contador de resultados com filtros ativos */}
+        {(search || fabricaFilter !== "all" || fornecedorFilter !== "all") && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span>{filtered.length} resultado{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</span>
+            {fornecedorFilter !== "all" && (
+              <span className="px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200 font-medium">
+                Fornecedor: {fornecedorMap.get(parseInt(fornecedorFilter))?.nome}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Lista */}
         <div className="space-y-2">
@@ -679,95 +729,245 @@ export default function MateriasPrimas() {
 
 function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, any> }) {
   const { data: mpDetalhes } = trpc.materiasPrimas.byId.useQuery({ id: mp.id });
+  const { data: fichasMp } = trpc.fichasTecnicas.list.useQuery({ materiaPrimaId: mp.id });
   const formulacao = (mp.alergeniosFormulacao as AlergenioId[]) ?? [];
   const contaminacao = (mp.alergeniosContaminacao as AlergenioId[]) ?? [];
-  const subIngredientes = (mp.subIngredientes as any[]) ?? [];
+  const subIngredientes = (mpDetalhes?.subIngredientes as any[]) ?? (mp.subIngredientes as any[]) ?? [];
   const fornecedoresMp = (mpDetalhes?.fornecedoresMp ?? []) as any[];
+  const paisOrigem = mpDetalhes?.paisOrigem ?? mp.paisOrigem;
+  const observacoes = mpDetalhes?.observacoes ?? mp.observacoes;
+  const tipo = mpDetalhes?.tipo ?? mp.tipo;
+
+  // Agrupar fichas técnicas por fornecedor para cruzamento
+  const fichasPorFornecedor = useMemo(() => {
+    const map = new Map<number | null, typeof fichasMp>();
+    (fichasMp ?? []).forEach(ft => {
+      const key = ft.fornecedorId ?? null;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(ft);
+    });
+    return map;
+  }, [fichasMp]);
+
+  // Obter a FT mais recente para um fornecedor específico
+  const getFtParaFornecedor = (fornId: number | null) => {
+    const fts = fichasPorFornecedor.get(fornId) ?? fichasPorFornecedor.get(null) ?? [];
+    return fts.sort((a, b) => new Date(b.dataValidade).getTime() - new Date(a.dataValidade).getTime())[0];
+  };
 
   return (
     <div className="border-t border-border/60 p-5 bg-muted/20 animate-fade-in">
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Alergénios */}
+      <div className="space-y-6">
+        {/* ── Perfil Alergénico ── */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Perfil Alergénico</p>
           <AllergenGrid formulacao={formulacao} contaminacao={contaminacao} readonly compact={false} />
         </div>
 
-        {/* Fornecedores e Origem */}
-        <div className="space-y-4">
-          {/* Fornecedores */}
-          {fornecedoresMp.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Fornecedores</p>
-              <div className="space-y-1.5">
-                {fornecedoresMp.map((fp: any) => {
-                  const forn = fornecedorMap.get(fp.fornecedorId);
-                  return (
-                    <div key={fp.id} className="flex items-center gap-3 py-1.5 border-b border-border/40 last:border-0">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-medium">{forn?.nome ?? `Fornecedor #${fp.fornecedorId}`}</span>
+        {/* ── Fornecedores com FT e Origem ── */}
+        {fornecedoresMp.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Fornecedores, Origens e Fichas Técnicas
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {fornecedoresMp.map((fp: any) => {
+                const forn = fornecedorMap.get(fp.fornecedorId);
+                const ft = getFtParaFornecedor(fp.fornecedorId);
+                const ftGeral = !ft ? getFtParaFornecedor(null) : null;
+                const ftAtiva = ft ?? ftGeral;
+                const diasValidade = ftAtiva
+                  ? Math.floor((new Date(ftAtiva.dataValidade).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                  : null;
+                const estadoFt = ftAtiva
+                  ? diasValidade! < 0 ? "expirada"
+                    : diasValidade! <= 30 ? "a_expirar_30"
+                    : diasValidade! <= 60 ? "a_expirar_60"
+                    : "valida"
+                  : null;
+
+                return (
+                  <div key={fp.id ?? fp.fornecedorId} className="rounded-xl border border-border/60 bg-card p-4 space-y-3">
+                    {/* Cabeçalho do fornecedor */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-sm font-semibold text-foreground">
+                            {forn?.nome ?? `Fornecedor #${fp.fornecedorId}`}
+                          </span>
                           {fp.preferencial && (
-                            <span className="flex items-center gap-1 text-[10px] text-amber-600">
+                            <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 font-medium">
                               <Star className="w-2.5 h-2.5" /> Preferencial
                             </span>
                           )}
                         </div>
-                        <div className="flex gap-3 mt-0.5">
-                          {fp.referenciaFornecedor && (
-                            <span className="text-[10px] text-muted-foreground font-mono">{fp.referenciaFornecedor}</span>
-                          )}
-                          {fp.paisOrigem && (
-                            <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                              <Globe className="w-2.5 h-2.5" />{fp.paisOrigem}
-                            </span>
-                          )}
-                        </div>
+                        {fp.referenciaFornecedor && (
+                          <p className="text-[10px] font-mono text-muted-foreground mt-0.5">
+                            Ref: {fp.referenciaFornecedor}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
-          {/* Origem */}
-          {mp.paisOrigem && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Origem</p>
-              <div className="flex items-center gap-2 text-sm">
-                <Globe className="w-4 h-4 text-muted-foreground" />
-                <span>{mp.paisOrigem}</span>
-              </div>
-            </div>
-          )}
+                    {/* Origem */}
+                    {(fp.paisOrigem || paisOrigem) && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Globe className="w-3.5 h-3.5 shrink-0 text-primary/60" />
+                        <span>{fp.paisOrigem || paisOrigem}</span>
+                      </div>
+                    )}
 
-          {/* Sub-ingredientes para MP compostas */}
-          {mp.tipo === "composta" && subIngredientes.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">
-                Composição da MP
-              </p>
-              <div className="space-y-1.5">
-                {subIngredientes.map((sub: any, idx: number) => (
-                  <div key={idx} className="flex items-center gap-3 py-1.5 border-b border-border/40 last:border-0">
-                    <span className="text-xs font-medium flex-1">{sub.nome}</span>
-                    {sub.percentagem && <span className="text-xs text-muted-foreground">{sub.percentagem}%</span>}
-                    {sub.paisOrigem && (
-                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                        <Globe className="w-2.5 h-2.5" />{sub.paisOrigem}
-                      </span>
+                    {/* Ficha Técnica */}
+                    <div className="pt-2 border-t border-border/40">
+                      {ftAtiva ? (
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <FileText className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">
+                                FT v{ftAtiva.versao}
+                                {!ft && ftGeral && (
+                                  <span className="ml-1 text-[10px] opacity-70">(geral)</span>
+                                )}
+                              </span>
+                            </div>
+                            <span className={cn(
+                              "text-[10px] font-medium px-1.5 py-0.5 rounded-full border",
+                              estadoFt === "expirada" ? "bg-red-50 text-red-600 border-red-200" :
+                              estadoFt === "a_expirar_30" ? "bg-orange-50 text-orange-600 border-orange-200" :
+                              estadoFt === "a_expirar_60" ? "bg-yellow-50 text-yellow-600 border-yellow-200" :
+                              "bg-emerald-50 text-emerald-600 border-emerald-200"
+                            )}>
+                              {estadoFt === "expirada" ? "Expirada" :
+                               estadoFt === "a_expirar_30" ? `${diasValidade}d` :
+                               estadoFt === "a_expirar_60" ? `${diasValidade}d` :
+                               "Válida"}
+                            </span>
+                          </div>
+                          {ftAtiva.ficheiroUrl ? (
+                            <a
+                              href={ftAtiva.ficheiroUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 text-xs text-primary hover:underline font-medium"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Abrir ficheiro FT
+                            </a>
+                          ) : (
+                            <p className="text-[10px] text-muted-foreground italic">Sem ficheiro anexado</p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground italic">
+                          <FileText className="w-3 h-3" />
+                          Sem ficha técnica registada
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ── Origem da MP (quando sem fornecedores associados) ── */}
+        {fornecedoresMp.length === 0 && paisOrigem && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Origem</p>
+            <div className="flex items-center gap-2 text-sm">
+              <Globe className="w-4 h-4 text-muted-foreground" />
+              <span>{paisOrigem}</span>
+            </div>
+          </div>
+        )}
+
+        {/* ── FT geral (sem fornecedor específico) quando não há fornecedores associados ── */}
+        {fornecedoresMp.length === 0 && (fichasMp ?? []).length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Fichas Técnicas
+            </p>
+            <div className="space-y-2">
+              {(fichasMp ?? []).slice(0, 3).map(ft => {
+                const diasV = Math.floor((new Date(ft.dataValidade).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                const est = diasV < 0 ? "expirada" : diasV <= 30 ? "a_expirar_30" : diasV <= 60 ? "a_expirar_60" : "valida";
+                return (
+                  <div key={ft.id} className="flex items-center gap-3 p-3 rounded-lg border border-border/60 bg-card">
+                    <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">v{ft.versao}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        Válida até {new Date(ft.dataValidade).toLocaleDateString("pt-PT")}
+                      </p>
+                    </div>
+                    <span className={cn(
+                      "text-[10px] font-medium px-1.5 py-0.5 rounded-full border shrink-0",
+                      est === "expirada" ? "bg-red-50 text-red-600 border-red-200" :
+                      est === "a_expirar_30" ? "bg-orange-50 text-orange-600 border-orange-200" :
+                      est === "a_expirar_60" ? "bg-yellow-50 text-yellow-600 border-yellow-200" :
+                      "bg-emerald-50 text-emerald-600 border-emerald-200"
+                    )}>
+                      {est === "expirada" ? "Expirada" : est === "valida" ? "Válida" : `${diasV}d`}
+                    </span>
+                    {ft.ficheiroUrl && (
+                      <a
+                        href={ft.ficheiroUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-xs text-primary hover:underline shrink-0"
+                      >
+                        <ExternalLink className="w-3 h-3" /> PDF
+                      </a>
                     )}
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          )}
+          </div>
+        )}
 
-          {mp.observacoes && (
-            <p className="text-xs text-muted-foreground italic">{mp.observacoes}</p>
-          )}
-        </div>
+        {/* ── MP Composta: sub-ingredientes ── */}
+        {tipo === "composta" && subIngredientes.length > 0 && (
+          <div>
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+              Composição da MP
+            </p>
+            <div className="rounded-xl border border-violet-200 overflow-hidden">
+              <div className="grid grid-cols-12 gap-0 px-3 py-2 bg-violet-50 text-[10px] font-semibold text-violet-700 uppercase tracking-wide">
+                <span className="col-span-5">Ingrediente</span>
+                <span className="col-span-3">País de Origem</span>
+                <span className="col-span-2 text-right">%</span>
+                <span className="col-span-2 pl-2">Obs.</span>
+              </div>
+              {subIngredientes.map((sub: any, idx: number) => (
+                <div key={idx} className={cn(
+                  "grid grid-cols-12 gap-0 px-3 py-2.5 text-xs border-t border-violet-100",
+                  idx % 2 === 0 ? "bg-white" : "bg-violet-50/30"
+                )}>
+                  <span className="col-span-5 font-medium text-foreground">{sub.nome}</span>
+                  <span className="col-span-3 flex items-center gap-1 text-muted-foreground">
+                    {sub.paisOrigem ? (
+                      <><Globe className="w-3 h-3 shrink-0" />{sub.paisOrigem}</>
+                    ) : <span className="opacity-40">—</span>}
+                  </span>
+                  <span className="col-span-2 text-right text-muted-foreground">
+                    {sub.percentagem ? `${sub.percentagem}%` : <span className="opacity-40">—</span>}
+                  </span>
+                  <span className="col-span-2 pl-2 text-muted-foreground italic text-[10px]">
+                    {sub.observacoes || ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Observações ── */}
+        {observacoes && (
+          <p className="text-xs text-muted-foreground italic border-t border-border/40 pt-3">{observacoes}</p>
+        )}
       </div>
     </div>
   );

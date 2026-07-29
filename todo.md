@@ -105,3 +105,12 @@
 - [x] Migração SQL aplicada (tabela mp_fornecedores + colunas tipo/pais_origem/sub_ingredientes)
 - [x] Tabs no formulário de MP: Alergénios / Fornecedores / Origem
 - [x] Painel expandível de MP com fornecedores, origem e sub-ingredientes
+
+## Melhorias v1.2
+- [x] Filtro por fornecedor na página de Matérias-Primas (select + contador de resultados)
+- [x] Botão "Limpar filtros" quando algum filtro está ativo
+- [x] Painel expandido de MP: cartões por fornecedor com origem, referência e estado da FT
+- [x] Link direto para ficheiro FT dentro do cartão de cada fornecedor
+- [x] Semáforo de validade da FT por fornecedor no painel expandido
+- [x] FT geral (sem fornecedor específico) mostrada quando MP não tem fornecedores associados
+- [x] Tabela de sub-ingredientes para MP compostas com colunas: ingrediente, origem, %, obs.
