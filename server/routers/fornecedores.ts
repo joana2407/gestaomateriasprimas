@@ -4,9 +4,10 @@ import {
   getFornecedores, upsertFornecedor, addAuditLog, getDb,
   getDocumentosFornecedor, getDocumentosComAlerta,
   upsertDocumentoFornecedor, deleteDocumentoFornecedor,
+  getMpPorFornecedor,
 } from "../db";
-import { fornecedores } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { fornecedores, mpFornecedores } from "../../drizzle/schema";
+import { and, eq } from "drizzle-orm";
 import { storagePut } from "../storage";
 
 const TIPOS_DOCUMENTO = [
@@ -17,6 +18,58 @@ const TIPOS_DOCUMENTO = [
 
 export const fornecedoresRouter = router({
   list: publicProcedure.query(async () => getFornecedores()),
+
+  // Listar MP associadas a um fornecedor
+  mpList: publicProcedure
+    .input(z.object({ fornecedorId: z.number() }))
+    .query(async ({ input }) => getMpPorFornecedor(input.fornecedorId)),
+
+  // Associar MP a um fornecedor (insere ou reactiva a relação N:N)
+  associarMp: protectedProcedure
+    .input(z.object({
+      fornecedorId: z.number(),
+      materiaPrimaId: z.number(),
+      referenciaFornecedor: z.string().optional().nullable(),
+      paisOrigem: z.string().optional().nullable(),
+      preferencial: z.boolean().optional(),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+      const existing = await db.select().from(mpFornecedores)
+        .where(and(
+          eq(mpFornecedores.materiaPrimaId, input.materiaPrimaId),
+          eq(mpFornecedores.fornecedorId, input.fornecedorId)
+        )).limit(1);
+      if (existing.length > 0) {
+        await db.update(mpFornecedores)
+          .set({ ativo: true, referenciaFornecedor: input.referenciaFornecedor ?? null, paisOrigem: input.paisOrigem ?? null, preferencial: input.preferencial ?? false })
+          .where(and(eq(mpFornecedores.materiaPrimaId, input.materiaPrimaId), eq(mpFornecedores.fornecedorId, input.fornecedorId)));
+      } else {
+        await db.insert(mpFornecedores).values({
+          materiaPrimaId: input.materiaPrimaId,
+          fornecedorId: input.fornecedorId,
+          referenciaFornecedor: input.referenciaFornecedor ?? null,
+          paisOrigem: input.paisOrigem ?? null,
+          preferencial: input.preferencial ?? false,
+          ativo: true,
+        });
+      }
+      await addAuditLog({ entidade: "fornecedor", entidadeId: input.fornecedorId, acao: "atualizado", dadosNovos: { mpAssociada: input.materiaPrimaId }, userId: ctx.user.id, userName: ctx.user.name ?? ctx.user.email ?? "Utilizador" });
+      return { success: true };
+    }),
+
+  // Remover associação MP-Fornecedor
+  desassociarMp: protectedProcedure
+    .input(z.object({ fornecedorId: z.number(), materiaPrimaId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB not available");
+      await db.update(mpFornecedores).set({ ativo: false })
+        .where(and(eq(mpFornecedores.materiaPrimaId, input.materiaPrimaId), eq(mpFornecedores.fornecedorId, input.fornecedorId)));
+      await addAuditLog({ entidade: "fornecedor", entidadeId: input.fornecedorId, acao: "atualizado", dadosNovos: { mpDesassociada: input.materiaPrimaId }, userId: ctx.user.id, userName: ctx.user.name ?? ctx.user.email ?? "Utilizador" });
+      return { success: true };
+    }),
 
   byId: publicProcedure
     .input(z.object({ id: z.number() }))

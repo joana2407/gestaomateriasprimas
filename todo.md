@@ -191,3 +191,14 @@
 - [x] Filtro por estado de completude na página de Matérias-Primas (select + badge no contador)
 - [x] Filtro por estado de completude na página de Fornecedores
 - [x] Schema Drizzle atualizado com os novos campos em ambas as tabelas
+
+## Melhorias v2.2 — MP por Fornecedor
+- [x] Tab "Matérias-Primas" no painel de detalhe do Fornecedor com lista de MP associadas
+- [x] Listar todas as MP associadas ao fornecedor (via tabela mp_fornecedores)
+- [x] Ao clicar no ícone de link numa MP, navegar para /materias-primas e fechar o painel
+- [x] Router backend fornecedores.mpList, associarMp e desassociarMp
+- [x] Associar MP ao fornecedor com pesquisa em tempo real na lista de MP existentes
+- [x] Desassociar MP com botão X por hover
+- [x] Badge de preferencial e referência interna na lista de MP do fornecedor
+- [x] Página MateriasPrimas lê query param ?expand=ID para abrir MP diretamente ao navegar do painel do fornecedor
+- [x] Linha de MP no painel do fornecedor clicável (ícone de link) navega para MP e fecha painel

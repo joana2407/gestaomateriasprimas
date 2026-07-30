@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback , useEffect } from "react";
 import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import {
@@ -85,6 +85,22 @@ export default function MateriasPrimas() {
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores" | "logistica" | "estado">("alergenios");
+
+  // Ler parâmetro ?expand=ID da URL para abrir MP diretamente (vindo do painel de fornecedor)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const expandId = params.get("expand");
+    if (expandId) {
+      const id = parseInt(expandId);
+      if (!isNaN(id)) {
+        setExpandedId(id);
+        // Limpar o parâmetro da URL sem recarregar
+        const url = new URL(window.location.href);
+        url.searchParams.delete("expand");
+        window.history.replaceState({}, "", url.toString());
+      }
+    }
+  }, []);
 
   const utils = trpc.useUtils();
   const [loadingEdit, setLoadingEdit] = useState(false);

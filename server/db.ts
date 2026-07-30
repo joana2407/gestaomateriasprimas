@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   auditLog,
@@ -441,4 +441,25 @@ export async function getDashboardStats() {
     alertas,
     alertasDocFornecedor,
   };
+}
+// Listar todas as MP associadas a um fornecedor específico
+export async function getMpPorFornecedor(fornecedorId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select({
+    mpId: mpFornecedores.materiaPrimaId,
+    referenciaFornecedor: mpFornecedores.referenciaFornecedor,
+    paisOrigem: mpFornecedores.paisOrigem,
+    preferencial: mpFornecedores.preferencial,
+  }).from(mpFornecedores)
+    .where(and(eq(mpFornecedores.fornecedorId, fornecedorId), eq(mpFornecedores.ativo, true)));
+  if (rows.length === 0) return [];
+  // Enriquecer com dados da MP
+  const mpIds = rows.map(r => r.mpId);
+  const mps = await db.select().from(materiasPrimas)
+    .where(inArray(materiasPrimas.id, mpIds));
+  return rows.map(r => {
+    const mp = mps.find(m => m.id === r.mpId);
+    return { ...r, mp };
+  }).filter(r => r.mp);
 }

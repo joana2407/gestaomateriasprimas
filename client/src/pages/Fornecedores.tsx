@@ -3,13 +3,14 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useCallback } from "react";
+import { useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
 import { pt } from "date-fns/locale";
 import {
   AlertTriangle, Building2, ChevronRight, Edit2, ExternalLink,
-  FileText, Globe, Mail, Phone, Plus, Search, Shield, Trash2,
+  FileText, Globe, Link2, Mail, Package, Phone, Plus, Search, Shield, Star, Trash2,
   Upload, User, X
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -91,6 +92,25 @@ function FornecedorDetalhe({
   onEdit: (f: any) => void;
 }) {
   const { data: forn, refetch } = trpc.fornecedores.byId.useQuery({ id: fornecedorId });
+  const [, navigate] = useLocation();
+  const { data: mpsFornecedor, refetch: refetchMps } = trpc.fornecedores.mpList.useQuery({ fornecedorId });
+  const { data: todasMps } = trpc.materiasPrimas.list.useQuery({});
+  const [mpSearchAdd, setMpSearchAdd] = useState("");
+  const [showMpAdd, setShowMpAdd] = useState(false);
+  const associarMp = trpc.fornecedores.associarMp.useMutation({
+    onSuccess: () => { toast.success("MP associada"); refetchMps(); setShowMpAdd(false); setMpSearchAdd(""); },
+    onError: (e) => toast.error(e.message),
+  });
+  const desassociarMp = trpc.fornecedores.desassociarMp.useMutation({
+    onSuccess: () => { toast.success("Associação removida"); refetchMps(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const mpIdsJaAssociadas = useMemo(() => new Set((mpsFornecedor ?? []).map((r: any) => r.mpId)), [mpsFornecedor]);
+  const mpsFiltradas = useMemo(() =>
+    (todasMps ?? []).filter((mp: any) =>
+      !mpIdsJaAssociadas.has(mp.id) &&
+      (mpSearchAdd === "" || mp.nome.toLowerCase().includes(mpSearchAdd.toLowerCase()) || (mp.codigo ?? "").toLowerCase().includes(mpSearchAdd.toLowerCase()))
+    ), [todasMps, mpIdsJaAssociadas, mpSearchAdd]);
   const [docDialogOpen, setDocDialogOpen] = useState(false);
   const [docForm, setDocForm] = useState<DocForm>(EMPTY_DOC(fornecedorId));
   const [uploading, setUploading] = useState(false);
@@ -473,6 +493,109 @@ function FornecedorDetalhe({
       </div>
 
       {/* Dialog de novo documento */}
+          {/* Tab Matérias-Primas */}
+          <TabsContent value="materias-primas" className="mt-0">
+            <div className="p-6 space-y-4">
+              {/* Lista de MP associadas */}
+              <div className="space-y-2">
+                {(mpsFornecedor ?? []).length === 0 && !showMpAdd && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                    <p className="text-sm">Nenhuma matéria-prima associada</p>
+                  </div>
+                )}
+                {(mpsFornecedor ?? []).map((row: any) => (
+                  <div key={row.mpId} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-card hover:border-primary/30 transition-colors group">
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+                      <Package className="w-3.5 h-3.5 text-blue-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-sm font-medium text-foreground truncate">{row.mp?.nome ?? `MP #${row.mpId}`}</p>
+                        {row.mp?.codigo && <span className="text-[10px] font-mono px-1 py-0.5 rounded bg-muted text-muted-foreground">{row.mp.codigo}</span>}
+                        {row.preferencial && <span className="flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200"><Star className="w-2.5 h-2.5" /> Preferencial</span>}
+                      </div>
+                      {row.referenciaFornecedor && <p className="text-[10px] font-mono text-muted-foreground mt-0.5">Ref: {row.referenciaFornecedor}</p>}
+                      {row.paisOrigem && <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Globe className="w-2.5 h-2.5" />{row.paisOrigem}</p>}
+                    </div>
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => { navigate(`/materias-primas?expand=${row.mpId}`); onClose(); }}
+                        className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
+                        title="Ver MP"
+                      >
+                        <Link2 className="w-3.5 h-3.5" />
+                      </button>
+                      {isAuthenticated && (
+                        <button
+                          onClick={() => desassociarMp.mutate({ fornecedorId, materiaPrimaId: row.mpId })}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-red-500 transition-colors"
+                          title="Remover associação"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Adicionar MP */}
+              {isAuthenticated && (
+                <div className="border-t border-border/40 pt-4">
+                  {!showMpAdd ? (
+                    <button
+                      onClick={() => setShowMpAdd(true)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-primary/30 text-xs font-medium text-primary hover:bg-primary/5 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Associar Matéria-Prima
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-semibold text-foreground flex-1">Selecionar MP para associar</p>
+                        <button onClick={() => { setShowMpAdd(false); setMpSearchAdd(""); }} className="p-1 rounded hover:bg-accent">
+                          <X className="w-3.5 h-3.5 text-muted-foreground" />
+                        </button>
+                      </div>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                        <Input
+                          placeholder="Pesquisar MP..."
+                          value={mpSearchAdd}
+                          onChange={e => setMpSearchAdd(e.target.value)}
+                          className="pl-9 h-8 text-xs"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto space-y-1 rounded-xl border border-border/60 p-2">
+                        {mpsFiltradas.length === 0 && (
+                          <p className="text-xs text-muted-foreground text-center py-3">
+                            {mpSearchAdd ? "Nenhuma MP encontrada" : "Todas as MP já estão associadas"}
+                          </p>
+                        )}
+                        {mpsFiltradas.map((mp: any) => (
+                          <button
+                            key={mp.id}
+                            onClick={() => associarMp.mutate({ fornecedorId, materiaPrimaId: mp.id })}
+                            disabled={associarMp.isPending}
+                            className="w-full flex items-center gap-2.5 p-2.5 rounded-lg hover:bg-accent/50 transition-colors text-left"
+                          >
+                            <Package className="w-3.5 h-3.5 text-blue-500 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-medium truncate">{mp.nome}</p>
+                              {mp.codigo && <p className="text-[10px] font-mono text-muted-foreground">{mp.codigo}</p>}
+                            </div>
+                            <Plus className="w-3 h-3 text-primary shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </TabsContent>
       <Dialog open={docDialogOpen} onOpenChange={setDocDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
