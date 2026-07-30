@@ -567,6 +567,7 @@ export default function Fornecedores() {
   const [search, setSearch] = useState("");
   const [estadoDocFilter, setEstadoDocFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [statusFornFilter, setStatusFornFilter] = useState("all");
   const [form, setForm] = useState<FornecedorForm>(EMPTY_FORN);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -906,4 +907,3 @@ export default function Fornecedores() {
     </SigaLayout>
   );
 }
-  const [statusFornFilter, setStatusFornFilter] = useState("all");
