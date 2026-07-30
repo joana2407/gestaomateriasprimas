@@ -59,6 +59,10 @@ export const materiasPrimasRouter = router({
       sacosPorPalete: z.number().int().optional().nullable(),
       kgPorBigbag: z.number().optional().nullable(),
       observacoesLogistica: z.string().optional().nullable(),
+      // Logística múltipla
+      formasFornecimento: z.array(z.enum(["saco", "granel", "bigbag", "caixa", "outro"])).optional().nullable(),
+      unidadesPorCaixa: z.number().optional().nullable(),
+      caixasPorPalete: z.number().int().optional().nullable(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Verificar bloqueio de glúten na Fábrica III

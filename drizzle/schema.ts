@@ -86,6 +86,12 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   kgPorBigbag: float("kg_por_bigbag"),
   // Observações logísticas (condições de armazenamento, prazo validade, etc.)
   observacoesLogistica: text("observacoes_logistica"),
+  // Múltiplas formas de fornecimento (array JSON: ["saco","granel","bigbag","caixa","outro"])
+  formasFornecimento: json("formas_fornecimento"),
+  // Quando caixa está selecionada: quantidade/peso por caixa
+  unidadesPorCaixa: float("unidades_por_caixa"),
+  // Quando caixa está selecionada: número de caixas por palete
+  caixasPorPalete: int("caixas_por_palete"),
   ativa: boolean("ativa").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

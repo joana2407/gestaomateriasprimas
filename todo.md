@@ -165,3 +165,12 @@
 - [x] Mostrar informação logística no painel expandido de cada MP (cartões com forma, pesos, palete calculada)
 - [x] Migração SQL para novos campos de logística
 - [x] Nota informativa sobre módulo de receções futuras
+
+## Melhorias v2.0 — Logística múltipla
+- [x] Alterar formaFornecimento de ENUM singular para JSON array (múltiplas formas) — campo formasFornecimento
+- [x] Migração SQL: colunas formas_fornecimento, unidades_por_caixa, caixas_por_palete adicionadas
+- [x] Campo unidadesPorCaixa (kg/un por caixa) quando caixa está selecionada
+- [x] Campo caixasPorPalete (nº caixas por palete) com cálculo automático do total
+- [x] Tab Logística: checkboxes multi-seleção com tick visual, campos condicionais por forma
+- [x] Painel expandido MPDetalhe: badges de formas + cartões de detalhe por forma (saco, bigbag, caixa)
+- [x] openEdit: carrega array de formas e campos de caixa

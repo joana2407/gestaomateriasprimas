@@ -56,6 +56,10 @@ interface MPFormData {
   sacosPorPalete?: number | null;
   kgPorBigbag?: number | null;
   observacoesLogistica?: string | null;
+  // Logística múltipla
+  formasFornecimento?: Array<"saco" | "granel" | "bigbag" | "caixa" | "outro"> | null;
+  unidadesPorCaixa?: number | null;
+  caixasPorPalete?: number | null;
 }
 
 const EMPTY_FORM: MPFormData = {
@@ -64,6 +68,7 @@ const EMPTY_FORM: MPFormData = {
   observacoes: "", tipo: "simples", paisOrigem: "",
   subIngredientes: [], fornecedoresMp: [],
   formaFornecimento: null, kgPorSaco: null, sacosPorPalete: null, kgPorBigbag: null, observacoesLogistica: null,
+  formasFornecimento: [], unidadesPorCaixa: null, caixasPorPalete: null,
 };
 
 export default function MateriasPrimas() {
@@ -153,6 +158,15 @@ export default function MateriasPrimas() {
         sacosPorPalete: (mpDetalhes as any).sacosPorPalete ?? null,
         kgPorBigbag: (mpDetalhes as any).kgPorBigbag ?? null,
         observacoesLogistica: (mpDetalhes as any).observacoesLogistica ?? null,
+        // Fallback: se o array novo estiver vazio mas existir valor legado, migrar
+        formasFornecimento: (() => {
+          const arr = ((mpDetalhes as any).formasFornecimento as any[]) ?? [];
+          if (arr.length > 0) return arr;
+          const legado = (mpDetalhes as any).formaFornecimento;
+          return legado ? [legado] : [];
+        })(),
+        unidadesPorCaixa: (mpDetalhes as any).unidadesPorCaixa ?? null,
+        caixasPorPalete: (mpDetalhes as any).caixasPorPalete ?? null,
       });
       setActiveTab("alergenios");
       setDialogOpen(true);
@@ -790,9 +804,12 @@ export default function MateriasPrimas() {
               {/* Tab: Logística */}
               {activeTab === "logistica" && (
                 <div className="space-y-5">
-                  {/* Forma de fornecimento */}
+
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-foreground">Forma de Fornecimento</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-foreground">Formas de Fornecimento</label>
+                      <span className="text-[10px] text-muted-foreground">Pode selecionar várias</span>
+                    </div>
                     <div className="grid grid-cols-3 gap-2">
                       {([
                         { id: "saco", label: "Saco", icon: "🧺" },
@@ -800,102 +817,112 @@ export default function MateriasPrimas() {
                         { id: "bigbag", label: "Big Bag", icon: "🛍️" },
                         { id: "caixa", label: "Caixa", icon: "📦" },
                         { id: "outro", label: "Outro", icon: "📋" },
-                      ] as const).map(opt => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setForm(f => ({ ...f, formaFornecimento: f.formaFornecimento === opt.id ? null : opt.id }))}
-                          className={cn(
-                            "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
-                            form.formaFornecimento === opt.id
-                              ? "bg-primary/10 border-primary text-primary"
-                              : "bg-muted/30 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
-                          )}
-                        >
-                          <span>{opt.icon}</span>
-                          {opt.label}
-                        </button>
-                      ))}
+                      ] as const).map(opt => {
+                        const isSelected = (form.formasFornecimento ?? []).includes(opt.id);
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setForm(f => {
+                              const atual = f.formasFornecimento ?? [];
+                              return {
+                                ...f,
+                                formasFornecimento: isSelected
+                                  ? atual.filter(x => x !== opt.id)
+                                  : [...atual, opt.id],
+                              };
+                            })}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                              isSelected
+                                ? "bg-primary/10 border-primary text-primary"
+                                : "bg-muted/30 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                            )}
+                          >
+                            <span>{opt.icon}</span>
+                            {opt.label}
+                            {isSelected && <span className="ml-auto w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-[8px]">✓</span>}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Campos específicos de saco */}
-                  {form.formaFornecimento === "saco" && (
+                  {/* Campos específicos de saco (nova lógica multi) */}
+                  {(form.formasFornecimento ?? []).includes("saco") && (
                     <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-4">
                       <p className="text-xs font-semibold text-foreground flex items-center gap-2">
-                        <Truck className="w-3.5 h-3.5" /> Configuração de Saco e Palete
+                        <Truck className="w-3.5 h-3.5" /> 🧺 Configuração de Saco e Palete
                       </p>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                            Peso por Saco (kg)
-                          </label>
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Peso por Saco (kg)</label>
                           <div className="relative">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="0.1"
-                              value={form.kgPorSaco ?? ""}
-                              onChange={e => setForm(f => ({ ...f, kgPorSaco: parseFloat(e.target.value) || null }))}
-                              placeholder="Ex: 25"
-                              className="pr-10"
-                            />
+                            <Input type="number" min="0" step="0.1" value={form.kgPorSaco ?? ""} onChange={e => setForm(f => ({ ...f, kgPorSaco: parseFloat(e.target.value) || null }))} placeholder="Ex: 25" className="pr-10" />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
                           </div>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                            Sacos por Palete
-                          </label>
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Sacos por Palete</label>
                           <div className="relative">
-                            <Input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={form.sacosPorPalete ?? ""}
-                              onChange={e => setForm(f => ({ ...f, sacosPorPalete: parseInt(e.target.value) || null }))}
-                              placeholder="Ex: 40"
-                              className="pr-16"
-                            />
+                            <Input type="number" min="0" step="1" value={form.sacosPorPalete ?? ""} onChange={e => setForm(f => ({ ...f, sacosPorPalete: parseInt(e.target.value) || null }))} placeholder="Ex: 40" className="pr-16" />
                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">sacos</span>
                           </div>
                         </div>
                       </div>
-                      {/* Peso por palete calculado */}
                       {form.kgPorSaco && form.sacosPorPalete && (
                         <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs">
                           <span className="text-blue-700 font-medium">Peso por palete (calculado)</span>
-                          <span className="font-bold text-blue-800">
-                            {(form.kgPorSaco * form.sacosPorPalete).toLocaleString("pt-PT")} kg
-                          </span>
+                          <span className="font-bold text-blue-800">{(form.kgPorSaco * form.sacosPorPalete).toLocaleString("pt-PT")} kg</span>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Campos específicos de big bag */}
-                  {form.formaFornecimento === "bigbag" && (
+                  {/* Campos específicos de big bag (nova lógica multi) */}
+                  {(form.formasFornecimento ?? []).includes("bigbag") && (
                     <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
                       <p className="text-xs font-semibold text-foreground flex items-center gap-2">
-                        <Truck className="w-3.5 h-3.5" /> Configuração de Big Bag
+                        <Truck className="w-3.5 h-3.5" /> 🛍️ Configuração de Big Bag
                       </p>
                       <div className="space-y-1.5">
-                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
-                          Peso por Big Bag (kg)
-                        </label>
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Peso por Big Bag (kg)</label>
                         <div className="relative">
-                          <Input
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            value={form.kgPorBigbag ?? ""}
-                            onChange={e => setForm(f => ({ ...f, kgPorBigbag: parseFloat(e.target.value) || null }))}
-                            placeholder="Ex: 500"
-                            className="pr-10"
-                          />
+                          <Input type="number" min="0" step="0.1" value={form.kgPorBigbag ?? ""} onChange={e => setForm(f => ({ ...f, kgPorBigbag: parseFloat(e.target.value) || null }))} placeholder="Ex: 500" className="pr-10" />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
                         </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Campos específicos de caixa (nova lógica multi) */}
+                  {(form.formasFornecimento ?? []).includes("caixa") && (
+                    <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-4">
+                      <p className="text-xs font-semibold text-foreground flex items-center gap-2">
+                        <Truck className="w-3.5 h-3.5" /> 📦 Configuração de Caixa e Palete
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Quantidade por Caixa</label>
+                          <div className="relative">
+                            <Input type="number" min="0" step="0.001" value={form.unidadesPorCaixa ?? ""} onChange={e => setForm(f => ({ ...f, unidadesPorCaixa: parseFloat(e.target.value) || null }))} placeholder="Ex: 10 ou 5.5" className="pr-16" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg/un</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Caixas por Palete</label>
+                          <div className="relative">
+                            <Input type="number" min="0" step="1" value={form.caixasPorPalete ?? ""} onChange={e => setForm(f => ({ ...f, caixasPorPalete: parseInt(e.target.value) || null }))} placeholder="Ex: 20" className="pr-14" />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">caixas</span>
+                          </div>
+                        </div>
+                      </div>
+                      {form.unidadesPorCaixa && form.caixasPorPalete && (
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs">
+                          <span className="text-blue-700 font-medium">Total por palete (calculado)</span>
+                          <span className="font-bold text-blue-800">{(form.unidadesPorCaixa * form.caixasPorPalete).toLocaleString("pt-PT")} kg/un</span>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -956,6 +983,11 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
   const sacosPorPalete = (mpDetalhes as any)?.sacosPorPalete ?? (mp as any)?.sacosPorPalete;
   const kgPorBigbag = (mpDetalhes as any)?.kgPorBigbag ?? (mp as any)?.kgPorBigbag;
   const observacoesLogistica = (mpDetalhes as any)?.observacoesLogistica ?? (mp as any)?.observacoesLogistica;
+  // Usar o novo campo array formasFornecimento; fallback para o campo singular legado
+  const formasFornecimento: string[] = ((mpDetalhes as any)?.formasFornecimento as string[] | null) ??
+    (formaFornecimento ? [formaFornecimento] : []);
+  const unidadesPorCaixa = (mpDetalhes as any)?.unidadesPorCaixa ?? (mp as any)?.unidadesPorCaixa;
+  const caixasPorPalete = (mpDetalhes as any)?.caixasPorPalete ?? (mp as any)?.caixasPorPalete;
   const FORMA_LABELS: Record<string, { label: string; icon: string }> = {
     saco: { label: "Saco", icon: "🧺" },
     granel: { label: "Granel", icon: "🏗️" },
@@ -1195,19 +1227,21 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
           <p className="text-xs text-muted-foreground italic border-t border-border/40 pt-3">{observacoes}</p>
         )}
         {/* ── Logística ── */}
-        {formaFornecimento && (
+        {formasFornecimento.length > 0 && (
           <div className="border-t border-border/40 pt-4">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
               <Truck className="w-3.5 h-3.5" /> Informação Logística
             </p>
+            {/* Formas de fornecimento (badges) */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {formasFornecimento.map(forma => (
+                <span key={forma} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-primary/30 bg-primary/5 text-xs font-medium text-primary">
+                  <span>{FORMA_LABELS[forma]?.icon}</span>
+                  {FORMA_LABELS[forma]?.label ?? forma}
+                </span>
+              ))}
+            </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl border border-border/60 bg-card">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Forma de Fornecimento</p>
-                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
-                  <span>{FORMA_LABELS[formaFornecimento]?.icon}</span>
-                  {FORMA_LABELS[formaFornecimento]?.label ?? formaFornecimento}
-                </p>
-              </div>
               {kgPorSaco != null && (
                 <div className="p-3 rounded-xl border border-border/60 bg-card">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Peso por Saco</p>
@@ -1230,6 +1264,24 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                 <div className="p-3 rounded-xl border border-border/60 bg-card">
                   <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Peso por Big Bag</p>
                   <p className="text-sm font-bold text-foreground">{kgPorBigbag} <span className="text-xs font-normal text-muted-foreground">kg</span></p>
+                </div>
+              )}
+              {unidadesPorCaixa != null && (
+                <div className="p-3 rounded-xl border border-border/60 bg-card">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Qtd. por Caixa</p>
+                  <p className="text-sm font-bold text-foreground">{unidadesPorCaixa} <span className="text-xs font-normal text-muted-foreground">kg/un</span></p>
+                </div>
+              )}
+              {caixasPorPalete != null && (
+                <div className="p-3 rounded-xl border border-border/60 bg-card">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Caixas por Palete</p>
+                  <p className="text-sm font-bold text-foreground">{caixasPorPalete} <span className="text-xs font-normal text-muted-foreground">caixas</span></p>
+                </div>
+              )}
+              {unidadesPorCaixa != null && caixasPorPalete != null && (
+                <div className="p-3 rounded-xl border border-blue-200 bg-blue-50">
+                  <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-1">Total por Palete</p>
+                  <p className="text-sm font-bold text-blue-800">{(unidadesPorCaixa * caixasPorPalete).toLocaleString("pt-PT")} <span className="text-xs font-normal">kg/un</span></p>
                 </div>
               )}
             </div>
