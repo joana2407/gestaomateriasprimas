@@ -91,11 +91,21 @@ export async function getMateriasPrimas(fabricaId?: number) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db.select().from(materiasPrimas).where(eq(materiasPrimas.ativa, true));
-  if (!fabricaId) return rows;
-  return rows.filter(mp => {
+  const filtered = !fabricaId ? rows : rows.filter(mp => {
     const ids = (mp.fabricasIds as number[] | null) ?? [];
     return ids.includes(fabricaId);
   });
+  // Enriquecer com fornecedores associados (tabela mp_fornecedores)
+  const allMpFornecedores = await db.select().from(mpFornecedores).where(eq(mpFornecedores.ativo, true));
+  const fornMap = new Map<number, Array<{ fornecedorId: number; preferencial: boolean | null }>>();
+  for (const rel of allMpFornecedores) {
+    if (!fornMap.has(rel.materiaPrimaId)) fornMap.set(rel.materiaPrimaId, []);
+    fornMap.get(rel.materiaPrimaId)!.push({ fornecedorId: rel.fornecedorId, preferencial: rel.preferencial });
+  }
+  return filtered.map(mp => ({
+    ...mp,
+    fornecedoresIds: (fornMap.get(mp.id) ?? []).map(f => f.fornecedorId),
+  }));
 }
 
 export async function getMateriaPrimaById(id: number) {

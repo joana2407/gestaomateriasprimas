@@ -118,3 +118,7 @@
 ## Melhorias v1.3
 - [x] Corrigir cálculo de validade das FT de MP para 3 anos (em vez de 1 ano)
 - [x] Atualizar texto de aviso no diálogo de FT para "3 anos após a emissão"
+
+## Melhorias v1.4
+- [x] Corrigir filtro por fornecedor nas MP: usar relação direta mp_fornecedores em vez de proxy via fichas técnicas
+- [x] Enriquecer listagem getMateriasPrimas no backend com campo fornecedoresIds (todos os fornecedores, independente de preferencial)

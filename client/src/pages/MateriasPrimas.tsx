@@ -110,12 +110,12 @@ export default function MateriasPrimas() {
     return (mps ?? []).filter(mp => {
       const matchSearch = mp.nome.toLowerCase().includes(search.toLowerCase()) ||
         (mp.codigo ?? "").toLowerCase().includes(search.toLowerCase());
-      // Filtro por fornecedor: verificar nas fichas técnicas se há FT deste fornecedor para esta MP
+      // Filtro por fornecedor: usar a relação direta mp_fornecedores devolvida pela listagem
       const matchFornecedor = fornecedorFilter === "all" ||
-        (fichasPorMp.get(mp.id) ?? []).some(ft => String(ft.fornecedorId) === fornecedorFilter);
+        ((mp as any).fornecedoresIds as number[] ?? []).some((id: number) => String(id) === fornecedorFilter);
       return matchSearch && matchFornecedor;
     });
-  }, [mps, search, fornecedorFilter, fichasPorMp]);
+  }, [mps, search, fornecedorFilter]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
   const openEdit = useCallback(async (mpId: number) => {
