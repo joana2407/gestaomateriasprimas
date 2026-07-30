@@ -7,12 +7,12 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
-import { useState, useMemo, useCallback , useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import {
   AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
-  Package, Plus, Search, Star, Trash2, X, GripVertical, Truck, Info
+  Package, Plus, Search, Star, Trash2, X, GripVertical, Truck, Info, Upload, Calendar, CheckCircle2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -1085,6 +1085,65 @@ export default function MateriasPrimas() {
 function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, any> }) {
   const { data: mpDetalhes } = trpc.materiasPrimas.byId.useQuery({ id: mp.id });
   const { data: fichasMp } = trpc.fichasTecnicas.list.useQuery({ materiaPrimaId: mp.id });
+  const utils = trpc.useUtils();
+  const { isAuthenticated } = useAuth();
+
+  // Estado para o formulário de upload de FT inline
+  const [uploadingFornId, setUploadingFornId] = useState<number | null>(null);
+  const [ftForm, setFtForm] = useState({ versao: "1.0", dataEmissao: "", notas: "" });
+  const [ftFile, setFtFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const uploadFicheiro = trpc.fichasTecnicas.uploadFicheiro.useMutation();
+  const upsertFt = trpc.fichasTecnicas.upsert.useMutation({
+    onSuccess: () => {
+      toast.success("Ficha técnica registada com sucesso");
+      setUploadingFornId(null);
+      setFtFile(null);
+      setFtForm({ versao: "1.0", dataEmissao: "", notas: "" });
+      utils.fichasTecnicas.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleUploadFt = async (fornecedorId: number) => {
+    if (!ftForm.dataEmissao) { toast.error("Data de emissão obrigatória"); return; }
+    const dataEmissao = new Date(ftForm.dataEmissao);
+    const dataValidade = new Date(dataEmissao);
+    dataValidade.setFullYear(dataValidade.getFullYear() + 3);
+
+    let ficheiroUrl: string | undefined;
+    let ficheiroKey: string | undefined;
+
+    if (ftFile) {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(ftFile);
+      });
+      const result = await uploadFicheiro.mutateAsync({
+        ficheiroBase64: base64,
+        nomeOriginal: ftFile.name,
+        mimeType: ftFile.type || "application/pdf",
+        materiaPrimaId: mp.id,
+        fornecedorId,
+      });
+      ficheiroUrl = result.url;
+      ficheiroKey = result.key;
+    }
+
+    upsertFt.mutate({
+      materiaPrimaId: mp.id,
+      fornecedorId,
+      versao: ftForm.versao || "1.0",
+      dataEmissao,
+      dataValidade,
+      ficheiroUrl,
+      ficheiroKey,
+      notas: ftForm.notas || undefined,
+    });
+  };
   const formulacao = (mp.alergeniosFormulacao as AlergenioId[]) ?? [];
   const contaminacao = (mp.alergeniosContaminacao as AlergenioId[]) ?? [];
   const subIngredientes = (mpDetalhes?.subIngredientes as any[]) ?? (mp.subIngredientes as any[]) ?? [];
@@ -1239,6 +1298,71 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                         </div>
                       )}
                     </div>
+                    {/* Botão e formulário de upload de FT */}
+                    {isAuthenticated && (
+                      <div className="pt-1">
+                        {uploadingFornId === fp.fornecedorId ? (
+                          <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/60">
+                            <p className="text-[10px] font-semibold text-foreground">Nova Ficha Técnica</p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-muted-foreground">Versão</label>
+                                <Input value={ftForm.versao} onChange={e => setFtForm(f => ({ ...f, versao: e.target.value }))} placeholder="1.0" className="h-7 text-xs" />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] text-muted-foreground">Data de Emissão *</label>
+                                <Input type="date" value={ftForm.dataEmissao} onChange={e => setFtForm(f => ({ ...f, dataEmissao: e.target.value }))} className="h-7 text-xs" />
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-muted-foreground">Ficheiro (PDF/imagem)</label>
+                              <div
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border/60 hover:border-primary/40 cursor-pointer transition-colors text-xs text-muted-foreground hover:text-foreground"
+                              >
+                                <Upload className="w-3.5 h-3.5 shrink-0" />
+                                {ftFile ? (
+                                  <span className="truncate text-primary font-medium">{ftFile.name}</span>
+                                ) : (
+                                  <span>Clique para selecionar ficheiro...</span>
+                                )}
+                              </div>
+                              <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".pdf,.png,.jpg,.jpeg"
+                                className="hidden"
+                                onChange={e => setFtFile(e.target.files?.[0] ?? null)}
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] text-muted-foreground">Notas</label>
+                              <Input value={ftForm.notas} onChange={e => setFtForm(f => ({ ...f, notas: e.target.value }))} placeholder="Observações opcionais..." className="h-7 text-xs" />
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                              <Button
+                                size="sm"
+                                className="h-7 text-xs flex-1"
+                                onClick={() => handleUploadFt(fp.fornecedorId)}
+                                disabled={!ftForm.dataEmissao || upsertFt.isPending || uploadFicheiro.isPending}
+                              >
+                                {(upsertFt.isPending || uploadFicheiro.isPending) ? "A guardar..." : <><CheckCircle2 className="w-3 h-3 mr-1" /> Guardar FT</>}
+                              </Button>
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => { setUploadingFornId(null); setFtFile(null); }}>
+                                <X className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => { setUploadingFornId(fp.fornecedorId); setFtForm({ versao: "1.0", dataEmissao: "", notas: "" }); setFtFile(null); }}
+                            className="w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-primary/30 text-[10px] font-medium text-primary hover:bg-primary/5 transition-colors"
+                          >
+                            <Upload className="w-3 h-3" /> {ftAtiva ? "Atualizar FT" : "Adicionar FT"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
