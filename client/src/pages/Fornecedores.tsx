@@ -234,9 +234,17 @@ function FornecedorDetalhe({
                 return <span className={cn("ml-1.5 w-4 h-4 rounded-full text-white text-[9px] flex items-center justify-center font-bold", st === "pendente" ? "bg-amber-500" : "bg-red-500")}>!</span>;
               })()}
             </TabsTrigger>
+
+            <TabsTrigger value="materias-primas" className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              Matérias-Primas
+              {(mpsFornecedor ?? []).length > 0 && (
+                <span className="ml-1.5 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] font-bold">
+                  {(mpsFornecedor ?? []).length}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
-          {/* Tab Contactos */}
           <TabsContent value="contactos" className="p-6 space-y-6 mt-0">
             {/* Contacto Comercial */}
             <div>
@@ -557,7 +565,6 @@ function FornecedorDetalhe({
                       <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                         <Input
-                          placeholder="Pesquisar MP..."
                           value={mpSearchAdd}
                           onChange={e => setMpSearchAdd(e.target.value)}
                           className="pl-9 h-8 text-xs"
@@ -616,7 +623,6 @@ function FornecedorDetalhe({
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Nome / Referência *</label>
-              <Input value={docForm.nome} onChange={e => setDocForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: ISO 22000:2018 — Cert. nº 12345" />
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-medium text-muted-foreground">Descrição (opcional)</label>
@@ -782,7 +788,6 @@ export default function Fornecedores() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
-                placeholder="Pesquisar fornecedores..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9"
@@ -790,7 +795,6 @@ export default function Fornecedores() {
             </div>
             <Select value={estadoDocFilter} onValueChange={setEstadoDocFilter}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos os estados de documentação" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os fornecedores</SelectItem>
@@ -802,7 +806,6 @@ export default function Fornecedores() {
             </Select>
             <Select value={statusFornFilter} onValueChange={setStatusFornFilter}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Todos os estados de completude" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os estados</SelectItem>
@@ -896,11 +899,9 @@ export default function Fornecedores() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Nome *</label>
-                <Input value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Nome do fornecedor" />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Código</label>
-                <Input value={form.codigo} onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))} placeholder="Ex: FORN-001" />
               </div>
             </div>
 
@@ -915,15 +916,12 @@ export default function Fornecedores() {
               <div className="grid grid-cols-2 gap-3 pl-7">
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Nome</label>
-                  <Input value={form.contactoComercialNome} onChange={e => setForm(f => ({ ...f, contactoComercialNome: e.target.value }))} placeholder="Nome completo" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Email</label>
-                  <Input type="email" value={form.contactoComercialEmail} onChange={e => setForm(f => ({ ...f, contactoComercialEmail: e.target.value }))} placeholder="email@..." />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Telemóvel</label>
-                  <Input value={form.contactoComercialTelemovel} onChange={e => setForm(f => ({ ...f, contactoComercialTelemovel: e.target.value }))} placeholder="+351 9xx xxx xxx" />
                 </div>
               </div>
             </div>
@@ -939,15 +937,12 @@ export default function Fornecedores() {
               <div className="grid grid-cols-2 gap-3 pl-7">
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Nome</label>
-                  <Input value={form.contactoQualidadeNome} onChange={e => setForm(f => ({ ...f, contactoQualidadeNome: e.target.value }))} placeholder="Nome completo" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Email</label>
-                  <Input type="email" value={form.contactoQualidadeEmail} onChange={e => setForm(f => ({ ...f, contactoQualidadeEmail: e.target.value }))} placeholder="email@..." />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Telemóvel</label>
-                  <Input value={form.contactoQualidadeTelemovel} onChange={e => setForm(f => ({ ...f, contactoQualidadeTelemovel: e.target.value }))} placeholder="+351 9xx xxx xxx" />
                 </div>
               </div>
             </div>
@@ -986,7 +981,6 @@ export default function Fornecedores() {
                 <textarea
                   value={form.observacoesPendencia ?? ""}
                   onChange={e => setForm(f => ({ ...f, observacoesPendencia: e.target.value || null }))}
-                  placeholder="Descreva o que está pendente ou incompleto (ex: Falta certificação ISO, Contacto de qualidade por confirmar...)"
                   rows={3}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                 />
