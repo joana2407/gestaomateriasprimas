@@ -8,8 +8,9 @@ import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { type AlergenioId, ALERGENIOS_14 } from "../../../shared/allergens";
 import { cn } from "@/lib/utils";
-import { ChevronDown, ChevronUp, Edit2, FileText, FlaskConical, Plus, RefreshCw, Search } from "lucide-react";
+import { AlertTriangle, ChevronDown, ChevronUp, Edit2, FileText, FlaskConical, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +22,7 @@ export default function Produtos() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [form, setForm] = useState({ id: undefined as number | undefined, nome: "", codigo: "", marca: "", fabricaId: 0, receitaId: undefined as number | undefined, gama: "" });
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const { data: produtos, refetch } = trpc.produtos.list.useQuery({ fabricaId: fabricaFilter !== "all" ? parseInt(fabricaFilter) : undefined });
   const { data: fabricas } = trpc.fabricas.list.useQuery();
@@ -28,6 +30,10 @@ export default function Produtos() {
 
   const upsert = trpc.produtos.upsert.useMutation({
     onSuccess: () => { toast.success(form.id ? "Produto atualizado" : "Produto criado"); setDialogOpen(false); refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteProduto = trpc.produtos.delete.useMutation({
+    onSuccess: () => { toast.success("Produto eliminado"); setDeleteId(null); refetch(); },
     onError: (e) => toast.error(e.message),
   });
   const calcularPerfil = trpc.produtos.calcularEGuardarPerfil.useMutation({
@@ -120,7 +126,36 @@ export default function Produtos() {
                         </button>
                       </>
                     )}
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                    {isAuthenticated && (
+                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            setForm({
+                              id: produto.id,
+                              nome: produto.nome,
+                              codigo: produto.codigo ?? "",
+                              marca: produto.marca ?? "",
+                              fabricaId: produto.fabricaId,
+                              receitaId: produto.receitaId ?? undefined,
+                              gama: produto.gama ?? "",
+                            });
+                            setDialogOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          title="Editar produto"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(produto.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"
+                          title="Eliminar produto"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground ml-1" /> : <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />}
                   </div>
                 </div>
 
@@ -188,6 +223,30 @@ export default function Produtos() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de confirmação de eliminação */}
+      <AlertDialog open={deleteId !== null} onOpenChange={open => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              Eliminar Produto
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação irá desativar o produto. O histórico e as fichas técnicas associadas serão mantidos.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteId && deleteProduto.mutate({ id: deleteId })}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleteProduto.isPending ? "A eliminar..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SigaLayout>
   );
 }
@@ -226,4 +285,3 @@ function ProdutoDetalhe({ produtoId }: { produtoId: number }) {
     </div>
   );
 }
-

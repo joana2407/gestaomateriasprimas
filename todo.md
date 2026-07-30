@@ -146,13 +146,13 @@
 - [x] Alertas de documentos integrados no getDashboardStats do backend
 
 ## Melhorias v1.7
-- [ ] Receitas: editar receita existente (pré-carregar ingredientes e dados)
-- [ ] Receitas: eliminar receita com confirmação
-- [ ] Receitas: seletor de unidade de gramagem por ingrediente (g ou kg)
-- [ ] Produtos: associar receita diretamente no painel de produtos
-- [ ] Produtos: editar produto existente
-- [ ] Produtos: eliminar produto com confirmação
-- [ ] Atualizar schema/backend para campo de unidade nos ingredientes de receita
+- [x] Receitas: editar receita existente (pré-carregar ingredientes e dados via byId)
+- [x] Receitas: eliminar receita com diálogo de confirmação
+- [x] Receitas: seletor de unidade por ingrediente (g, kg, ml, L, unid)
+- [x] Produtos: associar receita diretamente no painel de produtos (select filtrado por fábrica)
+- [x] Produtos: editar produto existente (botão editar na lista)
+- [x] Produtos: eliminar produto com diálogo de confirmação
+- [x] Backend: routers receitas.delete e produtos.delete com audit log
 
 ## Melhorias v1.8 — Logística de MP
 - [x] Adicionar campos de logística à MP: tipo de embalagem (saco/granel/bigbag/caixa/outro)

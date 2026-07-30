@@ -5,18 +5,18 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { ALERGENIOS_14, type AlergenioId } from "../../../shared/allergens";
 import { cn } from "@/lib/utils";
 import {
   BookOpen, CheckCircle2, ChevronDown, ChevronUp, Edit2, GripVertical,
-  Minus, Plus, Search, Trash2, Zap
+  Minus, Plus, Search, Trash2, Zap, AlertTriangle
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 
 const ESTADO_LABELS: Record<string, { label: string; class: string }> = {
   rascunho: { label: "Rascunho", class: "bg-slate-100 text-slate-600 border-slate-200" },
@@ -24,6 +24,8 @@ const ESTADO_LABELS: Record<string, { label: string; class: string }> = {
   aprovada: { label: "Aprovada", class: "bg-emerald-50 text-emerald-600 border-emerald-200" },
   obsoleta: { label: "Obsoleta", class: "bg-red-50 text-red-500 border-red-200" },
 };
+
+const UNIDADES = ["g", "kg", "ml", "L", "unid"] as const;
 
 interface IngredienteForm {
   id?: number; materiaPrimaId: number; quantidade: number; unidade: string; percentagem: number; ordem: number;
@@ -38,17 +40,17 @@ export default function Receitas() {
   const [form, setForm] = useState({ id: undefined as number | undefined, nome: "", codigo: "", fabricaId: 0, descricao: "", estado: "rascunho" as any });
   const [ingredientes, setIngredientes] = useState<IngredienteForm[]>([]);
   const [mpSearch, setMpSearch] = useState("");
-  const [editingReceita, setEditingReceita] = useState<number | null>(null);
+  const [loadingEdit, setLoadingEdit] = useState(false);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
+  const utils = trpc.useUtils();
   const { data: receitas, refetch } = trpc.receitas.list.useQuery({ fabricaId: fabricaFilter !== "all" ? parseInt(fabricaFilter) : undefined });
   const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: mps } = trpc.materiasPrimas.list.useQuery();
 
   const upsertReceita = trpc.receitas.upsert.useMutation({
     onSuccess: async (data) => {
-      if (ingredientes.length > 0) {
-        await setIngredientesMutation.mutateAsync({ receitaId: data.id, ingredientes });
-      }
+      await setIngredientesMutation.mutateAsync({ receitaId: data.id, ingredientes });
       toast.success(form.id ? "Receita atualizada" : "Receita criada");
       setDialogOpen(false); refetch();
     },
@@ -58,10 +60,13 @@ export default function Receitas() {
   const aprovarReceita = trpc.receitas.aprovar.useMutation({
     onSuccess: () => { toast.success("Receita aprovada"); refetch(); },
   });
+  const deleteReceita = trpc.receitas.delete.useMutation({
+    onSuccess: () => { toast.success("Receita eliminada"); setDeleteId(null); refetch(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   const mpMap = useMemo(() => new Map((mps ?? []).map(mp => [mp.id, mp])), [mps]);
 
-  // Calcular perfil alergénico em tempo real com base nos ingredientes selecionados
   const perfilTempoReal = useMemo(() => {
     const formulacao = new Set<string>();
     const contaminacao = new Set<string>();
@@ -86,15 +91,43 @@ export default function Receitas() {
     setMpSearch("");
   };
 
-  const removeIngrediente = (idx: number) => {
-    setIngredientes(prev => prev.filter((_, i) => i !== idx));
-  };
+  const removeIngrediente = (idx: number) => setIngredientes(prev => prev.filter((_, i) => i !== idx));
+
+  const updateIngrediente = (idx: number, field: keyof IngredienteForm, value: any) =>
+    setIngredientes(prev => prev.map((ing, i) => i === idx ? { ...ing, [field]: value } : ing));
 
   const openCreate = () => {
     setForm({ id: undefined, nome: "", codigo: "", fabricaId: fabricas?.[0]?.id ?? 0, descricao: "", estado: "rascunho" });
     setIngredientes([]);
     setDialogOpen(true);
   };
+
+  const openEdit = useCallback(async (receitaId: number) => {
+    setLoadingEdit(true);
+    try {
+      const receita = await utils.receitas.byId.fetch({ id: receitaId });
+      if (!receita) { toast.error("Erro ao carregar receita"); return; }
+      setForm({
+        id: receita.id,
+        nome: receita.nome,
+        codigo: receita.codigo ?? "",
+        fabricaId: receita.fabricaId,
+        descricao: receita.descricao ?? "",
+        estado: receita.estado,
+      });
+      setIngredientes((receita.ingredientes ?? []).map((ing: any) => ({
+        id: ing.id,
+        materiaPrimaId: ing.materiaPrimaId,
+        quantidade: ing.quantidade ?? 0,
+        unidade: ing.unidade ?? "g",
+        percentagem: ing.percentagem ?? 0,
+        ordem: ing.ordem ?? 0,
+      })));
+      setDialogOpen(true);
+    } finally {
+      setLoadingEdit(false);
+    }
+  }, [utils]);
 
   const filtered = (receitas ?? []).filter(r =>
     r.nome.toLowerCase().includes(search.toLowerCase())
@@ -150,12 +183,12 @@ export default function Receitas() {
                   onClick={() => setExpandedId(isExpanded ? null : receita.id)}
                 >
                   <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
-                    <BookOpen className="w-4.5 h-4.5 text-emerald-600" />
+                    <BookOpen className="w-4 h-4 text-emerald-600" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <p className="text-sm font-semibold">{receita.nome}</p>
-                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border">v{receita.versao}</span>
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border border-border/60 text-muted-foreground">v{receita.versao}</span>
                     </div>
                     <div className="flex items-center gap-2 mt-1">
                       {fab && <FactoryBadge nome={fab.nome} codigo={fab.codigo} size="sm" />}
@@ -164,16 +197,35 @@ export default function Receitas() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
                     {isAuthenticated && receita.estado === "rascunho" && (
                       <button
-                        onClick={e => { e.stopPropagation(); aprovarReceita.mutate({ id: receita.id }); }}
+                        onClick={() => aprovarReceita.mutate({ id: receita.id })}
                         className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
                       >
                         <CheckCircle2 className="w-3 h-3" /> Aprovar
                       </button>
                     )}
-                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                    {isAuthenticated && (
+                      <>
+                        <button
+                          onClick={() => openEdit(receita.id)}
+                          disabled={loadingEdit}
+                          className="p-1.5 rounded-lg hover:bg-accent text-muted-foreground hover:text-foreground transition-colors"
+                          title="Editar receita"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(receita.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500 transition-colors"
+                          title="Eliminar receita"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </>
+                    )}
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground ml-1" /> : <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />}
                   </div>
                 </div>
 
@@ -186,11 +238,11 @@ export default function Receitas() {
         </div>
       </div>
 
-      {/* Dialog de criação */}
+      {/* Dialog de criação/edição */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nova Receita</DialogTitle>
+            <DialogTitle>{form.id ? "Editar Receita" : "Nova Receita"}</DialogTitle>
           </DialogHeader>
           <div className="grid lg:grid-cols-2 gap-6 pt-2">
             {/* Formulário */}
@@ -219,7 +271,10 @@ export default function Receitas() {
 
               {/* Ingredientes */}
               <div className="space-y-2">
-                <label className="text-xs font-medium text-muted-foreground">Ingredientes</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">Ingredientes</label>
+                  <span className="text-[10px] text-muted-foreground">{ingredientes.length} adicionados</span>
+                </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
                   <Input
@@ -244,21 +299,37 @@ export default function Receitas() {
                   </div>
                 )}
 
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                <div className="space-y-1.5 max-h-56 overflow-y-auto">
                   {ingredientes.map((ing, idx) => {
                     const mp = mpMap.get(ing.materiaPrimaId);
                     return (
                       <div key={idx} className="flex items-center gap-2 p-2.5 rounded-lg bg-muted/40 border border-border/40">
                         <GripVertical className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                         <span className="flex-1 text-xs font-medium truncate">{mp?.nome}</span>
+                        {/* Quantidade */}
                         <Input
                           type="number"
-                          value={ing.quantidade}
-                          onChange={e => setIngredientes(prev => prev.map((i, j) => j === idx ? { ...i, quantidade: parseFloat(e.target.value) } : i))}
+                          min="0"
+                          step="0.001"
+                          value={ing.quantidade || ""}
+                          onChange={e => updateIngrediente(idx, "quantidade", parseFloat(e.target.value) || 0)}
                           className="w-16 h-7 text-xs text-right"
                           placeholder="0"
                         />
-                        <span className="text-xs text-muted-foreground">g</span>
+                        {/* Seletor de unidade g/kg */}
+                        <Select
+                          value={ing.unidade}
+                          onValueChange={v => updateIngrediente(idx, "unidade", v)}
+                        >
+                          <SelectTrigger className="w-14 h-7 text-xs px-1.5">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {UNIDADES.map(u => (
+                              <SelectItem key={u} value={u} className="text-xs">{u}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <button type="button" onClick={() => removeIngrediente(idx)} className="p-1 rounded hover:bg-red-50 hover:text-red-500 transition-colors">
                           <Minus className="w-3 h-3" />
                         </button>
@@ -342,11 +413,36 @@ export default function Receitas() {
               onClick={() => upsertReceita.mutate(form)}
               disabled={!form.nome || !form.fabricaId || upsertReceita.isPending}
             >
-              {upsertReceita.isPending ? "A guardar..." : "Criar Receita"}
+              {upsertReceita.isPending ? "A guardar..." : form.id ? "Guardar Alterações" : "Criar Receita"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Diálogo de confirmação de eliminação */}
+      <AlertDialog open={deleteId !== null} onOpenChange={open => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              Eliminar Receita
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. A receita e todos os seus ingredientes serão permanentemente eliminados.
+              Os produtos que utilizam esta receita perderão a associação.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteId && deleteReceita.mutate({ id: deleteId })}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {deleteReceita.isPending ? "A eliminar..." : "Eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SigaLayout>
   );
 }
@@ -367,7 +463,9 @@ function ReceitaDetalhe({ receitaId, fabricaId, fabricaCodigo }: { receitaId: nu
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Ingredientes */}
         <div>
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Ingredientes</p>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Ingredientes ({(receita.ingredientes ?? []).length})
+          </p>
           {(receita.ingredientes ?? []).length === 0 ? (
             <p className="text-xs text-muted-foreground italic">Sem ingredientes registados</p>
           ) : (
@@ -376,10 +474,12 @@ function ReceitaDetalhe({ receitaId, fabricaId, fabricaCodigo }: { receitaId: nu
                 const mp = mpMap.get(ing.materiaPrimaId);
                 return (
                   <div key={ing.id} className="flex items-center gap-3 py-1.5 border-b border-border/40 last:border-0">
-                    <span className="text-xs text-muted-foreground w-5 text-right">{idx + 1}.</span>
+                    <span className="text-xs text-muted-foreground w-5 text-right shrink-0">{idx + 1}.</span>
                     <span className="flex-1 text-xs font-medium">{mp?.nome ?? `MP #${ing.materiaPrimaId}`}</span>
-                    {ing.quantidade && (
-                      <span className="text-xs text-muted-foreground">{ing.quantidade}{ing.unidade}</span>
+                    {ing.quantidade != null && ing.quantidade > 0 && (
+                      <span className="text-xs font-mono text-muted-foreground shrink-0">
+                        {ing.quantidade} {ing.unidade ?? "g"}
+                      </span>
                     )}
                   </div>
                 );

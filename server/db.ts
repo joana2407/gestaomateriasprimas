@@ -323,7 +323,9 @@ export async function deleteIngredientesByReceita(receitaId: number) {
 export async function deleteReceita(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  // Eliminar ingredientes primeiro, depois a receita
+  // Desassociar produtos que referenciam esta receita (evitar FK violation)
+  await db.update(produtos).set({ receitaId: null, updatedAt: new Date() }).where(eq(produtos.receitaId, id));
+  // Eliminar ingredientes e depois a receita
   await db.delete(ingredientesReceita).where(eq(ingredientesReceita.receitaId, id));
   await db.delete(receitas).where(eq(receitas.id, id));
 }
