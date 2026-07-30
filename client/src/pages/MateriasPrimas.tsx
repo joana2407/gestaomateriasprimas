@@ -12,7 +12,7 @@ import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import {
   AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
-  Package, Plus, Search, Star, Trash2, X, GripVertical, Truck
+  Package, Plus, Search, Star, Trash2, X, GripVertical, Truck, Info
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -60,6 +60,9 @@ interface MPFormData {
   formasFornecimento?: Array<"saco" | "granel" | "bigbag" | "caixa" | "outro"> | null;
   unidadesPorCaixa?: number | null;
   caixasPorPalete?: number | null;
+  // Estado de completude
+  statusMp?: "completo" | "pendente" | "incompleto";
+  observacoesPendencia?: string | null;
 }
 
 const EMPTY_FORM: MPFormData = {
@@ -69,6 +72,7 @@ const EMPTY_FORM: MPFormData = {
   subIngredientes: [], fornecedoresMp: [],
   formaFornecimento: null, kgPorSaco: null, sacosPorPalete: null, kgPorBigbag: null, observacoesLogistica: null,
   formasFornecimento: [], unidadesPorCaixa: null, caixasPorPalete: null,
+  statusMp: "completo", observacoesPendencia: null,
 };
 
 export default function MateriasPrimas() {
@@ -76,10 +80,11 @@ export default function MateriasPrimas() {
   const [search, setSearch] = useState("");
   const [fabricaFilter, setFabricaFilter] = useState<string>("all");
   const [fornecedorFilter, setFornecedorFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores" | "logistica">("alergenios");
+  const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores" | "logistica" | "estado">("alergenios");
 
   const utils = trpc.useUtils();
   const [loadingEdit, setLoadingEdit] = useState(false);
@@ -125,9 +130,10 @@ export default function MateriasPrimas() {
       // Filtro por fornecedor: usar a relação direta mp_fornecedores devolvida pela listagem
       const matchFornecedor = fornecedorFilter === "all" ||
         ((mp as any).fornecedoresIds as number[] ?? []).some((id: number) => String(id) === fornecedorFilter);
-      return matchSearch && matchFornecedor;
+      const matchStatus = statusFilter === "all" || ((mp as any).statusMp ?? "completo") === statusFilter;
+      return matchSearch && matchFornecedor && matchStatus;
     });
-  }, [mps, search, fornecedorFilter]);
+  }, [mps, search, fornecedorFilter, statusFilter]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
   const openEdit = useCallback(async (mpId: number) => {
@@ -167,6 +173,8 @@ export default function MateriasPrimas() {
         })(),
         unidadesPorCaixa: (mpDetalhes as any).unidadesPorCaixa ?? null,
         caixasPorPalete: (mpDetalhes as any).caixasPorPalete ?? null,
+        statusMp: (mpDetalhes as any).statusMp ?? "completo",
+        observacoesPendencia: (mpDetalhes as any).observacoesPendencia ?? null,
       });
       setActiveTab("alergenios");
       setDialogOpen(true);
@@ -224,6 +232,7 @@ export default function MateriasPrimas() {
     { id: "fornecedores", label: "Fornecedores" },
     { id: "origem", label: "Origem" },
     { id: "logistica", label: "Logística" },
+    { id: "estado", label: "Estado" },
   ] as const;
 
   return (
@@ -274,9 +283,20 @@ export default function MateriasPrimas() {
               ))}
             </SelectContent>
           </Select>
-          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all") && (
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Todos os estados" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os estados</SelectItem>
+              <SelectItem value="completo">✓ Completo</SelectItem>
+              <SelectItem value="pendente">⚠ Pendente</SelectItem>
+              <SelectItem value="incompleto">✗ Incompleto</SelectItem>
+            </SelectContent>
+          </Select>
+          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all") && (
             <button
-              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); }}
+              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); setStatusFilter("all"); }}
               className="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors border border-border/60 shrink-0"
             >
               <X className="w-3.5 h-3.5" /> Limpar filtros
@@ -285,12 +305,22 @@ export default function MateriasPrimas() {
         </div>
 
         {/* Contador de resultados com filtros ativos */}
-        {(search || fabricaFilter !== "all" || fornecedorFilter !== "all") && (
+        {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all") && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{filtered.length} resultado{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</span>
             {fornecedorFilter !== "all" && (
               <span className="px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 border border-violet-200 font-medium">
                 Fornecedor: {fornecedorMap.get(parseInt(fornecedorFilter))?.nome}
+              </span>
+            )}
+            {statusFilter !== "all" && (
+              <span className={cn(
+                "px-2 py-0.5 rounded-full border font-medium",
+                statusFilter === "completo" ? "bg-green-50 text-green-700 border-green-200" :
+                statusFilter === "pendente" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                "bg-red-50 text-red-700 border-red-200"
+              )}>
+                Estado: {statusFilter === "completo" ? "✓ Completo" : statusFilter === "pendente" ? "⚠ Pendente" : "✗ Incompleto"}
               </span>
             )}
           </div>
@@ -342,6 +372,19 @@ export default function MateriasPrimas() {
                           Composta
                         </span>
                       )}
+                      {/* Badge de estado de completude */}
+                      {(() => {
+                        const st = (mp as any).statusMp ?? "completo";
+                        if (st === "completo") return null;
+                        return (
+                          <span className={cn(
+                            "text-[10px] px-1.5 py-0.5 rounded-full border font-medium",
+                            st === "pendente" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-red-700 border-red-200"
+                          )}>
+                            {st === "pendente" ? "⚠ Pendente" : "✗ Incompleto"}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
                       {mpFabricas.map(f => (
@@ -950,6 +993,61 @@ export default function MateriasPrimas() {
                   </div>
                 </div>
               )}
+
+              {/* Tab: Estado de Completude */}
+              {activeTab === "estado" && (
+                <div className="space-y-5">
+                  {/* Status */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-foreground">Estado de Completude</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { id: "completo", label: "✓ Completo", icon: "✓", color: "bg-green-50 border-green-200 text-green-700" },
+                        { id: "pendente", label: "⚠ Pendente", icon: "⚠", color: "bg-amber-50 border-amber-200 text-amber-700" },
+                        { id: "incompleto", label: "✗ Incompleto", icon: "✗", color: "bg-red-50 border-red-200 text-red-700" },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, statusMp: opt.id }))}
+                          className={cn(
+                            "flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                            form.statusMp === opt.id
+                              ? `${opt.color} border-current`
+                              : `bg-muted/30 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground`
+                          )}
+                        >
+                          <span>{opt.icon}</span>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Observações de Pendência */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
+                      Observações de Pendência
+                    </label>
+                    <textarea
+                      value={form.observacoesPendencia ?? ""}
+                      onChange={e => setForm(f => ({ ...f, observacoesPendencia: e.target.value || null }))}
+                      placeholder="Descreva o que está pendente ou incompleto (ex: Falta FT do fornecedor X, Alergénios a confirmar com fornecedor, etc.)"
+                      rows={4}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex items-start gap-2.5 p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-700">
+                    <Info className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold mb-0.5">Controlo de Completude</p>
+                      <p>Marque como <strong>Completo</strong> quando toda a informação está preenchida. Use <strong>Pendente</strong> ou <strong>Incompleto</strong> para rastrear o que ainda falta, com detalhes nas observações.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -988,6 +1086,8 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
     (formaFornecimento ? [formaFornecimento] : []);
   const unidadesPorCaixa = (mpDetalhes as any)?.unidadesPorCaixa ?? (mp as any)?.unidadesPorCaixa;
   const caixasPorPalete = (mpDetalhes as any)?.caixasPorPalete ?? (mp as any)?.caixasPorPalete;
+  const statusMp: "completo" | "pendente" | "incompleto" = (mpDetalhes as any)?.statusMp ?? (mp as any)?.statusMp ?? "completo";
+  const observacoesPendencia = (mpDetalhes as any)?.observacoesPendencia ?? (mp as any)?.observacoesPendencia;
   const FORMA_LABELS: Record<string, { label: string; icon: string }> = {
     saco: { label: "Saco", icon: "🧺" },
     granel: { label: "Granel", icon: "🏗️" },
@@ -1290,6 +1390,29 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                 <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Observações Logísticas</p>
                 <p className="text-xs text-foreground">{observacoesLogistica}</p>
               </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Estado de Completude ── */}
+        {statusMp !== "completo" && (
+          <div className={cn(
+            "border-t border-border/40 pt-4 rounded-xl p-4 mt-2",
+            statusMp === "pendente" ? "bg-amber-50 border border-amber-200" : "bg-red-50 border border-red-200"
+          )}>
+            <div className="flex items-center gap-2 mb-2">
+              <span className={cn(
+                "text-sm font-semibold",
+                statusMp === "pendente" ? "text-amber-700" : "text-red-700"
+              )}>
+                {statusMp === "pendente" ? "⚠ Informação Pendente" : "✗ Informação Incompleta"}
+              </span>
+            </div>
+            {observacoesPendencia && (
+              <p className={cn(
+                "text-xs",
+                statusMp === "pendente" ? "text-amber-800" : "text-red-800"
+              )}>{observacoesPendencia}</p>
             )}
           </div>
         )}

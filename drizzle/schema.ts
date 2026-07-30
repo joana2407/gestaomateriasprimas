@@ -57,6 +57,9 @@ export const fornecedores = mysqlTable("fornecedores", {
   ativo: boolean("ativo").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  // Estado de completude
+  statusFornecedor: mysqlEnum("status_fornecedor", ["completo", "pendente", "incompleto"]).default("completo"),
+  observacoesPendencia: text("observacoes_pendencia"),
 });
 export type Fornecedor = typeof fornecedores.$inferSelect;
 
@@ -92,6 +95,9 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   unidadesPorCaixa: float("unidades_por_caixa"),
   // Quando caixa está selecionada: número de caixas por palete
   caixasPorPalete: int("caixas_por_palete"),
+  // Estado de completude
+  statusMp: mysqlEnum("status_mp", ["completo", "pendente", "incompleto"]).default("completo"),
+  observacoesPendencia: text("observacoes_pendencia"),
   ativa: boolean("ativa").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

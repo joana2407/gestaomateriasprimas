@@ -29,11 +29,14 @@ interface FornecedorForm {
   nome: string; codigo: string;
   contactoComercialNome: string; contactoComercialEmail: string; contactoComercialTelemovel: string;
   contactoQualidadeNome: string; contactoQualidadeEmail: string; contactoQualidadeTelemovel: string;
+  statusFornecedor?: "completo" | "pendente" | "incompleto";
+  observacoesPendencia?: string | null;
 }
 const EMPTY_FORN: FornecedorForm = {
   nome: "", codigo: "",
   contactoComercialNome: "", contactoComercialEmail: "", contactoComercialTelemovel: "",
   contactoQualidadeNome: "", contactoQualidadeEmail: "", contactoQualidadeTelemovel: "",
+  statusFornecedor: "completo", observacoesPendencia: null,
 };
 
 interface DocForm {
@@ -202,6 +205,14 @@ function FornecedorDetalhe({
                   {docStats.expirado + docStats.a_expirar_30}
                 </span>
               )}
+            </TabsTrigger>
+            <TabsTrigger value="estado" className="text-xs data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
+              Estado
+              {(() => {
+                const st = (forn as any).statusFornecedor ?? "completo";
+                if (st === "completo") return null;
+                return <span className={cn("ml-1.5 w-4 h-4 rounded-full text-white text-[9px] flex items-center justify-center font-bold", st === "pendente" ? "bg-amber-500" : "bg-red-500")}>!</span>;
+              })()}
             </TabsTrigger>
           </TabsList>
 
@@ -410,6 +421,58 @@ function FornecedorDetalhe({
       </div>
 
       {/* Dialog de novo documento */}
+          {/* Tab Estado de Completude */}
+          <TabsContent value="estado" className="p-6 mt-0">
+            {(() => {
+              const st: string = (forn as any).statusFornecedor ?? "completo";
+              const obs: string | null = (forn as any).observacoesPendencia ?? null;
+              return (
+                <div className="space-y-4">
+                  <div className={cn(
+                    "flex items-center gap-3 p-4 rounded-xl border",
+                    st === "completo" ? "bg-green-50 border-green-200" :
+                    st === "pendente" ? "bg-amber-50 border-amber-200" :
+                    "bg-red-50 border-red-200"
+                  )}>
+                    <span className="text-2xl">{st === "completo" ? "✓" : st === "pendente" ? "⚠" : "✗"}</span>
+                    <div>
+                      <p className={cn(
+                        "text-sm font-semibold",
+                        st === "completo" ? "text-green-700" : st === "pendente" ? "text-amber-700" : "text-red-700"
+                      )}>
+                        {st === "completo" ? "Informação Completa" : st === "pendente" ? "Informação Pendente" : "Informação Incompleta"}
+                      </p>
+                      <p className={cn(
+                        "text-xs mt-0.5",
+                        st === "completo" ? "text-green-600" : st === "pendente" ? "text-amber-600" : "text-red-600"
+                      )}>
+                        {st === "completo"
+                          ? "Todos os dados deste fornecedor estão completos e validados."
+                          : "Existem dados em falta ou por confirmar. Consulte as observações abaixo."}
+                      </p>
+                    </div>
+                  </div>
+                  {obs && (
+                    <div className="p-4 rounded-xl border border-border/60 bg-muted/20">
+                      <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Observações de Pendência</p>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{obs}</p>
+                    </div>
+                  )}
+                  {!obs && st !== "completo" && (
+                    <p className="text-xs text-muted-foreground italic">Sem observações registadas. Edite o fornecedor para adicionar detalhes sobre o que está pendente.</p>
+                  )}
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => onEdit(forn)}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-primary/30 bg-primary/5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
+                    >
+                      Editar estado de completude
+                    </button>
+                  )}
+                </div>
+              );
+            })()}
+          </TabsContent>
       <Dialog open={docDialogOpen} onOpenChange={setDocDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -539,9 +602,10 @@ export default function Fornecedores() {
       const matchEstado = estadoDocFilter === "all" ||
         (estadoDocFilter === "com_alerta" ? fornDocEstado.has(f.id) :
          fornDocEstado.get(f.id) === estadoDocFilter);
-      return matchSearch && matchEstado;
+      const matchStatus = statusFornFilter === "all" || ((f as any).statusFornecedor ?? "completo") === statusFornFilter;
+      return matchSearch && matchEstado && matchStatus;
     });
-  }, [fornecedores, search, estadoDocFilter, fornDocEstado]);
+  }, [fornecedores, search, estadoDocFilter, fornDocEstado, statusFornFilter]);
 
   const openCreate = () => { setForm(EMPTY_FORN); setDialogOpen(true); };
   const openEdit = (f: any) => {
@@ -553,6 +617,8 @@ export default function Fornecedores() {
       contactoQualidadeNome: f.contactoQualidadeNome ?? "",
       contactoQualidadeEmail: f.contactoQualidadeEmail ?? "",
       contactoQualidadeTelemovel: f.contactoQualidadeTelemovel ?? "",
+      statusFornecedor: (f as any).statusFornecedor ?? "completo",
+      observacoesPendencia: (f as any).observacoesPendencia ?? null,
     });
     setDialogOpen(true);
   };
@@ -609,6 +675,17 @@ export default function Fornecedores() {
                 <SelectItem value="a_expirar_60">Documentação a expirar (≤ 60 dias)</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={statusFornFilter} onValueChange={setStatusFornFilter}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Todos os estados de completude" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os estados</SelectItem>
+                <SelectItem value="completo">✓ Completo</SelectItem>
+                <SelectItem value="pendente">⚠ Pendente</SelectItem>
+                <SelectItem value="incompleto">✗ Incompleto</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Lista de fornecedores */}
@@ -639,6 +716,19 @@ export default function Fornecedores() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{f.nome}</p>
                     {f.codigo && <p className="text-[10px] font-mono text-muted-foreground">{f.codigo}</p>}
+                    {/* Badge de estado de completude */}
+                    {(() => {
+                      const st = (f as any).statusFornecedor ?? "completo";
+                      if (st === "completo") return null;
+                      return (
+                        <span className={cn(
+                          "inline-flex mt-0.5 text-[10px] px-1.5 py-0.5 rounded-full border font-medium",
+                          st === "pendente" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-red-700 border-red-200"
+                        )}>
+                          {st === "pendente" ? "⚠ Pendente" : "✗ Incompleto"}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {piorEstado && (
@@ -737,6 +827,47 @@ export default function Fornecedores() {
               </div>
             </div>
 
+            {/* Estado de Completude */}
+            <div className="space-y-3 border-t border-border/60 pt-4">
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 rounded bg-slate-50 flex items-center justify-center">
+                  <FileText className="w-3 h-3 text-slate-600" />
+                </div>
+                <p className="text-xs font-semibold text-foreground">Estado de Completude</p>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { id: "completo", label: "✓ Completo", color: "bg-green-50 border-green-200 text-green-700" },
+                  { id: "pendente", label: "⚠ Pendente", color: "bg-amber-50 border-amber-200 text-amber-700" },
+                  { id: "incompleto", label: "✗ Incompleto", color: "bg-red-50 border-red-200 text-red-700" },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, statusFornecedor: opt.id }))}
+                    className={cn(
+                      "flex items-center justify-center gap-1 px-2 py-2 rounded-xl border text-xs font-medium transition-all",
+                      form.statusFornecedor === opt.id
+                        ? `${opt.color} border-current`
+                        : "bg-muted/30 border-border text-muted-foreground hover:border-primary/40"
+                    )}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-muted-foreground">Observações de Pendência</label>
+                <textarea
+                  value={form.observacoesPendencia ?? ""}
+                  onChange={e => setForm(f => ({ ...f, observacoesPendencia: e.target.value || null }))}
+                  placeholder="Descreva o que está pendente ou incompleto (ex: Falta certificação ISO, Contacto de qualidade por confirmar...)"
+                  rows={3}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </div>
+
             {/* Ações */}
             <div className="flex items-center justify-between pt-2 border-t border-border/60">
               {form.id && isAuthenticated && (
@@ -775,3 +906,4 @@ export default function Fornecedores() {
     </SigaLayout>
   );
 }
+  const [statusFornFilter, setStatusFornFilter] = useState("all");

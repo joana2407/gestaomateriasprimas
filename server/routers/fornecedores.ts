@@ -45,6 +45,9 @@ export const fornecedoresRouter = router({
       // Legado
       contacto: z.string().optional(),
       email: z.string().optional(),
+      // Estado de completude
+      statusFornecedor: z.enum(["completo", "pendente", "incompleto"]).optional(),
+      observacoesPendencia: z.string().optional().nullable(),
     }))
     .mutation(async ({ input, ctx }) => {
       const id = await upsertFornecedor(input as any);

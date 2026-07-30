@@ -174,3 +174,20 @@
 - [x] Tab Logística: checkboxes multi-seleção com tick visual, campos condicionais por forma
 - [x] Painel expandido MPDetalhe: badges de formas + cartões de detalhe por forma (saco, bigbag, caixa)
 - [x] openEdit: carrega array de formas e campos de caixa
+
+## Melhorias v2.1 — Estado de Completude
+- [x] Adicionar campo status_mp (ENUM: completo, pendente, incompleto) à tabela materias_primas
+- [x] Adicionar campo observacoes_pendencia (TEXT) à tabela materias_primas
+- [x] Adicionar campo status_fornecedor (ENUM: completo, pendente, incompleto) à tabela fornecedores
+- [x] Adicionar campo observacoes_pendencia (TEXT) à tabela fornecedores
+- [x] Migração SQL aplicada para ambas as tabelas
+- [x] Atualizar routers materiasPrimas e fornecedores para incluir status e observações
+- [x] Atualizar formulário de MP com tab Estado: seletor 3 opções + textarea de observações
+- [x] Atualizar formulário de Fornecedor com secção Estado: seletor + textarea
+- [x] Badge de estado na lista de MP (⚠ Pendente / ✗ Incompleto, oculto quando Completo)
+- [x] Badge de estado na lista de Fornecedores (inline sob o nome)
+- [x] Painel expandido de MP: bloco colorido com estado e observações quando não completo
+- [x] Tab Estado no painel de detalhe de Fornecedor com bloco visual + observações + botão editar
+- [x] Filtro por estado de completude na página de Matérias-Primas (select + badge no contador)
+- [x] Filtro por estado de completude na página de Fornecedores
+- [x] Schema Drizzle atualizado com os novos campos em ambas as tabelas
