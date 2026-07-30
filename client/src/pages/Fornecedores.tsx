@@ -417,10 +417,6 @@ function FornecedorDetalhe({
               </div>
             </div>
           </TabsContent>
-        </Tabs>
-      </div>
-
-      {/* Dialog de novo documento */}
           {/* Tab Estado de Completude */}
           <TabsContent value="estado" className="p-6 mt-0">
             {(() => {
@@ -473,6 +469,10 @@ function FornecedorDetalhe({
               );
             })()}
           </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Dialog de novo documento */}
       <Dialog open={docDialogOpen} onOpenChange={setDocDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
