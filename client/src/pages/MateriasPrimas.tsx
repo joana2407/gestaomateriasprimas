@@ -12,7 +12,7 @@ import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import {
   AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
-  Package, Plus, Search, Star, Trash2, X
+  Package, Plus, Search, Star, Trash2, X, GripVertical
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -632,81 +632,145 @@ export default function MateriasPrimas() {
                   {/* Sub-ingredientes para MP compostas */}
                   {form.tipo === "composta" && (
                     <div className="space-y-3">
+                      {/* Cabeçalho com contador e botão */}
                       <div className="flex items-center justify-between">
-                        <label className="text-xs font-semibold text-foreground">
-                          Ingredientes da MP Composta
-                        </label>
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">Ingredientes da MP Composta</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            {form.subIngredientes.length} ingrediente{form.subIngredientes.length !== 1 ? "s" : ""} registado{form.subIngredientes.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
                         <button
                           type="button"
                           onClick={addSubIngrediente}
-                          className="flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
                         >
-                          <Plus className="w-3 h-3" /> Adicionar ingrediente
+                          <Plus className="w-3.5 h-3.5" /> Adicionar ingrediente
                         </button>
                       </div>
-                      <div className="p-3 rounded-lg bg-violet-50 border border-violet-200 text-xs text-violet-700">
-                        <p className="font-medium mb-1">MP Composta</p>
-                        <p>Liste os ingredientes que compõem esta MP, com o seu país de origem. Útil para rastreabilidade e declaração de proveniência.</p>
-                      </div>
-                      <div className="space-y-2">
-                        {form.subIngredientes.length === 0 && (
-                          <p className="text-xs text-muted-foreground italic text-center py-3">
-                            Clique em "Adicionar ingrediente" para listar os componentes desta MP.
+
+                      {/* Lista vazia */}
+                      {form.subIngredientes.length === 0 ? (
+                        <div className="flex flex-col items-center gap-2 py-8 rounded-xl border-2 border-dashed border-violet-200 bg-violet-50/40">
+                          <Layers className="w-7 h-7 text-violet-400" />
+                          <p className="text-xs font-medium text-violet-700">Nenhum ingrediente adicionado</p>
+                          <p className="text-[10px] text-violet-600 text-center max-w-xs">
+                            Clique em "Adicionar ingrediente" para registar cada componente com a sua origem e % de incorporação.
                           </p>
-                        )}
-                        {form.subIngredientes.map((sub, idx) => (
-                          <div key={idx} className="grid grid-cols-12 gap-2 items-start p-3 rounded-lg border border-border/60 bg-muted/20">
-                            <div className="col-span-4 space-y-1">
-                              <label className="text-[10px] font-medium text-muted-foreground">Nome do ingrediente *</label>
-                              <Input
-                                value={sub.nome}
-                                onChange={e => updateSubIngrediente(idx, "nome", e.target.value)}
-                                placeholder="Ex: Açúcar, Sal"
-                                className="h-7 text-xs"
-                              />
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          {form.subIngredientes.map((sub, idx) => (
+                            <div key={idx} className="rounded-xl border border-border/70 bg-card overflow-hidden">
+                              {/* Cabeçalho do cartão */}
+                              <div className="flex items-center justify-between px-4 py-2.5 bg-muted/30 border-b border-border/50">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-5 h-5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-bold flex items-center justify-center shrink-0">
+                                    {idx + 1}
+                                  </span>
+                                  <span className="text-xs font-semibold text-foreground">
+                                    {sub.nome || <span className="text-muted-foreground italic font-normal">Ingrediente {idx + 1}</span>}
+                                  </span>
+                                  {sub.percentagem != null && sub.percentagem > 0 && (
+                                    <span className="px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] font-semibold">
+                                      {sub.percentagem}%
+                                    </span>
+                                  )}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => removeSubIngrediente(idx)}
+                                  className="p-1 rounded-md hover:bg-red-50 hover:text-red-500 transition-colors text-muted-foreground"
+                                  title="Remover ingrediente"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              {/* Campos do cartão */}
+                              <div className="p-4 grid grid-cols-3 gap-4">
+                                <div className="col-span-3 space-y-1.5">
+                                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                    Nome do Ingrediente *
+                                  </label>
+                                  <Input
+                                    value={sub.nome}
+                                    onChange={e => updateSubIngrediente(idx, "nome", e.target.value)}
+                                    placeholder="Ex: Farinha de Trigo, Açúcar, Sal marinho..."
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                    País / Região de Origem
+                                  </label>
+                                  <Input
+                                    value={sub.paisOrigem ?? ""}
+                                    onChange={e => updateSubIngrediente(idx, "paisOrigem", e.target.value)}
+                                    placeholder="Ex: Portugal, Espanha, UE..."
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                    % de Incorporação
+                                  </label>
+                                  <div className="relative">
+                                    <Input
+                                      type="number"
+                                      min="0"
+                                      max="100"
+                                      step="0.1"
+                                      value={sub.percentagem ?? ""}
+                                      onChange={e => {
+                                        const val = parseFloat(e.target.value);
+                                        updateSubIngrediente(idx, "percentagem", isNaN(val) ? undefined : Math.min(100, Math.max(0, val)));
+                                      }}
+                                      placeholder="0.0"
+                                      className="pr-8"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-medium">%</span>
+                                  </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                                    Observações
+                                  </label>
+                                  <Input
+                                    value={sub.observacoes ?? ""}
+                                    onChange={e => updateSubIngrediente(idx, "observacoes", e.target.value)}
+                                    placeholder="Notas adicionais..."
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="col-span-3 space-y-1">
-                              <label className="text-[10px] font-medium text-muted-foreground">País de origem</label>
-                              <Input
-                                value={sub.paisOrigem ?? ""}
-                                onChange={e => updateSubIngrediente(idx, "paisOrigem", e.target.value)}
-                                placeholder="Ex: Portugal"
-                                className="h-7 text-xs"
-                              />
-                            </div>
-                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] font-medium text-muted-foreground">% (opcional)</label>
-                              <Input
-                                type="number"
-                                value={sub.percentagem ?? ""}
-                                onChange={e => updateSubIngrediente(idx, "percentagem", parseFloat(e.target.value) || undefined)}
-                                placeholder="0"
-                                className="h-7 text-xs"
-                              />
-                            </div>
-                            <div className="col-span-2 space-y-1">
-                              <label className="text-[10px] font-medium text-muted-foreground">Obs.</label>
-                              <Input
-                                value={sub.observacoes ?? ""}
-                                onChange={e => updateSubIngrediente(idx, "observacoes", e.target.value)}
-                                placeholder="Nota"
-                                className="h-7 text-xs"
-                              />
-                            </div>
-                            <div className="col-span-1 pt-5">
-                              <button
-                                type="button"
-                                onClick={() => removeSubIngrediente(idx)}
-                                className="p-1.5 rounded hover:bg-red-50 hover:text-red-500 transition-colors text-muted-foreground"
-                              >
-                                <X className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
+                  {/* Indicador de soma das percentagens */}
+                  {form.tipo === "composta" && form.subIngredientes.some(s => s.percentagem) && (() => {
+                    const soma = form.subIngredientes.reduce((acc, s) => acc + (s.percentagem ?? 0), 0);
+                    const ok = Math.abs(soma - 100) < 0.1;
+                    return (
+                      <div className={cn(
+                        "flex items-center justify-between px-3 py-2 rounded-lg text-xs font-medium border",
+                        ok ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-amber-50 border-amber-200 text-amber-700"
+                      )}>
+                        <span>Total de incorporação</span>
+                        <span className="font-bold">{soma.toFixed(1)}%{ok ? " ✓" : " (deve somar 100%)"}</span>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* Aviso quando tipo é composta mas sem ingredientes ainda */}
+              {form.tipo === "composta" && activeTab === "origem" && form.subIngredientes.length === 0 && (
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-violet-50 border border-violet-200 text-xs text-violet-700">
+                  <Layers className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold mb-0.5">MP Composta — Composição por preencher</p>
+                    <p>Aceda ao separador <strong>Origem</strong> e clique em <strong>"Adicionar ingrediente"</strong> para listar os componentes desta MP com origem e % de incorporação.</p>
+                  </div>
                 </div>
               )}
             </div>

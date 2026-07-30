@@ -122,3 +122,25 @@
 ## Melhorias v1.4
 - [x] Corrigir filtro por fornecedor nas MP: usar relação direta mp_fornecedores em vez de proxy via fichas técnicas
 - [x] Enriquecer listagem getMateriasPrimas no backend com campo fornecedoresIds (todos os fornecedores, independente de preferencial)
+
+## Melhorias v1.5
+- [x] Adicionar campos de contacto comercial (nome, email, telemóvel) ao fornecedor
+- [x] Adicionar campos de contacto de qualidade (nome, email, telemóvel) ao fornecedor
+- [x] Criar tabela documentos_fornecedor (tipo, nome, ficheiro S3, dataEmissao, dataValidade, estado)
+- [x] Upload de documentos de qualidade por fornecedor (certificações, declarações, etc.)
+- [x] Validade automática de 1 ano para documentos de fornecedor
+- [x] Filtro de documentos por estado (válido, a expirar 60d, a expirar 30d, expirado)
+- [x] Alertas de documentos expirados/a expirar no Dashboard (banner + filtro por estado)
+- [x] Vista de detalhe do fornecedor com tabs: Contactos, Documentos
+- [x] Painel lateral de detalhe ao clicar num fornecedor
+- [x] Indicador visual de alerta por fornecedor na lista (ponto colorido)
+
+## Melhorias v1.6
+- [x] Redesenhar formulário de sub-ingredientes de MP compostas com cartões individuais
+- [x] Cada cartão com campos: Nome, País/Região de Origem, % de Incorporação, Observações
+- [x] Indicador de número de ingredientes registados no cabeçalho
+- [x] Percentagem com validação 0-100 e símbolo % no campo
+- [x] Indicador de soma total das percentagens (verde se = 100%, âmbar caso contrário)
+- [x] Estado vazio com área dashed e ícone quando sem ingredientes
+- [x] Alertas de documentos de fornecedor no Dashboard (painel com semáforo + lista)
+- [x] Alertas de documentos integrados no getDashboardStats do backend

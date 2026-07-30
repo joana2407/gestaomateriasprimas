@@ -43,6 +43,15 @@ export const fornecedores = mysqlTable("fornecedores", {
   id: int("id").autoincrement().primaryKey(),
   nome: varchar("nome", { length: 150 }).notNull(),
   codigo: varchar("codigo", { length: 50 }),
+  // Contacto comercial
+  contactoComercialNome: varchar("contacto_comercial_nome", { length: 150 }),
+  contactoComercialEmail: varchar("contacto_comercial_email", { length: 320 }),
+  contactoComercialTelemovel: varchar("contacto_comercial_telemovel", { length: 30 }),
+  // Contacto qualidade
+  contactoQualidadeNome: varchar("contacto_qualidade_nome", { length: 150 }),
+  contactoQualidadeEmail: varchar("contacto_qualidade_email", { length: 320 }),
+  contactoQualidadeTelemovel: varchar("contacto_qualidade_telemovel", { length: 30 }),
+  // Campos legados (mantidos para compatibilidade)
   contacto: varchar("contacto", { length: 200 }),
   email: varchar("email", { length: 320 }),
   ativo: boolean("ativo").default(true).notNull(),
@@ -106,6 +115,38 @@ export const fichasTecnicasFornecedor = mysqlTable("fichas_tecnicas_fornecedor",
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type FichaTecnicaFornecedor = typeof fichasTecnicasFornecedor.$inferSelect;
+
+// ─── DOCUMENTOS DE QUALIDADE DO FORNECEDOR ────────────────────────────────────
+export const documentosFornecedor = mysqlTable("documentos_fornecedor", {
+  id: int("id").autoincrement().primaryKey(),
+  fornecedorId: int("fornecedor_id").notNull().references(() => fornecedores.id),
+  tipo: mysqlEnum("tipo", [
+    "certificacao_iso",
+    "certificacao_fssc",
+    "certificacao_ifs",
+    "certificacao_brc",
+    "declaracao_alergenios",
+    "declaracao_ogm",
+    "declaracao_halal",
+    "declaracao_kosher",
+    "analise_laboratorial",
+    "auditoria_fornecedor",
+    "outro"
+  ]).notNull().default("outro"),
+  nome: varchar("nome", { length: 200 }).notNull(),
+  descricao: text("descricao"),
+  dataEmissao: timestamp("data_emissao").notNull(),
+  dataValidade: timestamp("data_validade").notNull(),
+  ficheiroUrl: text("ficheiro_url"),
+  ficheiroKey: text("ficheiro_key"),
+  nomeOriginal: varchar("nome_original", { length: 255 }),
+  estado: mysqlEnum("estado", ["valido", "a_expirar_60", "a_expirar_30", "expirado"]).default("valido").notNull(),
+  uploadedBy: int("uploaded_by").references(() => users.id),
+  ativo: boolean("ativo").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DocumentoFornecedor = typeof documentosFornecedor.$inferSelect;
 
 // ─── RECEITAS ─────────────────────────────────────────────────────────────────
 export const receitas = mysqlTable("receitas", {

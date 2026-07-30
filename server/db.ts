@@ -15,6 +15,7 @@ import {
   receitas,
   users,
 } from "../drizzle/schema";
+import { documentosFornecedor } from "../drizzle/schema";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -84,6 +85,53 @@ export async function upsertFornecedor(data: typeof fornecedores.$inferInsert) {
   }
   const result = await db.insert(fornecedores).values(data);
   return (result[0] as any).insertId as number;
+}
+
+// ─── DOCUMENTOS DE QUALIDADE DO FORNECEDOR ────────────────────────────────────
+export async function getDocumentosFornecedor(fornecedorId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (fornecedorId) {
+    return db.select().from(documentosFornecedor)
+      .where(and(eq(documentosFornecedor.fornecedorId, fornecedorId), eq(documentosFornecedor.ativo, true)))
+      .orderBy(documentosFornecedor.dataValidade);
+  }
+  return db.select().from(documentosFornecedor)
+    .where(eq(documentosFornecedor.ativo, true))
+    .orderBy(documentosFornecedor.dataValidade);
+}
+
+export async function getDocumentosComAlerta() {
+  const db = await getDb();
+  if (!db) return [];
+  const em60Dias = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+  return db.select().from(documentosFornecedor)
+    .where(and(eq(documentosFornecedor.ativo, true), lte(documentosFornecedor.dataValidade, em60Dias)))
+    .orderBy(documentosFornecedor.dataValidade);
+}
+
+export async function upsertDocumentoFornecedor(data: typeof documentosFornecedor.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const agora = new Date();
+  const dias = Math.floor((data.dataValidade.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
+  let estado: "valido" | "a_expirar_60" | "a_expirar_30" | "expirado" = "valido";
+  if (dias < 0) estado = "expirado";
+  else if (dias <= 30) estado = "a_expirar_30";
+  else if (dias <= 60) estado = "a_expirar_60";
+  const payload = { ...data, estado };
+  if (data.id) {
+    await db.update(documentosFornecedor).set({ ...payload, updatedAt: new Date() }).where(eq(documentosFornecedor.id, data.id!));
+    return data.id;
+  }
+  const result = await db.insert(documentosFornecedor).values(payload);
+  return (result[0] as any).insertId as number;
+}
+
+export async function deleteDocumentoFornecedor(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(documentosFornecedor).set({ ativo: false }).where(eq(documentosFornecedor.id, id));
 }
 
 // ─── MATÉRIAS-PRIMAS ──────────────────────────────────────────────────────────
@@ -368,11 +416,13 @@ export async function getDashboardStats() {
     db.select({ count: sql<number>`count(*)` }).from(fornecedores).where(eq(fornecedores.ativo, true)),
   ]);
   const alertas = await getFichasTecnicasComAlerta();
+  const alertasDocFornecedor = await getDocumentosComAlerta();
   return {
     totalMP: Number(totalMP[0]?.count ?? 0),
     totalReceitas: Number(totalReceitas[0]?.count ?? 0),
     totalProdutos: Number(totalProdutos[0]?.count ?? 0),
     totalFornecedores: Number(totalFornecedores[0]?.count ?? 0),
     alertas,
+    alertasDocFornecedor,
   };
 }

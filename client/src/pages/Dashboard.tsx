@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, ArrowRight, BarChart3, CheckCircle2,
-  ClipboardList, Factory, FileText, Package, RefreshCw, Users
+  ClipboardList, Factory, FileText, Package, RefreshCw, Shield, Users
 } from "lucide-react";
 import { Link } from "wouter";
 import { format } from "date-fns";
@@ -62,6 +62,12 @@ export default function Dashboard() {
   const { data: stats, isLoading, refetch } = trpc.dashboard.stats.useQuery();
   const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: alertas } = trpc.fichasTecnicas.alertas.useQuery();
+  const { data: fornecedores } = trpc.fornecedores.list.useQuery();
+  const { data: alertasDoc } = trpc.fornecedores.documentos.alertas.useQuery();
+  const fornMap = new Map((fornecedores ?? []).map(f => [f.id, f]));
+  const docsExpirados = (alertasDoc ?? []).filter((d: any) => d.estado === "expirado");
+  const docs30 = (alertasDoc ?? []).filter((d: any) => d.estado === "a_expirar_30");
+  const docs60 = (alertasDoc ?? []).filter((d: any) => d.estado === "a_expirar_60");
 
   const alertasExpiradas = alertas?.filter(a => {
     const dias = Math.floor((new Date(a.dataValidade).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
@@ -101,6 +107,66 @@ export default function Dashboard() {
 
         {/* Alertas de Fichas Técnicas */}
         <div className="grid lg:grid-cols-2 gap-6">
+          {/* Alertas de Documentos de Fornecedor */}
+          {(alertasDoc ?? []).length > 0 && (
+            <div className="lg:col-span-2 card-elegant p-5">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                    <Shield className="w-4 h-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">Documentação de Fornecedores</h2>
+                    <p className="text-xs text-muted-foreground">Certificações e declarações com validade a expirar</p>
+                  </div>
+                </div>
+                <Link href="/fornecedores">
+                  <button className="flex items-center gap-1 text-xs text-primary hover:underline">
+                    Ver fornecedores <ArrowRight className="w-3 h-3" />
+                  </button>
+                </Link>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="text-center p-3 rounded-lg bg-red-50 border border-red-100">
+                  <div className="text-2xl font-bold text-red-600">{docsExpirados.length}</div>
+                  <div className="text-xs text-red-600 mt-0.5">Expirados</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-orange-50 border border-orange-100">
+                  <div className="text-2xl font-bold text-orange-600">{docs30.length}</div>
+                  <div className="text-xs text-orange-600 mt-0.5">≤ 30 dias</div>
+                </div>
+                <div className="text-center p-3 rounded-lg bg-yellow-50 border border-yellow-100">
+                  <div className="text-2xl font-bold text-yellow-600">{docs60.length}</div>
+                  <div className="text-xs text-yellow-600 mt-0.5">≤ 60 dias</div>
+                </div>
+              </div>
+              <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                {(alertasDoc ?? []).slice(0, 6).map((doc: any) => {
+                  const forn = fornMap.get(doc.fornecedorId);
+                  const dias = Math.floor((new Date(doc.dataValidade).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                  const rowClass = doc.estado === "expirado" ? "alerta-expirada" : doc.estado === "a_expirar_30" ? "alerta-30" : "alerta-60";
+                  return (
+                    <div key={doc.id} className={cn("flex items-center gap-3 px-3 py-2.5 rounded-lg", rowClass)}>
+                      <Shield className="w-3.5 h-3.5 shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-semibold truncate">{doc.nome}</p>
+                        <p className="text-[10px] opacity-80">{forn?.nome ?? `Fornecedor #${doc.fornecedorId}`}</p>
+                      </div>
+                      <span className={cn(
+                        "text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0",
+                        doc.estado === "expirado" ? "bg-red-100 text-red-700 border-red-200" :
+                        doc.estado === "a_expirar_30" ? "bg-orange-100 text-orange-700 border-orange-200" :
+                        "bg-yellow-100 text-yellow-700 border-yellow-200"
+                      )}>
+                        {doc.estado === "expirado" ? "Expirado" : `${dias}d`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           <div className="card-elegant p-6">
             <div className="flex items-center justify-between mb-5">
               <div>
