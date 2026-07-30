@@ -12,7 +12,7 @@ import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import {
   AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
-  Package, Plus, Search, Star, Trash2, X, GripVertical
+  Package, Plus, Search, Star, Trash2, X, GripVertical, Truck
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,12 @@ interface MPFormData {
   paisOrigem: string;
   subIngredientes: SubIngrediente[];
   fornecedoresMp: FornecedorMp[];
+  // Logística
+  formaFornecimento?: "saco" | "granel" | "bigbag" | "caixa" | "outro" | null;
+  kgPorSaco?: number | null;
+  sacosPorPalete?: number | null;
+  kgPorBigbag?: number | null;
+  observacoesLogistica?: string | null;
 }
 
 const EMPTY_FORM: MPFormData = {
@@ -57,6 +63,7 @@ const EMPTY_FORM: MPFormData = {
   alergeniosFormulacao: [], alergeniosContaminacao: [],
   observacoes: "", tipo: "simples", paisOrigem: "",
   subIngredientes: [], fornecedoresMp: [],
+  formaFornecimento: null, kgPorSaco: null, sacosPorPalete: null, kgPorBigbag: null, observacoesLogistica: null,
 };
 
 export default function MateriasPrimas() {
@@ -67,7 +74,7 @@ export default function MateriasPrimas() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores">("alergenios");
+  const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores" | "logistica">("alergenios");
 
   const utils = trpc.useUtils();
   const [loadingEdit, setLoadingEdit] = useState(false);
@@ -141,6 +148,11 @@ export default function MateriasPrimas() {
           paisOrigem: f.paisOrigem ?? "",
           preferencial: f.preferencial ?? false,
         })),
+        formaFornecimento: (mpDetalhes as any).formaFornecimento ?? null,
+        kgPorSaco: (mpDetalhes as any).kgPorSaco ?? null,
+        sacosPorPalete: (mpDetalhes as any).sacosPorPalete ?? null,
+        kgPorBigbag: (mpDetalhes as any).kgPorBigbag ?? null,
+        observacoesLogistica: (mpDetalhes as any).observacoesLogistica ?? null,
       });
       setActiveTab("alergenios");
       setDialogOpen(true);
@@ -197,6 +209,7 @@ export default function MateriasPrimas() {
     { id: "alergenios", label: "Alergénios" },
     { id: "fornecedores", label: "Fornecedores" },
     { id: "origem", label: "Origem" },
+    { id: "logistica", label: "Logística" },
   ] as const;
 
   return (
@@ -773,6 +786,143 @@ export default function MateriasPrimas() {
                   </div>
                 </div>
               )}
+
+              {/* Tab: Logística */}
+              {activeTab === "logistica" && (
+                <div className="space-y-5">
+                  {/* Forma de fornecimento */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-foreground">Forma de Fornecimento</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { id: "saco", label: "Saco", icon: "🧺" },
+                        { id: "granel", label: "Granel", icon: "🏗️" },
+                        { id: "bigbag", label: "Big Bag", icon: "🛍️" },
+                        { id: "caixa", label: "Caixa", icon: "📦" },
+                        { id: "outro", label: "Outro", icon: "📋" },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, formaFornecimento: f.formaFornecimento === opt.id ? null : opt.id }))}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                            form.formaFornecimento === opt.id
+                              ? "bg-primary/10 border-primary text-primary"
+                              : "bg-muted/30 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"
+                          )}
+                        >
+                          <span>{opt.icon}</span>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Campos específicos de saco */}
+                  {form.formaFornecimento === "saco" && (
+                    <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-4">
+                      <p className="text-xs font-semibold text-foreground flex items-center gap-2">
+                        <Truck className="w-3.5 h-3.5" /> Configuração de Saco e Palete
+                      </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                            Peso por Saco (kg)
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.1"
+                              value={form.kgPorSaco ?? ""}
+                              onChange={e => setForm(f => ({ ...f, kgPorSaco: parseFloat(e.target.value) || null }))}
+                              placeholder="Ex: 25"
+                              className="pr-10"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                            Sacos por Palete
+                          </label>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={form.sacosPorPalete ?? ""}
+                              onChange={e => setForm(f => ({ ...f, sacosPorPalete: parseInt(e.target.value) || null }))}
+                              placeholder="Ex: 40"
+                              className="pr-16"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">sacos</span>
+                          </div>
+                        </div>
+                      </div>
+                      {/* Peso por palete calculado */}
+                      {form.kgPorSaco && form.sacosPorPalete && (
+                        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-blue-50 border border-blue-200 text-xs">
+                          <span className="text-blue-700 font-medium">Peso por palete (calculado)</span>
+                          <span className="font-bold text-blue-800">
+                            {(form.kgPorSaco * form.sacosPorPalete).toLocaleString("pt-PT")} kg
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Campos específicos de big bag */}
+                  {form.formaFornecimento === "bigbag" && (
+                    <div className="p-4 rounded-xl border border-border/60 bg-muted/20 space-y-3">
+                      <p className="text-xs font-semibold text-foreground flex items-center gap-2">
+                        <Truck className="w-3.5 h-3.5" /> Configuração de Big Bag
+                      </p>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+                          Peso por Big Bag (kg)
+                        </label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            min="0"
+                            step="0.1"
+                            value={form.kgPorBigbag ?? ""}
+                            onChange={e => setForm(f => ({ ...f, kgPorBigbag: parseFloat(e.target.value) || null }))}
+                            placeholder="Ex: 500"
+                            className="pr-10"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">kg</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Observações logísticas */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">
+                      Observações Logísticas
+                    </label>
+                    <textarea
+                      value={form.observacoesLogistica ?? ""}
+                      onChange={e => setForm(f => ({ ...f, observacoesLogistica: e.target.value || null }))}
+                      placeholder="Condições de armazenamento, prazo de validade, instruções de receção, temperatura de conservação..."
+                      rows={3}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                  </div>
+
+                  {/* Info sobre receções futuras */}
+                  <div className="flex items-start gap-2.5 p-3 rounded-lg bg-blue-50 border border-blue-200 text-xs text-blue-700">
+                    <Truck className="w-4 h-4 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold mb-0.5">Módulo de Receções</p>
+                      <p>A informação logística aqui registada será utilizada futuramente no módulo de <strong>receções diárias</strong>, permitindo validação automática de quantidades e rastreabilidade de lotes.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -801,6 +951,18 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
   const paisOrigem = mpDetalhes?.paisOrigem ?? mp.paisOrigem;
   const observacoes = mpDetalhes?.observacoes ?? mp.observacoes;
   const tipo = mpDetalhes?.tipo ?? mp.tipo;
+  const formaFornecimento = (mpDetalhes as any)?.formaFornecimento ?? (mp as any)?.formaFornecimento;
+  const kgPorSaco = (mpDetalhes as any)?.kgPorSaco ?? (mp as any)?.kgPorSaco;
+  const sacosPorPalete = (mpDetalhes as any)?.sacosPorPalete ?? (mp as any)?.sacosPorPalete;
+  const kgPorBigbag = (mpDetalhes as any)?.kgPorBigbag ?? (mp as any)?.kgPorBigbag;
+  const observacoesLogistica = (mpDetalhes as any)?.observacoesLogistica ?? (mp as any)?.observacoesLogistica;
+  const FORMA_LABELS: Record<string, { label: string; icon: string }> = {
+    saco: { label: "Saco", icon: "🧺" },
+    granel: { label: "Granel", icon: "🏗️" },
+    bigbag: { label: "Big Bag", icon: "🛍️" },
+    caixa: { label: "Caixa", icon: "📦" },
+    outro: { label: "Outro", icon: "📋" },
+  };
 
   // Agrupar fichas técnicas por fornecedor para cruzamento
   const fichasPorFornecedor = useMemo(() => {
@@ -1031,6 +1193,53 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
         {/* ── Observações ── */}
         {observacoes && (
           <p className="text-xs text-muted-foreground italic border-t border-border/40 pt-3">{observacoes}</p>
+        )}
+        {/* ── Logística ── */}
+        {formaFornecimento && (
+          <div className="border-t border-border/40 pt-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Truck className="w-3.5 h-3.5" /> Informação Logística
+            </p>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 rounded-xl border border-border/60 bg-card">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Forma de Fornecimento</p>
+                <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                  <span>{FORMA_LABELS[formaFornecimento]?.icon}</span>
+                  {FORMA_LABELS[formaFornecimento]?.label ?? formaFornecimento}
+                </p>
+              </div>
+              {kgPorSaco != null && (
+                <div className="p-3 rounded-xl border border-border/60 bg-card">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Peso por Saco</p>
+                  <p className="text-sm font-bold text-foreground">{kgPorSaco} <span className="text-xs font-normal text-muted-foreground">kg</span></p>
+                </div>
+              )}
+              {sacosPorPalete != null && (
+                <div className="p-3 rounded-xl border border-border/60 bg-card">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Sacos por Palete</p>
+                  <p className="text-sm font-bold text-foreground">{sacosPorPalete} <span className="text-xs font-normal text-muted-foreground">sacos</span></p>
+                </div>
+              )}
+              {kgPorSaco != null && sacosPorPalete != null && (
+                <div className="p-3 rounded-xl border border-blue-200 bg-blue-50">
+                  <p className="text-[10px] font-semibold text-blue-700 uppercase tracking-wide mb-1">Peso por Palete</p>
+                  <p className="text-sm font-bold text-blue-800">{(kgPorSaco * sacosPorPalete).toLocaleString("pt-PT")} <span className="text-xs font-normal">kg</span></p>
+                </div>
+              )}
+              {kgPorBigbag != null && (
+                <div className="p-3 rounded-xl border border-border/60 bg-card">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Peso por Big Bag</p>
+                  <p className="text-sm font-bold text-foreground">{kgPorBigbag} <span className="text-xs font-normal text-muted-foreground">kg</span></p>
+                </div>
+              )}
+            </div>
+            {observacoesLogistica && (
+              <div className="mt-3 p-3 rounded-lg bg-muted/30 border border-border/40">
+                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-1">Observações Logísticas</p>
+                <p className="text-xs text-foreground">{observacoesLogistica}</p>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

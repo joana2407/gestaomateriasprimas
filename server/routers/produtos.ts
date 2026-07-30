@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
-  getProdutos, getProdutoById, upsertProduto,
+  getProdutos, getProdutoById, upsertProduto, deleteProduto,
   getIngredientesByReceita, getMateriasPrimas, getFabricaById,
   upsertPerfilAlergenico, getPerfilAlergenico,
   getFichasTecnicasProduto, upsertFichaTecnicaProduto,
@@ -31,11 +31,11 @@ export const produtosRouter = router({
       codigo: z.string().optional(),
       marca: z.string().optional(),
       fabricaId: z.number(),
-      receitaId: z.number().optional(),
+      receitaId: z.number().optional().nullable(),
       gama: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      const id = await upsertProduto(input);
+      const id = await upsertProduto(input as any);
       await addAuditLog({
         entidade: "produto",
         entidadeId: id,
@@ -45,6 +45,20 @@ export const produtosRouter = router({
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
       return { id };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await deleteProduto(input.id);
+      await addAuditLog({
+        entidade: "produto",
+        entidadeId: input.id,
+        acao: "eliminado",
+        userId: ctx.user.id,
+        userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
+      });
+      return { success: true };
     }),
 
   calcularEGuardarPerfil: protectedProcedure

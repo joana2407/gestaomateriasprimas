@@ -144,3 +144,24 @@
 - [x] Estado vazio com área dashed e ícone quando sem ingredientes
 - [x] Alertas de documentos de fornecedor no Dashboard (painel com semáforo + lista)
 - [x] Alertas de documentos integrados no getDashboardStats do backend
+
+## Melhorias v1.7
+- [ ] Receitas: editar receita existente (pré-carregar ingredientes e dados)
+- [ ] Receitas: eliminar receita com confirmação
+- [ ] Receitas: seletor de unidade de gramagem por ingrediente (g ou kg)
+- [ ] Produtos: associar receita diretamente no painel de produtos
+- [ ] Produtos: editar produto existente
+- [ ] Produtos: eliminar produto com confirmação
+- [ ] Atualizar schema/backend para campo de unidade nos ingredientes de receita
+
+## Melhorias v1.8 — Logística de MP
+- [x] Adicionar campos de logística à MP: tipo de embalagem (saco/granel/bigbag/caixa/outro)
+- [x] Campo kg por saco (quando embalagem = saco)
+- [x] Campo nº de sacos por palete (quando embalagem = saco)
+- [x] Campo peso por palete (kg) calculado automaticamente
+- [x] Campo kg por bigbag (quando embalagem = bigbag)
+- [x] Campo observações logísticas
+- [x] Tab "Logística" no formulário de edição de MP
+- [x] Mostrar informação logística no painel expandido de cada MP (cartões com forma, pesos, palete calculada)
+- [x] Migração SQL para novos campos de logística
+- [x] Nota informativa sobre módulo de receções futuras

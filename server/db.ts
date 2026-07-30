@@ -320,6 +320,20 @@ export async function deleteIngredientesByReceita(receitaId: number) {
   await db.delete(ingredientesReceita).where(eq(ingredientesReceita.receitaId, receitaId));
 }
 
+export async function deleteReceita(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // Eliminar ingredientes primeiro, depois a receita
+  await db.delete(ingredientesReceita).where(eq(ingredientesReceita.receitaId, id));
+  await db.delete(receitas).where(eq(receitas.id, id));
+}
+
+export async function deleteProduto(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(produtos).set({ ativo: false, updatedAt: new Date() }).where(eq(produtos.id, id));
+}
+
 // ─── PRODUTOS ─────────────────────────────────────────────────────────────────
 export async function getProdutos(fabricaId?: number) {
   const db = await getDb();

@@ -2,12 +2,11 @@ import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getReceitas, getReceitaById, upsertReceita,
-  getIngredientesByReceita, upsertIngrediente, deleteIngrediente,
-  deleteIngredientesByReceita, addAuditLog, getMateriasPrimas, getDb
+  getIngredientesByReceita, upsertIngrediente,
+  deleteIngredientesByReceita, deleteReceita, addAuditLog, getMateriasPrimas, getDb
 } from "../db";
 import { receitas } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
-import { TRPCError } from "@trpc/server";
 import { calcularPerfilAlergenico, REGRAS_FABRICAS } from "../../shared/allergens";
 
 export const receitasRouter = router({
@@ -48,6 +47,20 @@ export const receitasRouter = router({
       return { id };
     }),
 
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      await deleteReceita(input.id);
+      await addAuditLog({
+        entidade: "receita",
+        entidadeId: input.id,
+        acao: "eliminado",
+        userId: ctx.user.id,
+        userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
+      });
+      return { success: true };
+    }),
+
   aprovar: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
@@ -80,7 +93,7 @@ export const receitasRouter = router({
         ordem: z.number().optional(),
       })),
     }))
-    .mutation(async ({ input, ctx }) => {
+    .mutation(async ({ input }) => {
       await deleteIngredientesByReceita(input.receitaId);
       for (const ing of input.ingredientes) {
         await upsertIngrediente({ ...ing, receitaId: input.receitaId });

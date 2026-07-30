@@ -75,6 +75,17 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   paisOrigem: varchar("pais_origem", { length: 100 }),
   // Para MP compostas: lista de sub-ingredientes com origem
   subIngredientes: json("sub_ingredientes"),
+  // ── Logística ──────────────────────────────────────────────────────────────
+  // Forma de fornecimento: saco, granel, bigbag, caixa, outro
+  formaFornecimento: mysqlEnum("forma_fornecimento", ["saco", "granel", "bigbag", "caixa", "outro"]),
+  // Quando forma = saco: peso por saco (kg)
+  kgPorSaco: float("kg_por_saco"),
+  // Quando forma = saco: número de sacos por palete
+  sacosPorPalete: int("sacos_por_palete"),
+  // Quando forma = bigbag: peso por bigbag (kg)
+  kgPorBigbag: float("kg_por_bigbag"),
+  // Observações logísticas (condições de armazenamento, prazo validade, etc.)
+  observacoesLogistica: text("observacoes_logistica"),
   ativa: boolean("ativa").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
