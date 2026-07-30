@@ -489,11 +489,7 @@ function FornecedorDetalhe({
               );
             })()}
           </TabsContent>
-        </Tabs>
-      </div>
 
-      {/* Dialog de novo documento */}
-          {/* Tab Matérias-Primas */}
           <TabsContent value="materias-primas" className="mt-0">
             <div className="p-6 space-y-4">
               {/* Lista de MP associadas */}
@@ -596,6 +592,11 @@ function FornecedorDetalhe({
               )}
             </div>
           </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Dialog de novo documento */}
+          {/* Tab Matérias-Primas */}
       <Dialog open={docDialogOpen} onOpenChange={setDocDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
