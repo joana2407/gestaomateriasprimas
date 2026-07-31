@@ -899,9 +899,21 @@ export default function Fornecedores() {
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Nome *</label>
+                <Input
+                  value={form.nome}
+                  onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                  placeholder="Nome do fornecedor"
+                  className="h-9"
+                />
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Código</label>
+                <Input
+                  value={form.codigo}
+                  onChange={e => setForm(f => ({ ...f, codigo: e.target.value }))}
+                  placeholder="Código interno"
+                  className="h-9"
+                />
               </div>
             </div>
 
@@ -916,12 +928,15 @@ export default function Fornecedores() {
               <div className="grid grid-cols-2 gap-3 pl-7">
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Nome</label>
+                  <Input value={form.contactoComercialNome} onChange={e => setForm(f => ({ ...f, contactoComercialNome: e.target.value }))} placeholder="Nome do contacto comercial" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Email</label>
+                  <Input type="email" value={form.contactoComercialEmail} onChange={e => setForm(f => ({ ...f, contactoComercialEmail: e.target.value }))} placeholder="email@empresa.pt" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Telemóvel</label>
+                  <Input value={form.contactoComercialTelemovel} onChange={e => setForm(f => ({ ...f, contactoComercialTelemovel: e.target.value }))} placeholder="+351 9XX XXX XXX" className="h-8 text-sm" />
                 </div>
               </div>
             </div>
@@ -937,12 +952,15 @@ export default function Fornecedores() {
               <div className="grid grid-cols-2 gap-3 pl-7">
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Nome</label>
+                  <Input value={form.contactoQualidadeNome} onChange={e => setForm(f => ({ ...f, contactoQualidadeNome: e.target.value }))} placeholder="Nome do responsável de qualidade" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Email</label>
+                  <Input type="email" value={form.contactoQualidadeEmail} onChange={e => setForm(f => ({ ...f, contactoQualidadeEmail: e.target.value }))} placeholder="qualidade@empresa.pt" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Telemóvel</label>
+                  <Input value={form.contactoQualidadeTelemovel} onChange={e => setForm(f => ({ ...f, contactoQualidadeTelemovel: e.target.value }))} placeholder="+351 9XX XXX XXX" className="h-8 text-sm" />
                 </div>
               </div>
             </div>
