@@ -100,7 +100,7 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   statusMp: mysqlEnum("status_mp", ["completo", "pendente", "incompleto"]).default("completo"),
   observacoesPendencia: text("observacoes_pendencia"),
   // Categorização da MP
-  categoria: varchar("categoria", { length: 20 }).default("em_utilizacao").notNull(),
+  categoria: mysqlEnum("categoria", ["em_utilizacao", "obsoleta", "para_testes"]).default("em_utilizacao").notNull(),
   // Data da última validação
   dataValidacao: date("dataValidacao"),
   ativa: boolean("ativa").default(true).notNull(),

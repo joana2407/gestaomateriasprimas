@@ -205,9 +205,9 @@
 
 ## Melhorias v2.5 — Categorização e Histórico de Validação de MP
 
-- [ ] Adicionar coluna `categoria` (enum: em_utilizacao, obsoleta, para_testes) à tabela materias_primas
-- [ ] Adicionar coluna `dataValidacao` (date) à tabela materias_primas
-- [ ] Criar tabela `validacoes_mp` com histórico de validações (id, mpId, dataValidacao, notas, usuarioId, criadoEm)
+- [x] Adicionar coluna `categoria` (enum: em_utilizacao, obsoleta, para_testes) à tabela materias_primas
+- [x] Adicionar coluna `dataValidacao` (date) à tabela materias_primas
+- [x] Criar tabela `validacoes_mp` com histórico de validações (id, mpId, dataValidacao, notas, usuarioId, criadoEm)
 - [ ] Atualizar router de materiasPrimas com endpoints para criar/editar validação
 - [ ] Adicionar campo de categoria no formulário de edição de MP
 - [ ] Adicionar campo de data de validação no formulário de edição de MP
