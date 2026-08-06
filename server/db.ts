@@ -463,3 +463,33 @@ export async function getMpPorFornecedor(fornecedorId: number) {
     return { ...r, mp };
   }).filter(r => r.mp);
 }
+
+
+// ─── VALIDAÇÕES DE MP ──────────────────────────────────────────────────────────
+export async function getValidacoesMp(mpId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const { desc, eq } = await import("drizzle-orm");
+  const { validacoesMp } = await import("../drizzle/schema");
+  return db.select().from(validacoesMp).where(eq(validacoesMp.mpId, mpId)).orderBy(desc(validacoesMp.criadoEm));
+}
+
+export async function criarValidacaoMp(mpId: number, dataValidacao: Date, notas?: string, usuarioId?: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const { validacoesMp } = await import("../drizzle/schema");
+  const result = await db.insert(validacoesMp).values({
+    mpId,
+    dataValidacao,
+    notas: notas || null,
+    usuarioId: usuarioId || null,
+  });
+  return result;
+}
+
+export async function atualizarDataValidacaoMp(mpId: number, dataValidacao: Date) {
+  const db = await getDb();
+  if (!db) return null;
+  const { eq } = await import("drizzle-orm");
+  return db.update(materiasPrimas).set({ dataValidacao }).where(eq(materiasPrimas.id, mpId));
+}

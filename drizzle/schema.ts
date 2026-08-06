@@ -8,6 +8,7 @@ import {
   varchar,
   float,
   json,
+  date,
 } from "drizzle-orm/mysql-core";
 
 // ─── USERS ────────────────────────────────────────────────────────────────────
@@ -98,6 +99,10 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   // Estado de completude
   statusMp: mysqlEnum("status_mp", ["completo", "pendente", "incompleto"]).default("completo"),
   observacoesPendencia: text("observacoes_pendencia"),
+  // Categorização da MP
+  categoria: varchar("categoria", { length: 20 }).default("em_utilizacao").notNull(),
+  // Data da última validação
+  dataValidacao: date("dataValidacao"),
   ativa: boolean("ativa").default(true).notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -245,6 +250,17 @@ export const fichasTecnicasProduto = mysqlTable("fichas_tecnicas_produto", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type FichaTecnicaProduto = typeof fichasTecnicasProduto.$inferSelect;
+
+// ─── HISTÓRICO DE VALIDAÇÕES DE MP ───────────────────────────────────────────
+export const validacoesMp = mysqlTable("validacoes_mp", {
+  id: int("id").autoincrement().primaryKey(),
+  mpId: int("mpId").notNull().references(() => materiasPrimas.id),
+  dataValidacao: date("dataValidacao").notNull(),
+  notas: text("notas"),
+  usuarioId: int("usuarioId").references(() => users.id),
+  criadoEm: timestamp("criadoEm").defaultNow().notNull(),
+});
+export type ValidacaoMp = typeof validacoesMp.$inferSelect;
 
 // ─── AUDIT LOG ────────────────────────────────────────────────────────────────
 export const auditLog = mysqlTable("audit_log", {
