@@ -63,6 +63,9 @@ interface MPFormData {
   // Estado de completude
   statusMp?: "completo" | "pendente" | "incompleto";
   observacoesPendencia?: string | null;
+  // Categorização e validação
+  categoria?: "em_utilizacao" | "obsoleta" | "para_testes";
+  dataValidacao?: Date;
 }
 
 const EMPTY_FORM: MPFormData = {
@@ -73,6 +76,7 @@ const EMPTY_FORM: MPFormData = {
   formaFornecimento: null, kgPorSaco: null, sacosPorPalete: null, kgPorBigbag: null, observacoesLogistica: null,
   formasFornecimento: [], unidadesPorCaixa: null, caixasPorPalete: null,
   statusMp: "completo", observacoesPendencia: null,
+  categoria: "em_utilizacao",
 };
 
 export default function MateriasPrimas() {
