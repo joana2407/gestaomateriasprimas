@@ -5,6 +5,8 @@ import {
   deleteMateriaPrima, addAuditLog, getFornecedores,
   getMpFornecedores, setMpFornecedores
 } from "../db";
+import { desc, eq } from "drizzle-orm";
+import { validacoesMp, materiasPrimas } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
 
 const AlergenioIdSchema = z.enum([
@@ -66,6 +68,9 @@ export const materiasPrimasRouter = router({
       // Estado de completude
       statusMp: z.enum(["completo", "pendente", "incompleto"]).optional(),
       observacoesPendencia: z.string().optional().nullable(),
+      // Categorização e validação
+      categoria: z.enum(["em_utilizacao", "obsoleta", "para_testes"]).optional(),
+      dataValidacao: z.date().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Verificar bloqueio de glúten na Fábrica III
@@ -107,6 +112,34 @@ export const materiasPrimasRouter = router({
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
+      return { success: true };
+    }),
+
+  validacoes: protectedProcedure
+    .input(z.object({ mpId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      
+      
+      return db.select().from(validacoesMp).where(eq(validacoesMp.mpId, input.mpId)).orderBy(desc(validacoesMp.criadoEm));
+    }),
+
+  criarValidacao: protectedProcedure
+    .input(z.object({ mpId: z.number(), dataValidacao: z.date(), notas: z.string().optional() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database not available" });
+      
+      
+      await db.insert(validacoesMp).values({
+        mpId: input.mpId,
+        dataValidacao: input.dataValidacao,
+        notas: input.notas || null,
+        usuarioId: ctx.user.id,
+      });
+      // Atualizar dataValidacao na MP
+      await db.update(materiasPrimas).set({ dataValidacao: input.dataValidacao }).where(eq(materiasPrimas.id, input.mpId));
       return { success: true };
     }),
 });
