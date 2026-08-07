@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
-import {
+import { getDb,
   getMateriasPrimas, getMateriaPrimaById, upsertMateriaPrima,
   deleteMateriaPrima, addAuditLog, getFornecedores,
   getMpFornecedores, setMpFornecedores
