@@ -252,7 +252,7 @@ export default function MateriasPrimas() {
     { id: "fornecedores", label: "Fornecedores" },
     { id: "origem", label: "Origem" },
     { id: "logistica", label: "Logística" },
-    { id: "estado", label: "Estado" },
+    { id: "estado", label: "Estado da Documentação" },
   ] as const;
 
   return (
