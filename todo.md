@@ -213,6 +213,6 @@
 - [x] Adicionar campo visual de categoria (3 botões: Ativa, Testes, Inativa) no formulário de edição de MP
 - [x] Adicionar campo visual de data de validação (date picker) no formulário de edição de MP
 - [ ] Adicionar tab de Histórico de Validações no painel expandido de MP
-- [ ] Adicionar badge de categoria na lista de MP (cor diferente por categoria)
-- [ ] Adicionar filtro por categoria na página de Matérias-Primas
+- [x] Adicionar badge de categoria na lista de MP (cor diferente por categoria)
+- [x] Adicionar filtro por categoria na página de Matérias-Primas
 - [ ] Adicionar alertas no Dashboard para MP obsoletas ou para testes

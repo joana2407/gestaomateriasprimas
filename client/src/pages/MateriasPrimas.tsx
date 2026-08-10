@@ -85,6 +85,7 @@ export default function MateriasPrimas() {
   const [fabricaFilter, setFabricaFilter] = useState<string>("all");
   const [fornecedorFilter, setFornecedorFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -151,9 +152,10 @@ export default function MateriasPrimas() {
       const matchFornecedor = fornecedorFilter === "all" ||
         ((mp as any).fornecedoresIds as number[] ?? []).some((id: number) => String(id) === fornecedorFilter);
       const matchStatus = statusFilter === "all" || ((mp as any).statusMp ?? "completo") === statusFilter;
-      return matchSearch && matchFornecedor && matchStatus;
+      const matchCategoria = categoriaFilter === "all" || ((mp as any).categoria ?? "em_utilizacao") === categoriaFilter;
+      return matchSearch && matchFornecedor && matchStatus && matchCategoria;
     });
-  }, [mps, search, fornecedorFilter, statusFilter]);
+  }, [mps, search, fornecedorFilter, statusFilter, categoriaFilter]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
   const openEdit = useCallback(async (mpId: number) => {
@@ -314,9 +316,20 @@ export default function MateriasPrimas() {
               <SelectItem value="incompleto">✗ Incompleto</SelectItem>
             </SelectContent>
           </Select>
-          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all") && (
+          <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
+            <SelectTrigger className="w-full sm:w-44">
+              <SelectValue placeholder="Todas as categorias" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              <SelectItem value="em_utilizacao">✓ Ativa</SelectItem>
+              <SelectItem value="para_testes">🧪 Testes</SelectItem>
+              <SelectItem value="obsoleta">✗ Inativa</SelectItem>
+            </SelectContent>
+          </Select>
+          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all" || categoriaFilter !== "all") && (
             <button
-              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); setStatusFilter("all"); }}
+              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); setStatusFilter("all"); setCategoriaFilter("all"); }}
               className="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors border border-border/60 shrink-0"
             >
               <X className="w-3.5 h-3.5" /> Limpar filtros
@@ -402,6 +415,22 @@ export default function MateriasPrimas() {
                             st === "pendente" ? "bg-amber-50 text-amber-700 border-amber-200" : "bg-red-50 text-red-700 border-red-200"
                           )}>
                             {st === "pendente" ? "⚠ Pendente" : "✗ Incompleto"}
+                          </span>
+                        );
+                      })()}
+
+                      {/* Badge de categoria */}
+                      {(() => {
+                        const cat = (mp as any).categoria ?? "em_utilizacao";
+                        const catConfig: Record<string, {label: string; color: string}> = {
+                          em_utilizacao: { label: "✓ Ativa", color: "bg-green-50 text-green-700 border-green-200" },
+                          para_testes: { label: "🧪 Testes", color: "bg-blue-50 text-blue-700 border-blue-200" },
+                          obsoleta: { label: "✗ Inativa", color: "bg-red-50 text-red-700 border-red-200" },
+                        };
+                        const config = catConfig[cat] || catConfig.em_utilizacao;
+                        return (
+                          <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium", config.color)}>
+                            {config.label}
                           </span>
                         );
                       })()}
