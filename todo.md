@@ -210,8 +210,8 @@
 - [x] Criar tabela `validacoes_mp` com histórico de validações (id, mpId, dataValidacao, notas, usuarioId, criadoEm)
 - [x] Atualizar router de materiasPrimas com endpoints para listar e criar validações
 - [x] Adicionar propriedades categoria e dataValidacao à interface MPFormData (TypeScript)
-- [ ] Adicionar campo visual de categoria (select) no formulário de edição de MP
-- [ ] Adicionar campo visual de data de validação (date picker) no formulário de edição de MP
+- [x] Adicionar campo visual de categoria (3 botões: Ativa, Testes, Inativa) no formulário de edição de MP
+- [x] Adicionar campo visual de data de validação (date picker) no formulário de edição de MP
 - [ ] Adicionar tab de Histórico de Validações no painel expandido de MP
 - [ ] Adicionar badge de categoria na lista de MP (cor diferente por categoria)
 - [ ] Adicionar filtro por categoria na página de Matérias-Primas

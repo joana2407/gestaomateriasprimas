@@ -1017,6 +1017,38 @@ export default function MateriasPrimas() {
               {/* Tab: Estado de Completude */}
               {activeTab === "estado" && (
                 <div className="space-y-5">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-foreground">Categorização da MP</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { id: "em_utilizacao", label: "✓ Ativa", icon: "✓", color: "bg-green-50 border-green-200 text-green-700" },
+                        { id: "para_testes", label: "🧪 Testes", icon: "🧪", color: "bg-blue-50 border-blue-200 text-blue-700" },
+                        { id: "obsoleta", label: "✗ Inativa", icon: "✗", color: "bg-red-50 border-red-200 text-red-700" },
+                      ] as const).map(opt => (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => setForm(f => ({ ...f, categoria: opt.id }))}
+                          className={cn(
+                            "flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
+                            form.categoria === opt.id
+                              ? `${opt.color} border-current`
+                              : `bg-muted/30 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground`
+                          )}
+                        >
+                          <span>{opt.icon}</span>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-[10px]">Data da Última Validação</label>
+                    <Input type="date" value={form.dataValidacao ? form.dataValidacao.toISOString().split('T')[0] : ""} onChange={e => setForm(f => ({ ...f, dataValidacao: e.target.value ? new Date(e.target.value) : undefined }))} />
+                  </div>
+
                   {/* Status */}
                   <div className="space-y-2">
                     <label className="text-xs font-semibold text-foreground">Estado de Completude</label>
