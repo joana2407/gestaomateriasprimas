@@ -216,3 +216,11 @@
 - [x] Adicionar badge de categoria na lista de MP (cor diferente por categoria)
 - [x] Adicionar filtro por categoria na página de Matérias-Primas
 - [ ] Adicionar alertas no Dashboard para MP obsoletas ou para testes
+
+## Melhorias v3.1 — Validade de FT por Fornecedor
+
+- [x] Adicionar coluna `dataValidacao` à tabela `fichasTecnicasFornecedor` (em vez de estar em materias_primas)
+- [x] Atualizar router de fichasTecnicas para incluir dataValidacao no input
+- [ ] Atualizar UI: mostrar "✓ Válida · DD/MM/YY" em cada cartão de FT de fornecedor
+- [ ] Atualizar painel expandido de MP: mostrar data da última validação da MP (campo dataValidacao em materias_primas)
+- [ ] Adicionar semáforo de validade por FT (verde se válida, vermelho se expirada, amarelo se < 60 dias)

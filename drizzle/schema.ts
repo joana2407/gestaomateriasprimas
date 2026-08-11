@@ -134,6 +134,7 @@ export const fichasTecnicasFornecedor = mysqlTable("fichas_tecnicas_fornecedor",
   versao: varchar("versao", { length: 20 }).notNull().default("1.0"),
   dataEmissao: timestamp("data_emissao").notNull(),
   dataValidade: timestamp("data_validade").notNull(),
+  dataValidacao: date("data_validacao"), // Data da última validação (para semáforo de validade)
   ficheiroUrl: text("ficheiro_url"),
   ficheiroKey: text("ficheiro_key"),
   estado: mysqlEnum("estado", ["valida", "a_expirar_60", "a_expirar_30", "expirada"]).default("valida").notNull(),

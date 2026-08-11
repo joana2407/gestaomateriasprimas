@@ -32,6 +32,7 @@ export const fichasTecnicasRouter = router({
       versao: z.string().default("1.0"),
       dataEmissao: z.date(),
       dataValidade: z.date(),
+      dataValidacao: z.date().optional(),
       ficheiroUrl: z.string().optional(),
       ficheiroKey: z.string().optional(),
       notas: z.string().optional(),
