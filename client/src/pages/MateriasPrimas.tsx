@@ -1080,7 +1080,7 @@ export default function MateriasPrimas() {
 
                   {/* Status */}
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold text-foreground">Estado de Completude</label>
+                    <label className="text-xs font-semibold text-foreground">Estado da Documentação</label>
                     <div className="grid grid-cols-3 gap-2">
                       {([
                         { id: "completo", label: "✓ Completo", icon: "✓", color: "bg-green-50 border-green-200 text-green-700" },
