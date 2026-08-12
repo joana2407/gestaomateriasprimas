@@ -117,8 +117,16 @@ export default function MateriasPrimas() {
   const { data: fornecedores } = trpc.fornecedores.list.useQuery();
   const { data: fichas } = trpc.fichasTecnicas.list.useQuery();
 
+  const criarValidacao = trpc.materiasPrimas.criarValidacao.useMutation();
   const upsert = trpc.materiasPrimas.upsert.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      if (form.id && form.dataValidacao) {
+        try {
+          await criarValidacao.mutateAsync({ mpId: form.id, dataValidacao: form.dataValidacao });
+        } catch {
+          toast.error("MP guardada, mas não foi possível registar o histórico de validação");
+        }
+      }
       toast.success(form.id ? "MP atualizada" : "MP criada com sucesso");
       setDialogOpen(false);
       refetch();
@@ -197,6 +205,8 @@ export default function MateriasPrimas() {
         caixasPorPalete: (mpDetalhes as any).caixasPorPalete ?? null,
         statusMp: (mpDetalhes as any).statusMp ?? "completo",
         observacoesPendencia: (mpDetalhes as any).observacoesPendencia ?? null,
+        categoria: (mpDetalhes as any).categoria ?? "em_utilizacao",
+        dataValidacao: (mpDetalhes as any).dataValidacao ? new Date((mpDetalhes as any).dataValidacao) : undefined,
       });
       setActiveTab("alergenios");
       setDialogOpen(true);
@@ -439,7 +449,12 @@ export default function MateriasPrimas() {
                       {mpFabricas.map(f => (
                         <FactoryBadge key={f.id} nome={f.nome} codigo={f.codigo} size="sm" />
                       ))}
-                      {fichaAtiva && <ValidityBadge dataValidade={fichaAtiva.dataValidade} />}
+                      {(mp as any).dataValidacao && (
+                        <span className="flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                          <CheckCircle2 className="w-3 h-3" />
+                          Última validação: {new Date((mp as any).dataValidacao).toLocaleDateString("pt-PT")}
+                        </span>
+                      )}
                       {mp.paisOrigem && (
                         <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
                           <Globe className="w-3 h-3" />{mp.paisOrigem}
@@ -1150,6 +1165,7 @@ export default function MateriasPrimas() {
 function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, any> }) {
   const { data: mpDetalhes } = trpc.materiasPrimas.byId.useQuery({ id: mp.id });
   const { data: fichasMp } = trpc.fichasTecnicas.list.useQuery({ materiaPrimaId: mp.id });
+  const { data: validacoesMp } = trpc.materiasPrimas.validacoes.useQuery({ mpId: mp.id });
   const utils = trpc.useUtils();
   const { isAuthenticated } = useAuth();
 
@@ -1228,6 +1244,7 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
   const caixasPorPalete = (mpDetalhes as any)?.caixasPorPalete ?? (mp as any)?.caixasPorPalete;
   const statusMp: "completo" | "pendente" | "incompleto" = (mpDetalhes as any)?.statusMp ?? (mp as any)?.statusMp ?? "completo";
   const observacoesPendencia = (mpDetalhes as any)?.observacoesPendencia ?? (mp as any)?.observacoesPendencia;
+  const ultimaValidacao = (mpDetalhes as any)?.dataValidacao ?? (mp as any)?.dataValidacao;
   const FORMA_LABELS: Record<string, { label: string; icon: string }> = {
     saco: { label: "Saco", icon: "🧺" },
     granel: { label: "Granel", icon: "🏗️" },
@@ -1256,6 +1273,17 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
   return (
     <div className="border-t border-border/60 p-5 bg-muted/20 animate-fade-in">
       <div className="space-y-6">
+        {/* ── Última validação da MP ── */}
+        {ultimaValidacao && (
+          <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2.5">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Última validação da matéria-prima</p>
+              <p className="text-xs font-medium text-emerald-800">{new Date(ultimaValidacao).toLocaleDateString("pt-PT")}</p>
+            </div>
+          </div>
+        )}
+
         {/* ── Perfil Alergénico ── */}
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Perfil Alergénico</p>
@@ -1337,10 +1365,20 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                               "bg-emerald-50 text-emerald-600 border-emerald-200"
                             )}>
                               {estadoFt === "expirada" ? "Expirada" :
-                               estadoFt === "a_expirar_30" ? `${diasValidade}d` :
-                               estadoFt === "a_expirar_60" ? `${diasValidade}d` :
-                               "Válida"}
+                               estadoFt === "a_expirar_30" ? `${diasValidade}d · ${new Date(ftAtiva.dataValidade).toLocaleDateString("pt-PT")}` :
+                               estadoFt === "a_expirar_60" ? `${diasValidade}d · ${new Date(ftAtiva.dataValidade).toLocaleDateString("pt-PT")}` :
+                               `✓ Válida · ${new Date(ftAtiva.dataValidade).toLocaleDateString("pt-PT")}`}
                             </span>
+                          </div>
+                          <div className={cn(
+                            "flex items-center justify-between text-[10px] mt-1",
+                            estadoFt === "expirada" ? "text-red-600" :
+                            estadoFt === "a_expirar_30" ? "text-orange-600" :
+                            estadoFt === "a_expirar_60" ? "text-yellow-700" :
+                            "text-emerald-700"
+                          )}>
+                            <span>Válida até {new Date(ftAtiva.dataValidade).toLocaleDateString("pt-PT")}</span>
+                            <span>Emitida em {new Date(ftAtiva.dataEmissao).toLocaleDateString("pt-PT")}</span>
                           </div>
                           {ftAtiva.ficheiroUrl ? (
                             <a
@@ -1472,7 +1510,7 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                       est === "a_expirar_60" ? "bg-yellow-50 text-yellow-600 border-yellow-200" :
                       "bg-emerald-50 text-emerald-600 border-emerald-200"
                     )}>
-                      {est === "expirada" ? "Expirada" : est === "valida" ? "Válida" : `${diasV}d`}
+                      {est === "expirada" ? "Expirada" : est === "valida" ? `✓ Válida · ${new Date(ft.dataValidade).toLocaleDateString("pt-PT")}` : `${diasV}d · ${new Date(ft.dataValidade).toLocaleDateString("pt-PT")}`}
                     </span>
                     {ft.ficheiroUrl && (
                       <a
@@ -1598,6 +1636,36 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
             )}
           </div>
         )}
+
+        {/* ── Histórico de validações ── */}
+        <div className="border-t border-border/40 pt-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
+            <CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Histórico de Validações
+          </p>
+          {(validacoesMp?.length ?? 0) > 0 ? (
+            <div className="space-y-2">
+              {(validacoesMp ?? []).map((validacao: any, index: number) => (
+                <div key={validacao.id ?? index} className="flex items-start justify-between gap-3 rounded-lg border border-border/50 bg-card px-3 py-2.5">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">
+                      Validação de {new Date(validacao.dataValidacao).toLocaleDateString("pt-PT")}
+                    </p>
+                    {validacao.notas && <p className="text-[11px] text-muted-foreground mt-0.5">{validacao.notas}</p>}
+                  </div>
+                  {validacao.criadoEm && (
+                    <span className="text-[10px] text-muted-foreground shrink-0">
+                      Registada em {new Date(validacao.criadoEm).toLocaleDateString("pt-PT")}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground italic rounded-lg border border-dashed border-border/60 px-3 py-3">
+              Ainda não existem validações históricas registadas.
+            </p>
+          )}
+        </div>
 
         {/* ── Estado de Completude ── */}
         {statusMp !== "completo" && (
