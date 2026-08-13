@@ -224,3 +224,11 @@
 - [x] Atualizar UI: mostrar "✓ Válida · DD/MM/YY" em cada cartão de FT de fornecedor
 - [x] Atualizar painel expandido de MP: mostrar data da última validação da MP (campo dataValidacao em materias_primas)
 - [x] Adicionar semáforo de validade por FT (verde se válida, vermelho se expirada, amarelo se < 60 dias)
+
+## Correção v3.2 — Formulário de MP
+
+- [x] Remover a secção superior duplicada de origem no formulário de edição de MP
+- [x] Manter o separador inferior “Origem” com os campos de origem e composição
+- [x] Verificar visualmente o formulário e executar testes
+
+A validade individual das FTs por fornecedor e a data da última validação da MP permanecem inalteradas.

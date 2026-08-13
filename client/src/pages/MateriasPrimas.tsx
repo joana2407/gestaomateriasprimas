@@ -584,14 +584,6 @@ export default function MateriasPrimas() {
                   ))}
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">País/Região de Origem</label>
-                <Input
-                  value={form.paisOrigem}
-                  onChange={e => setForm(f => ({ ...f, paisOrigem: e.target.value }))}
-                  placeholder="Ex: Portugal, Espanha, UE"
-                />
-              </div>
             </div>
 
             {/* Fábricas */}
