@@ -259,3 +259,12 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Adicionar observações para informação ou documentação em falta
 - [x] Preservar o estado e as observações no fornecedor criado
 - [x] Executar testes e criar checkpoint
+
+## Dados v3.6 — Novas matérias-primas da Fábrica III
+
+- [x] Confirmar fornecedores existentes e IDs da Fábrica III
+- [x] Verificar duplicados por nome antes da criação
+- [x] Garantir que as 26 MP pedidas ficam registadas/disponíveis na Fábrica III (24 novas + Sal e Canela em Pó reutilizadas)
+- [x] Associar fornecedores conforme a lista recebida
+- [x] Manter Vinho do Porto sem fornecedor associado
+- [x] Verificar os registos criados e criar checkpoint
