@@ -364,6 +364,13 @@ export async function upsertProduto(data: typeof produtos.$inferInsert) {
   return (result[0] as any).insertId as number;
 }
 
+export async function associarReceitaAoProduto(produtoId: number, receitaId: number | null) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(produtos).set({ receitaId, updatedAt: new Date() }).where(eq(produtos.id, produtoId));
+  await db.delete(perfilAlergenicoProduto).where(eq(perfilAlergenicoProduto.produtoId, produtoId));
+}
+
 // ─── PERFIL ALERGÉNICO ────────────────────────────────────────────────────────
 export async function getPerfilAlergenico(produtoId: number) {
   const db = await getDb();

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useState, useMemo } from "react";
 import { type AlergenioId, ALERGENIOS_14 } from "../../../shared/allergens";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, ChevronDown, ChevronUp, Edit2, FileText, FlaskConical, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
+import { AlertTriangle, BookOpen, ChevronDown, ChevronUp, Edit2, FileText, FlaskConical, Link2, Link2Off, Plus, RefreshCw, Search, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,11 @@ export default function Produtos() {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [form, setForm] = useState({ id: undefined as number | undefined, nome: "", codigo: "", marca: "", fabricaId: 0, receitaId: undefined as number | undefined, gama: "" });
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [linkerOpen, setLinkerOpen] = useState(false);
+  const [linkerFabricaId, setLinkerFabricaId] = useState(0);
+  const [linkerProdutoSearch, setLinkerProdutoSearch] = useState("");
+  const [linkerReceitaSearch, setLinkerReceitaSearch] = useState("");
+  const [selectedProdutoId, setSelectedProdutoId] = useState<number | null>(null);
 
   const { data: produtos, refetch } = trpc.produtos.list.useQuery({ fabricaId: fabricaFilter !== "all" ? parseInt(fabricaFilter) : undefined });
   const { data: fabricas } = trpc.fabricas.list.useQuery();
@@ -44,8 +49,48 @@ export default function Produtos() {
     onSuccess: () => { toast.success("FTP gerada com sucesso"); },
     onError: (e) => toast.error(e.message),
   });
+  const associarReceita = trpc.produtos.associarReceita.useMutation({
+    onSuccess: ({ produtoId, receitaId }) => {
+      toast.success(receitaId ? "Receita associada e perfil alergénico atualizado" : "Associação de receita removida");
+      refetch();
+      if (receitaId) calcularPerfil.mutate({ produtoId });
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const filtered = (produtos ?? []).filter(p => p.nome.toLowerCase().includes(search.toLowerCase()));
+  const receitasPorId = useMemo(() => new Map((receitas ?? []).map(receita => [receita.id, receita])), [receitas]);
+  const produtosDoAssociador = useMemo(() => (produtos ?? [])
+    .filter(produto => linkerFabricaId === 0 || produto.fabricaId === linkerFabricaId)
+    .filter(produto => produto.nome.toLowerCase().includes(linkerProdutoSearch.toLowerCase())), [produtos, linkerFabricaId, linkerProdutoSearch]);
+  const produtoSelecionado = useMemo(() => (produtos ?? []).find(produto => produto.id === selectedProdutoId) ?? null, [produtos, selectedProdutoId]);
+  const receitasCandidatas = useMemo(() => {
+    if (!produtoSelecionado) return [];
+    const pesquisa = linkerReceitaSearch.trim().toLowerCase();
+    const normalizar = (texto: string) => texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const produtoNome = normalizar(produtoSelecionado.nome);
+    return (receitas ?? [])
+      .filter(receita => receita.fabricaId === produtoSelecionado.fabricaId)
+      .filter(receita => !pesquisa || receita.nome.toLowerCase().includes(pesquisa) || (receita.descricao ?? "").toLowerCase().includes(pesquisa))
+      .sort((a, b) => {
+        const aMatch = normalizar(a.nome).includes(produtoNome) || produtoNome.includes(normalizar(a.nome));
+        const bMatch = normalizar(b.nome).includes(produtoNome) || produtoNome.includes(normalizar(b.nome));
+        return Number(bMatch) - Number(aMatch) || a.nome.localeCompare(b.nome);
+      });
+  }, [receitas, produtoSelecionado, linkerReceitaSearch]);
+
+  const openAssociador = () => {
+    const primeiraFabrica = fabricas?.[0]?.id ?? 0;
+    const fabricaId = fabricaFilter !== "all" ? parseInt(fabricaFilter) : primeiraFabrica;
+    const primeiroProduto = (produtos ?? []).find(produto => produto.fabricaId === fabricaId && !produto.receitaId)
+      ?? (produtos ?? []).find(produto => produto.fabricaId === fabricaId)
+      ?? null;
+    setLinkerFabricaId(fabricaId);
+    setSelectedProdutoId(primeiroProduto?.id ?? null);
+    setLinkerProdutoSearch("");
+    setLinkerReceitaSearch("");
+    setLinkerOpen(true);
+  };
 
   return (
     <SigaLayout
@@ -53,9 +98,14 @@ export default function Produtos() {
       subtitle={`${filtered.length} produtos ativos`}
       actions={
         isAuthenticated ? (
-          <Button onClick={() => { setForm({ id: undefined, nome: "", codigo: "", marca: "", fabricaId: fabricas?.[0]?.id ?? 0, receitaId: undefined, gama: "" }); setDialogOpen(true); }} size="sm" className="gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> Novo Produto
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={openAssociador} size="sm" variant="outline" className="gap-1.5 bg-background">
+              <Link2 className="w-3.5 h-3.5" /> Associar receitas
+            </Button>
+            <Button onClick={() => { setForm({ id: undefined, nome: "", codigo: "", marca: "", fabricaId: fabricas?.[0]?.id ?? 0, receitaId: undefined, gama: "" }); setDialogOpen(true); }} size="sm" className="gap-1.5">
+              <Plus className="w-3.5 h-3.5" /> Novo Produto
+            </Button>
+          </div>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )
@@ -88,6 +138,7 @@ export default function Produtos() {
           {filtered.map(produto => {
             const fab = fabricas?.find(f => f.id === produto.fabricaId);
             const isExpanded = expandedId === produto.id;
+            const receitaAssociada = produto.receitaId ? receitasPorId.get(produto.receitaId) : null;
             return (
               <div key={produto.id} className="card-elegant overflow-hidden">
                 <div
@@ -105,6 +156,13 @@ export default function Produtos() {
                     <div className="flex items-center gap-2 mt-1">
                       {fab && <FactoryBadge nome={fab.nome} codigo={fab.codigo} size="sm" />}
                       {produto.gama && <span className="text-[10px] text-muted-foreground">{produto.gama}</span>}
+                      {receitaAssociada ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full px-1.5 py-0.5">
+                          <BookOpen className="w-2.5 h-2.5" /> {receitaAssociada.nome}
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-amber-700 bg-amber-50 border border-amber-100 rounded-full px-1.5 py-0.5">Sem receita</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -220,6 +278,88 @@ export default function Produtos() {
                 {upsert.isPending ? "A guardar..." : form.id ? "Guardar" : "Criar Produto"}
               </Button>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={linkerOpen} onOpenChange={setLinkerOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Link2 className="w-5 h-5 text-emerald-600" /> Associar Produtos e Receitas
+            </DialogTitle>
+            <p className="text-sm text-muted-foreground">Selecione um produto e associe uma receita da mesma fábrica. O perfil alergénico é recalculado automaticamente.</p>
+          </DialogHeader>
+          <div className="flex flex-col sm:flex-row gap-3 py-1">
+            <Select value={String(linkerFabricaId)} onValueChange={value => {
+              const fabricaId = parseInt(value);
+              setLinkerFabricaId(fabricaId);
+              setSelectedProdutoId((produtos ?? []).find(produto => produto.fabricaId === fabricaId && !produto.receitaId)?.id ?? (produtos ?? []).find(produto => produto.fabricaId === fabricaId)?.id ?? null);
+              setLinkerProdutoSearch("");
+              setLinkerReceitaSearch("");
+            }}>
+              <SelectTrigger className="w-full sm:w-72"><SelectValue placeholder="Selecionar fábrica" /></SelectTrigger>
+              <SelectContent>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent>
+            </Select>
+            <div className="text-xs text-muted-foreground flex items-center px-1">Apenas receitas da unidade selecionada são disponibilizadas.</div>
+          </div>
+          <div className="grid lg:grid-cols-5 gap-5 min-h-0 flex-1 overflow-hidden pt-2">
+            <section className="lg:col-span-2 min-h-0 flex flex-col rounded-xl border border-border/70 bg-muted/15 overflow-hidden">
+              <div className="p-3 border-b border-border/60 bg-background/70">
+                <p className="text-xs font-semibold">Produtos comerciais</p>
+                <div className="relative mt-2">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <Input value={linkerProdutoSearch} onChange={event => setLinkerProdutoSearch(event.target.value)} placeholder="Pesquisar produto..." className="h-8 pl-8 text-xs" />
+                </div>
+              </div>
+              <div className="p-2 overflow-y-auto max-h-[48vh] space-y-1">
+                {produtosDoAssociador.length === 0 ? <p className="p-5 text-xs text-center text-muted-foreground">Nenhum produto nesta fábrica.</p> : produtosDoAssociador.map(produto => {
+                  const receita = produto.receitaId ? receitasPorId.get(produto.receitaId) : null;
+                  const selected = produto.id === selectedProdutoId;
+                  return <button key={produto.id} type="button" onClick={() => { setSelectedProdutoId(produto.id); setLinkerReceitaSearch(""); }} className={cn("w-full text-left rounded-lg p-3 transition-colors border", selected ? "bg-emerald-50 border-emerald-200 shadow-sm" : "bg-background border-transparent hover:bg-accent/60 hover:border-border/70")}>
+                    <div className="flex items-start gap-2">
+                      <FlaskConical className={cn("w-4 h-4 mt-0.5 shrink-0", selected ? "text-emerald-600" : "text-muted-foreground")} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-semibold truncate">{produto.nome}</p>
+                        <p className={cn("mt-1 text-[10px] truncate", receita ? "text-emerald-700" : "text-amber-700")}>{receita ? `Receita: ${receita.nome}` : "Sem receita associada"}</p>
+                      </div>
+                    </div>
+                  </button>;
+                })}
+              </div>
+            </section>
+
+            <section className="lg:col-span-3 min-h-0 flex flex-col rounded-xl border border-border/70 overflow-hidden">
+              {!produtoSelecionado ? <div className="flex-1 p-10 flex flex-col items-center justify-center text-center text-muted-foreground"><FlaskConical className="w-8 h-8 mb-3 opacity-30" /><p className="text-sm">Selecione um produto para ver as receitas disponíveis.</p></div> : <>
+                <div className="p-4 border-b border-border/60 bg-emerald-50/40">
+                  <div className="flex items-start gap-3 justify-between">
+                    <div className="min-w-0">
+                      <p className="text-[10px] uppercase tracking-wide text-emerald-700 font-semibold">Produto selecionado</p>
+                      <p className="mt-1 font-semibold text-sm truncate">{produtoSelecionado.nome}</p>
+                      {produtoSelecionado.receitaId && receitasPorId.get(produtoSelecionado.receitaId) ? <p className="mt-1 text-xs text-emerald-700 flex items-center gap-1"><BookOpen className="w-3 h-3" /> Associado a: {receitasPorId.get(produtoSelecionado.receitaId)?.nome}</p> : <p className="mt-1 text-xs text-amber-700">Ainda sem receita associada.</p>}
+                    </div>
+                    {produtoSelecionado.receitaId && <Button type="button" variant="outline" size="sm" className="gap-1.5 border-red-200 text-red-700 hover:bg-red-50" disabled={associarReceita.isPending} onClick={() => associarReceita.mutate({ produtoId: produtoSelecionado.id, receitaId: null })}><Link2Off className="w-3.5 h-3.5" /> Remover</Button>}
+                  </div>
+                  <div className="relative mt-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                    <Input value={linkerReceitaSearch} onChange={event => setLinkerReceitaSearch(event.target.value)} placeholder="Pesquisar receitas desta fábrica..." className="h-9 pl-8 text-xs bg-background" />
+                  </div>
+                </div>
+                <div className="p-3 overflow-y-auto max-h-[42vh] space-y-2 bg-muted/10">
+                  {receitasCandidatas.length === 0 ? <div className="p-8 text-center text-xs text-muted-foreground"><BookOpen className="w-6 h-6 mx-auto mb-2 opacity-30" />Não existem receitas que correspondam à pesquisa nesta fábrica.</div> : receitasCandidatas.map(receita => {
+                    const associada = produtoSelecionado.receitaId === receita.id;
+                    return <div key={receita.id} className={cn("rounded-lg border p-3 flex items-center gap-3", associada ? "bg-emerald-50 border-emerald-200" : "bg-background border-border/70")}>
+                      <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center shrink-0", associada ? "bg-emerald-100 text-emerald-700" : "bg-muted text-muted-foreground")}><BookOpen className="w-4 h-4" /></div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap"><p className="text-xs font-semibold truncate">{receita.nome}</p><span className="text-[10px] text-muted-foreground">v{receita.versao}</span>{associada && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Associada</span>}</div>
+                        {receita.descricao && <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{receita.descricao.replace(/\n/g, " · ")}</p>}
+                      </div>
+                      <Button type="button" size="sm" variant={associada ? "outline" : "default"} disabled={associada || associarReceita.isPending} onClick={() => associarReceita.mutate({ produtoId: produtoSelecionado.id, receitaId: receita.id })}>{associada ? "Atual" : "Associar"}</Button>
+                    </div>;
+                  })}
+                </div>
+              </>}
+            </section>
           </div>
         </DialogContent>
       </Dialog>

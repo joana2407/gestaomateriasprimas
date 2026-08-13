@@ -5,9 +5,10 @@ import {
   getIngredientesByReceita, getMateriasPrimas, getFabricaById,
   upsertPerfilAlergenico, getPerfilAlergenico,
   getFichasTecnicasProduto, upsertFichaTecnicaProduto,
-  addAuditLog, getReceitaById
+  addAuditLog, getReceitaById, associarReceitaAoProduto
 } from "../db";
 import { calcularPerfilAlergenico, REGRAS_FABRICAS } from "../../shared/allergens";
+import { validarAssociacaoProdutoReceita } from "../../shared/associacao-produto-receita";
 
 export const produtosRouter = router({
   list: publicProcedure
@@ -35,6 +36,11 @@ export const produtosRouter = router({
       gama: z.string().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (input.receitaId) {
+        const receita = await getReceitaById(input.receitaId);
+        if (!receita) throw new Error("Receita não encontrada");
+        validarAssociacaoProdutoReceita(input.fabricaId, receita.fabricaId);
+      }
       const id = await upsertProduto(input as any);
       await addAuditLog({
         entidade: "produto",
@@ -45,6 +51,30 @@ export const produtosRouter = router({
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
       return { id };
+    }),
+
+  associarReceita: protectedProcedure
+    .input(z.object({ produtoId: z.number(), receitaId: z.number().nullable() }))
+    .mutation(async ({ input, ctx }) => {
+      const produto = await getProdutoById(input.produtoId);
+      if (!produto) throw new Error("Produto não encontrado");
+      let receitaNome: string | null = null;
+      if (input.receitaId !== null) {
+        const receita = await getReceitaById(input.receitaId);
+        if (!receita) throw new Error("Receita não encontrada");
+        validarAssociacaoProdutoReceita(produto.fabricaId, receita.fabricaId);
+        receitaNome = receita.nome;
+      }
+      await associarReceitaAoProduto(input.produtoId, input.receitaId);
+      await addAuditLog({
+        entidade: "produto",
+        entidadeId: input.produtoId,
+        acao: "atualizado",
+        dadosNovos: { receitaId: input.receitaId, receitaNome, origem: "associação rápida Produto–Receita" },
+        userId: ctx.user.id,
+        userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
+      });
+      return { produtoId: input.produtoId, receitaId: input.receitaId };
     }),
 
   delete: protectedProcedure
@@ -127,4 +157,3 @@ export const produtosRouter = router({
       return { id, conteudo };
     }),
 });
-

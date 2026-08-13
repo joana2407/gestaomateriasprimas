@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 16/16 testes passados
+- [x] Total: 19/19 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -290,3 +290,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] v3.8: criar como pendentes as MP auxiliares da formulação que não existam na Fábrica III, mantendo o perfil alergénico por validar
 - [x] v3.8: confirmar cálculo do perfil Q1-Q6 para receitas importadas e actualizar testes
 - [x] v3.7: matriz MP_SG importada com 62 MP, 30 presenças via formulação e 19 via contaminação; uma MP nova ficou pendente de FT e validação
+
+## Melhoria v3.9 — Associação interativa Produto–Receita
+
+- [x] Analisar o fluxo atual de produtos e receitas nas três fábricas
+- [x] Criar uma interface interativa de associação Produto–Receita, filtrada pela fábrica respetiva
+- [x] Permitir pesquisa, associação, substituição e remoção segura da receita associada
+- [x] Verificar a integração com o cálculo de perfil alergénico e a geração de FTP
+- [x] Atualizar testes, validar visualmente e criar checkpoint
