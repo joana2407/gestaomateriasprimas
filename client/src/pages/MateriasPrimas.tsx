@@ -68,6 +68,14 @@ interface MPFormData {
   dataValidacao?: Date;
 }
 
+const normalizarFornecedor = (value?: string | null) =>
+  (value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase();
+
 const EMPTY_FORM: MPFormData = {
   nome: "", codigo: "", fabricasIds: [],
   alergeniosFormulacao: [], alergeniosContaminacao: [],
@@ -98,6 +106,9 @@ export default function MateriasPrimas() {
     contactoComercialEmail: "",
     contactoComercialTelemovel: "",
   });
+  const [novoFornecedorErros, setNovoFornecedorErros] = useState<{ nome?: string; codigo?: string }>({});
+  const [novoFornecedorStatus, setNovoFornecedorStatus] = useState<"completo" | "pendente" | "incompleto">("pendente");
+  const [novoFornecedorObservacoes, setNovoFornecedorObservacoes] = useState("");
 
   // Ler parâmetro ?expand=ID da URL para abrir MP diretamente (vindo do painel de fornecedor)
   useEffect(() => {
@@ -259,19 +270,44 @@ export default function MateriasPrimas() {
 
   const handleCreateFornecedor = async () => {
     const nome = novoFornecedor.nome.trim();
+    const codigo = novoFornecedor.codigo.trim();
     if (!nome) {
       toast.error("O nome do fornecedor é obrigatório");
       return;
     }
+
+    const erros: { nome?: string; codigo?: string } = {};
+    const fornecedorComMesmoNome = (fornecedores ?? []).find(
+      fornecedor => normalizarFornecedor(fornecedor.nome) === normalizarFornecedor(nome)
+    );
+    if (fornecedorComMesmoNome) {
+      erros.nome = `Já existe um fornecedor com este nome: “${fornecedorComMesmoNome.nome}”.`;
+    }
+
+    if (codigo) {
+      const fornecedorComMesmoCodigo = (fornecedores ?? []).find(
+        fornecedor => normalizarFornecedor(fornecedor.codigo) === normalizarFornecedor(codigo)
+      );
+      if (fornecedorComMesmoCodigo) {
+        erros.codigo = `Já existe um fornecedor com este código: “${fornecedorComMesmoCodigo.codigo}”.`;
+      }
+    }
+
+    setNovoFornecedorErros(erros);
+    if (Object.keys(erros).length > 0) {
+      toast.error("Corrija os campos assinalados antes de continuar");
+      return;
+    }
+
     try {
       const result = await criarFornecedor.mutateAsync({
         nome,
-        codigo: novoFornecedor.codigo.trim() || undefined,
+        codigo: codigo || undefined,
         contactoComercialNome: novoFornecedor.contactoComercialNome.trim() || undefined,
         contactoComercialEmail: novoFornecedor.contactoComercialEmail.trim() || undefined,
         contactoComercialTelemovel: novoFornecedor.contactoComercialTelemovel.trim() || undefined,
-        statusFornecedor: "pendente",
-        observacoesPendencia: "Informação criada a partir da edição da matéria-prima; completar dados do fornecedor.",
+        statusFornecedor: novoFornecedorStatus,
+        observacoesPendencia: novoFornecedorObservacoes.trim() || null,
       });
       await utils.fornecedores.list.invalidate();
       const seraPreferencial = form.fornecedoresMp.length === 0;
@@ -284,6 +320,9 @@ export default function MateriasPrimas() {
       }
       addFornecedor(result.id);
       setNovoFornecedor({ nome: "", codigo: "", contactoComercialNome: "", contactoComercialEmail: "", contactoComercialTelemovel: "" });
+      setNovoFornecedorErros({});
+      setNovoFornecedorStatus("pendente");
+      setNovoFornecedorObservacoes("");
       setNovoFornecedorOpen(false);
       toast.success(
         form.id
@@ -737,7 +776,7 @@ export default function MateriasPrimas() {
                               : "O fornecedor será criado agora e associado quando guardar a nova MP."}
                           </p>
                         </div>
-                        <button type="button" onClick={() => setNovoFornecedorOpen(false)} className="p-1 rounded-md text-muted-foreground hover:bg-background hover:text-foreground">
+                        <button type="button" onClick={() => { setNovoFornecedorOpen(false); setNovoFornecedorErros({}); setNovoFornecedorStatus("pendente"); setNovoFornecedorObservacoes(""); }} className="p-1 rounded-md text-muted-foreground hover:bg-background hover:text-foreground">
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -746,20 +785,28 @@ export default function MateriasPrimas() {
                           <label className="text-[10px] font-medium text-muted-foreground">Nome do fornecedor *</label>
                           <Input
                             value={novoFornecedor.nome}
-                            onChange={e => setNovoFornecedor(f => ({ ...f, nome: e.target.value }))}
+                            onChange={e => {
+                              setNovoFornecedor(f => ({ ...f, nome: e.target.value }));
+                              setNovoFornecedorErros(errors => ({ ...errors, nome: undefined }));
+                            }}
                             placeholder="Ex: Cereais do Norte"
-                            className="h-8 text-xs"
+                            className={cn("h-8 text-xs", novoFornecedorErros.nome && "border-red-400 focus-visible:ring-red-300")}
                             autoFocus
                           />
+                          {novoFornecedorErros.nome && <p className="text-[10px] text-red-600">{novoFornecedorErros.nome}</p>}
                         </div>
                         <div className="space-y-1">
                           <label className="text-[10px] font-medium text-muted-foreground">Código</label>
                           <Input
                             value={novoFornecedor.codigo}
-                            onChange={e => setNovoFornecedor(f => ({ ...f, codigo: e.target.value }))}
+                            onChange={e => {
+                              setNovoFornecedor(f => ({ ...f, codigo: e.target.value }));
+                              setNovoFornecedorErros(errors => ({ ...errors, codigo: undefined }));
+                            }}
                             placeholder="Código interno"
-                            className="h-8 text-xs"
+                            className={cn("h-8 text-xs", novoFornecedorErros.codigo && "border-red-400 focus-visible:ring-red-300")}
                           />
+                          {novoFornecedorErros.codigo && <p className="text-[10px] text-red-600">{novoFornecedorErros.codigo}</p>}
                         </div>
                       </div>
                       <div className="grid grid-cols-3 gap-2">
@@ -791,6 +838,39 @@ export default function MateriasPrimas() {
                             className="h-8 text-xs"
                           />
                         </div>
+                      </div>
+                      <div className="space-y-2 rounded-lg border border-border/60 bg-background/70 p-3">
+                        <div>
+                          <p className="text-xs font-semibold text-foreground">Controlo de Completude</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            Marque como Completo quando toda a informação está preenchida. Use Pendente ou Incompleto para rastrear o que ainda falta, com detalhes nas observações.
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {([
+                            { id: "completo", label: "✓ Completo", style: "bg-green-50 border-green-300 text-green-700" },
+                            { id: "pendente", label: "⚠ Pendente", style: "bg-amber-50 border-amber-300 text-amber-700" },
+                            { id: "incompleto", label: "✗ Incompleto", style: "bg-red-50 border-red-300 text-red-700" },
+                          ] as const).map(opcao => (
+                            <button
+                              key={opcao.id}
+                              type="button"
+                              onClick={() => setNovoFornecedorStatus(opcao.id)}
+                              className={cn(
+                                "rounded-lg border px-2 py-2 text-[11px] font-semibold transition-colors",
+                                novoFornecedorStatus === opcao.id ? opcao.style : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40"
+                              )}
+                            >
+                              {opcao.label}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={novoFornecedorObservacoes}
+                          onChange={e => setNovoFornecedorObservacoes(e.target.value)}
+                          placeholder="Observações sobre informação ou documentação pendente..."
+                          className="min-h-16 w-full resize-y rounded-lg border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+                        />
                       </div>
                       <div className="flex justify-end gap-2">
                         <Button type="button" variant="ghost" size="sm" onClick={() => setNovoFornecedorOpen(false)}>Cancelar</Button>

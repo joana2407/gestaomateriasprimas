@@ -241,3 +241,21 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Verificar interação e executar testes
 
 - [x] Persistir imediatamente a associação MP↔Fornecedor quando a MP já existe e indicar quando a associação depende de guardar uma MP nova
+
+## Melhoria v3.4 — Validação de fornecedores duplicados
+
+- [x] Impedir criação de fornecedor com nome já existente, ignorando maiúsculas/minúsculas, acentos e espaços extra
+- [x] Impedir criação de fornecedor com código já existente, ignorando maiúsculas/minúsculas e espaços extra
+- [x] Mostrar mensagens de erro específicas no formulário inline
+- [x] Verificar testes e criar checkpoint
+
+- [x] Mostrar erros de duplicação diretamente sob os campos Nome e Código no formulário inline
+- [x] Criar checkpoint após a validação anti-duplicados
+
+## Melhoria v3.5 — Completude no novo fornecedor
+
+- [x] Adicionar a secção “Controlo de Completude” ao formulário inline de novo fornecedor
+- [x] Permitir selecionar Completo, Pendente ou Incompleto
+- [x] Adicionar observações para informação ou documentação em falta
+- [x] Preservar o estado e as observações no fornecedor criado
+- [x] Executar testes e criar checkpoint

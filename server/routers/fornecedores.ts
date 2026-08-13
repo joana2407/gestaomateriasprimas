@@ -103,6 +103,29 @@ export const fornecedoresRouter = router({
       observacoesPendencia: z.string().optional().nullable(),
     }))
     .mutation(async ({ input, ctx }) => {
+      if (!input.id) {
+        const normalizar = (value?: string | null) =>
+          (value ?? "")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, " ")
+            .trim()
+            .toLocaleLowerCase();
+        const fornecedoresAtivos = await getFornecedores();
+        const nomeNormalizado = normalizar(input.nome);
+        const codigoNormalizado = normalizar(input.codigo);
+        const nomeDuplicado = fornecedoresAtivos.find(f => normalizar(f.nome) === nomeNormalizado);
+        if (nomeDuplicado) {
+          throw new Error(`Já existe um fornecedor com o nome “${nomeDuplicado.nome}”.`);
+        }
+        if (codigoNormalizado) {
+          const codigoDuplicado = fornecedoresAtivos.find(f => normalizar(f.codigo) === codigoNormalizado);
+          if (codigoDuplicado) {
+            throw new Error(`Já existe um fornecedor com o código “${codigoDuplicado.codigo}”.`);
+          }
+        }
+      }
+
       const id = await upsertFornecedor(input as any);
       await addAuditLog({
         entidade: "fornecedor",
