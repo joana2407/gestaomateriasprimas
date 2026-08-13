@@ -268,3 +268,24 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Associar fornecedores conforme a lista recebida
 - [x] Manter Vinho do Porto sem fornecedor associado
 - [x] Verificar os registos criados e criar checkpoint
+
+## Dados v3.7 — Matriz de alergénios da Fábrica III
+
+- [ ] Extrair os cabeçalhos, legenda e símbolos da matriz fornecida
+- [ ] Mapear cada símbolo para formulação ou contaminação cruzada
+- [ ] Atualizar as MP da Fábrica III sem alterar outras fábricas
+- [ ] Verificar a correspondência entre MP, fornecedor e alergénios
+- [ ] Criar checkpoint da atualização da matriz
+
+## Dados v3.8 — Receitas da Fábrica III a partir da aba formulação
+
+- [x] Analisar a aba “formulação”, cabeçalhos e linhas de produto
+- [x] Mapear gama, nome, versão e MP assinaladas com “x”
+- [x] Validar correspondência das MP com a base de dados da Fábrica III
+- [x] Criar uma receita por produto para a Fábrica III
+- [x] Registar a gama e a versão nas observações da receita
+- [x] Verificar receitas e ingredientes importados e criar checkpoint
+
+- [x] v3.8: preparar importação idempotente da aba formulação, com relatório de correspondência e sem omitir marcações x
+- [x] v3.8: criar como pendentes as MP auxiliares da formulação que não existam na Fábrica III, mantendo o perfil alergénico por validar
+- [x] v3.8: confirmar cálculo do perfil Q1-Q6 para receitas importadas e actualizar testes
