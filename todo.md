@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 11/11 testes passados
+- [x] Total: 16/16 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -271,11 +271,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 
 ## Dados v3.7 — Matriz de alergénios da Fábrica III
 
-- [ ] Extrair os cabeçalhos, legenda e símbolos da matriz fornecida
-- [ ] Mapear cada símbolo para formulação ou contaminação cruzada
-- [ ] Atualizar as MP da Fábrica III sem alterar outras fábricas
-- [ ] Verificar a correspondência entre MP, fornecedor e alergénios
-- [ ] Criar checkpoint da atualização da matriz
+- [x] Extrair os cabeçalhos, legenda e símbolos da matriz fornecida
+- [x] Mapear cada símbolo para formulação ou contaminação cruzada
+- [x] Atualizar as MP da Fábrica III sem alterar outras fábricas
+- [x] Verificar a correspondência entre MP, fornecedor e alergénios
+- [x] Criar checkpoint da atualização da matriz
 
 ## Dados v3.8 — Receitas da Fábrica III a partir da aba formulação
 
@@ -289,3 +289,4 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] v3.8: preparar importação idempotente da aba formulação, com relatório de correspondência e sem omitir marcações x
 - [x] v3.8: criar como pendentes as MP auxiliares da formulação que não existam na Fábrica III, mantendo o perfil alergénico por validar
 - [x] v3.8: confirmar cálculo do perfil Q1-Q6 para receitas importadas e actualizar testes
+- [x] v3.7: matriz MP_SG importada com 62 MP, 30 presenças via formulação e 19 via contaminação; uma MP nova ficou pendente de FT e validação

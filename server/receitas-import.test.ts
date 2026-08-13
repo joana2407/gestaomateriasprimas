@@ -4,6 +4,7 @@ import {
   FORMULACAO_ALIASES,
   normalizeImportName,
 } from "../shared/receitas-import";
+import { matrixSymbolsToAllergenArrays } from "../shared/mp-sg-matrix";
 
 describe("importação da formulação da Fábrica III", () => {
   it("normaliza acentos, sufixo SG e variações de escrita sem perder a identidade da MP", () => {
@@ -16,6 +17,13 @@ describe("importação da formulação da Fábrica III", () => {
     expect(FORMULACAO_ALIASES[normalizeImportName("Mix Baguette")]).toBe("Mix Baguette SG");
     expect(FORMULACAO_ALIASES[normalizeImportName("Molho Pizza")]).toBe("Molho Tomate (Pizza)");
     expect(FORMULACAO_ALIASES[normalizeImportName("Farinha de milho")]).toBe("Farinho de milho");
+  });
+
+  it("interpreta © e ©* como formulação e c como contaminação cruzada", () => {
+    expect(matrixSymbolsToAllergenArrays({ ovos: "©", sulfitos: "©*", sesamo: "c" })).toEqual({
+      formulacao: ["ovos", "sulfitos"],
+      contaminacao: ["sesamo"],
+    });
   });
 
   it("regista Gama, Versão e linha de origem nas observações da receita", () => {
