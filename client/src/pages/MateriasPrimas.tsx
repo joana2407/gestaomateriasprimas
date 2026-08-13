@@ -90,6 +90,14 @@ export default function MateriasPrimas() {
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores" | "logistica" | "estado">("alergenios");
+  const [novoFornecedorOpen, setNovoFornecedorOpen] = useState(false);
+  const [novoFornecedor, setNovoFornecedor] = useState({
+    nome: "",
+    codigo: "",
+    contactoComercialNome: "",
+    contactoComercialEmail: "",
+    contactoComercialTelemovel: "",
+  });
 
   // Ler parâmetro ?expand=ID da URL para abrir MP diretamente (vindo do painel de fornecedor)
   useEffect(() => {
@@ -118,6 +126,8 @@ export default function MateriasPrimas() {
   const { data: fichas } = trpc.fichasTecnicas.list.useQuery();
 
   const criarValidacao = trpc.materiasPrimas.criarValidacao.useMutation();
+  const criarFornecedor = trpc.fornecedores.upsert.useMutation();
+  const associarMp = trpc.fornecedores.associarMp.useMutation();
   const upsert = trpc.materiasPrimas.upsert.useMutation({
     onSuccess: async () => {
       if (form.id && form.dataValidacao) {
@@ -246,6 +256,44 @@ export default function MateriasPrimas() {
       ...f,
       fornecedoresMp: f.fornecedoresMp.map(x => ({ ...x, preferencial: x.fornecedorId === fornId })),
     }));
+
+  const handleCreateFornecedor = async () => {
+    const nome = novoFornecedor.nome.trim();
+    if (!nome) {
+      toast.error("O nome do fornecedor é obrigatório");
+      return;
+    }
+    try {
+      const result = await criarFornecedor.mutateAsync({
+        nome,
+        codigo: novoFornecedor.codigo.trim() || undefined,
+        contactoComercialNome: novoFornecedor.contactoComercialNome.trim() || undefined,
+        contactoComercialEmail: novoFornecedor.contactoComercialEmail.trim() || undefined,
+        contactoComercialTelemovel: novoFornecedor.contactoComercialTelemovel.trim() || undefined,
+        statusFornecedor: "pendente",
+        observacoesPendencia: "Informação criada a partir da edição da matéria-prima; completar dados do fornecedor.",
+      });
+      await utils.fornecedores.list.invalidate();
+      const seraPreferencial = form.fornecedoresMp.length === 0;
+      if (form.id) {
+        await associarMp.mutateAsync({
+          fornecedorId: result.id,
+          materiaPrimaId: form.id,
+          preferencial: seraPreferencial,
+        });
+      }
+      addFornecedor(result.id);
+      setNovoFornecedor({ nome: "", codigo: "", contactoComercialNome: "", contactoComercialEmail: "", contactoComercialTelemovel: "" });
+      setNovoFornecedorOpen(false);
+      toast.success(
+        form.id
+          ? "Fornecedor criado e associado à matéria-prima"
+          : "Fornecedor criado; a associação será guardada ao criar a matéria-prima"
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível criar o fornecedor");
+    }
+  };
 
   const addSubIngrediente = () =>
     setForm(f => ({ ...f, subIngredientes: [...f.subIngredientes, { nome: "" }] }));
@@ -655,17 +703,103 @@ export default function MateriasPrimas() {
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="text-xs font-medium text-muted-foreground">Adicionar Fornecedor</label>
-                    <Select onValueChange={v => addFornecedor(parseInt(v))}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecionar fornecedor para adicionar..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fornecedores?.filter(f => !form.fornecedoresMp.some(x => x.fornecedorId === f.id)).map(f => (
-                          <SelectItem key={f.id} value={String(f.id)}>{f.nome}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-2">
+                      <Select onValueChange={v => addFornecedor(parseInt(v))}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Selecionar fornecedor para adicionar..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {fornecedores?.filter(f => !form.fornecedoresMp.some(x => x.fornecedorId === f.id)).map(f => (
+                            <SelectItem key={f.id} value={String(f.id)}>{f.nome}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="shrink-0 gap-1.5"
+                        onClick={() => setNovoFornecedorOpen(v => !v)}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Novo fornecedor
+                      </Button>
+                    </div>
                   </div>
+
+                  {novoFornecedorOpen && (
+                    <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">Criar novo fornecedor</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {form.id
+                              ? "O fornecedor será criado e associado automaticamente a esta MP."
+                              : "O fornecedor será criado agora e associado quando guardar a nova MP."}
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => setNovoFornecedorOpen(false)} className="p-1 rounded-md text-muted-foreground hover:bg-background hover:text-foreground">
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-muted-foreground">Nome do fornecedor *</label>
+                          <Input
+                            value={novoFornecedor.nome}
+                            onChange={e => setNovoFornecedor(f => ({ ...f, nome: e.target.value }))}
+                            placeholder="Ex: Cereais do Norte"
+                            className="h-8 text-xs"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-muted-foreground">Código</label>
+                          <Input
+                            value={novoFornecedor.codigo}
+                            onChange={e => setNovoFornecedor(f => ({ ...f, codigo: e.target.value }))}
+                            placeholder="Código interno"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-muted-foreground">Contacto comercial</label>
+                          <Input
+                            value={novoFornecedor.contactoComercialNome}
+                            onChange={e => setNovoFornecedor(f => ({ ...f, contactoComercialNome: e.target.value }))}
+                            placeholder="Nome"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-muted-foreground">E-mail comercial</label>
+                          <Input
+                            type="email"
+                            value={novoFornecedor.contactoComercialEmail}
+                            onChange={e => setNovoFornecedor(f => ({ ...f, contactoComercialEmail: e.target.value }))}
+                            placeholder="email@fornecedor.pt"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[10px] font-medium text-muted-foreground">Telemóvel comercial</label>
+                          <Input
+                            value={novoFornecedor.contactoComercialTelemovel}
+                            onChange={e => setNovoFornecedor(f => ({ ...f, contactoComercialTelemovel: e.target.value }))}
+                            placeholder="912 000 000"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button type="button" variant="ghost" size="sm" onClick={() => setNovoFornecedorOpen(false)}>Cancelar</Button>
+                        <Button type="button" size="sm" onClick={handleCreateFornecedor} disabled={criarFornecedor.isPending || associarMp.isPending || !novoFornecedor.nome.trim()}>
+                          {criarFornecedor.isPending ? "A criar..." : "Criar e associar"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     {form.fornecedoresMp.length === 0 && (
                       <p className="text-xs text-muted-foreground italic text-center py-4">

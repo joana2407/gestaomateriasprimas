@@ -232,3 +232,12 @@
 - [x] Verificar visualmente o formulário e executar testes
 
 A validade individual das FTs por fornecedor e a data da última validação da MP permanecem inalteradas.
+
+## Melhoria v3.3 — Criar fornecedor no formulário de MP
+
+- [x] Adicionar ação “Novo fornecedor” no separador Fornecedores do formulário de MP
+- [x] Criar formulário inline/modal com os dados essenciais do fornecedor
+- [x] Associar automaticamente o novo fornecedor à MP após guardar
+- [x] Verificar interação e executar testes
+
+- [x] Persistir imediatamente a associação MP↔Fornecedor quando a MP já existe e indicar quando a associação depende de guardar uma MP nova
