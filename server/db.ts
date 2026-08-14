@@ -89,6 +89,68 @@ export async function getOperadoresPinAtivos() {
   }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(eq(operadoresPin.ativo, true)).orderBy(users.name);
 }
 
+export async function getOperadoresPinGeriveis() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    operadorId: operadoresPin.id,
+    userId: users.id,
+    name: users.name,
+    role: users.role,
+    ativo: operadoresPin.ativo,
+    ultimoAcessoEm: operadoresPin.ultimoAcessoEm,
+    criadoEm: operadoresPin.criadoEm,
+  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).orderBy(users.name);
+}
+
+export async function getOperadorPinGerivelPorId(operadorId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({ operadorId: operadoresPin.id, userId: users.id, ativo: operadoresPin.ativo }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(eq(operadoresPin.id, operadorId)).limit(1);
+  return result[0];
+}
+
+export async function getUtilizadorComPinAtivo(userId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({
+    id: users.id,
+    openId: users.openId,
+    name: users.name,
+    email: users.email,
+    loginMethod: users.loginMethod,
+    role: users.role,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(and(eq(operadoresPin.userId, userId), eq(operadoresPin.ativo, true))).limit(1);
+  return result[0];
+}
+
+export async function criarOperadorPin(data: { openId: string; nome: string; role: "logistica" | "qualidade"; pinHash: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const userResult = await db.insert(users).values({ openId: data.openId, name: data.nome, loginMethod: "pin", role: data.role });
+  const userId = (userResult[0] as any).insertId as number;
+  const operadorResult = await db.insert(operadoresPin).values({ userId, pinHash: data.pinHash, ativo: true });
+  return { operadorId: (operadorResult[0] as any).insertId as number, userId };
+}
+
+export async function atualizarOperadorPin(operadorId: number, data: { ativo?: boolean; role?: "logistica" | "qualidade"; pinHash?: string }) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const operador = await db.select().from(operadoresPin).where(eq(operadoresPin.id, operadorId)).limit(1);
+  if (!operador[0]) throw new Error("Operador não encontrado");
+  if (data.ativo !== undefined || data.pinHash !== undefined) {
+    await db.update(operadoresPin).set({
+      ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
+      ...(data.pinHash !== undefined ? { pinHash: data.pinHash } : {}),
+    }).where(eq(operadoresPin.id, operadorId));
+  }
+  if (data.role) await db.update(users).set({ role: data.role, updatedAt: new Date() }).where(eq(users.id, operador[0].userId));
+  return operador[0].userId;
+}
+
 export async function getOperadorAtivoPorIdEPinHash(operadorId: number, pinHash: string) {
   const db = await getDb();
   if (!db) return undefined;

@@ -14,6 +14,7 @@ import { rececoesRouter } from "./routers/rececoes";
 import { utilizadoresRouter } from "./routers/utilizadores";
 import { notificacoesRouter } from "./routers/notificacoes";
 import { acessoPinRouter } from "./routers/acessoPin";
+import { operadoresRouter } from "./routers/operadores";
 import { PIN_SESSION_COOKIE } from "./_core/pinSession";
 
 export const appRouter = router({
@@ -39,6 +40,7 @@ export const appRouter = router({
   utilizadores: utilizadoresRouter,
   notificacoes: notificacoesRouter,
   acessoPin: acessoPinRouter,
+  operadores: operadoresRouter,
 });
 
 export type AppRouter = typeof appRouter;

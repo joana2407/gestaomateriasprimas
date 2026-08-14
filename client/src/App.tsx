@@ -45,6 +45,7 @@ function Router() {
       <Route path="/notificacoes" component={() => <QualidadeRoute component={Notificacoes} />} />
       <Route path="/importacao" component={() => <QualidadeRoute component={Importacao} />} />
       <Route path="/utilizadores" component={() => <QualidadeRoute component={Utilizadores} />} />
+      <Route path="/configuracoes" component={() => <QualidadeRoute component={Utilizadores} />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

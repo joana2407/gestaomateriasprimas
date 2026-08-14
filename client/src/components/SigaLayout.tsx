@@ -24,7 +24,7 @@ const NAV_ITEMS = [
   { href: "/historico", icon: BarChart3, label: "Histórico", group: "documentos" },
   { href: "/notificacoes", icon: Bell, label: "Notificações", group: "documentos" },
   { href: "/importacao", icon: Settings, label: "Importação", group: "config" },
-  { href: "/utilizadores", icon: ShieldCheck, label: "Utilizadores", group: "config" },
+  { href: "/configuracoes", icon: ShieldCheck, label: "Configurações", group: "config" },
 ];
 
 const GROUPS = [

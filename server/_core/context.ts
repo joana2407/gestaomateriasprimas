@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User } from "../../drizzle/schema";
-import { getUserById } from "../db";
+import { getUtilizadorComPinAtivo } from "../db";
 import { lerUtilizadorSessaoPin } from "./pinSession";
 
 export type TrpcContext = {
@@ -16,7 +16,7 @@ export async function createContext(
 
   try {
     const userIdPin = await lerUtilizadorSessaoPin(opts.req);
-    if (userIdPin) user = await getUserById(userIdPin) ?? null;
+    if (userIdPin) user = await getUtilizadorComPinAtivo(userIdPin) ?? null;
   } catch (error) {
     // Authentication is optional for public procedures.
     user = null;

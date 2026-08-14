@@ -32,4 +32,9 @@ describe("perfis Logística e Qualidade", () => {
     const caller = appRouter.createCaller(criarContexto("logistica"));
     await expect(caller.notificacoes.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+
+  it("bloqueia a gestão de operadores para o perfil de Logística", async () => {
+    const caller = appRouter.createCaller(criarContexto("logistica"));
+    await expect(caller.operadores.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 });
