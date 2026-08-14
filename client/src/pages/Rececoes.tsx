@@ -152,9 +152,10 @@ export default function Rececoes() {
     return Number.isInteger(value) && value > 0 ? value : null;
   });
 
-  const { data: fabricas } = trpc.fabricas.list.useQuery();
-  const { data: fornecedores } = trpc.fornecedores.list.useQuery();
-  const { data: materiasPrimas } = trpc.materiasPrimas.list.useQuery();
+  const { data: contextoOperacional } = trpc.rececoes.contextoOperacional.useQuery();
+  const fabricas = contextoOperacional?.fabricas;
+  const fornecedores = contextoOperacional?.fornecedores;
+  const materiasPrimas = contextoOperacional?.materiasPrimas;
   const { data: rececoes, refetch } = trpc.rececoes.list.useQuery({
     fabricaId: fabricaFilter === "all" ? undefined : Number(fabricaFilter),
     armazem: armazemFilter === "all" ? undefined : armazemFilter as "ambiente_secos" | "frio" | "embalagens",

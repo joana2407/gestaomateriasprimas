@@ -4,6 +4,8 @@ import {
   addAuditLog,
   criarNotificacaoQualidade,
   deleteRececaoMateriaPrima,
+  getFabricas,
+  getFornecedores,
   getMateriasPrimas,
   getMpFornecedores,
   getRececaoMateriaPrimaById,
@@ -51,6 +53,15 @@ const rececaoInput = z.object({
 });
 
 export const rececoesRouter = router({
+  contextoOperacional: rececoesProcedure.query(async () => {
+    const [fabricas, fornecedores, materiasPrimas] = await Promise.all([
+      getFabricas(),
+      getFornecedores(),
+      getMateriasPrimas(),
+    ]);
+    return { fabricas, fornecedores, materiasPrimas };
+  }),
+
   list: rececoesProcedure
     .input(z.object({
       fabricaId: z.number().optional(),

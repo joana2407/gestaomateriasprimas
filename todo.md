@@ -372,3 +372,16 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Implementar autenticação e encerramento de sessão por PIN
 - [x] Aplicar a sessão por PIN às permissões e à interface
 - [x] Validar perfis, segurança e testes e criar checkpoint
+
+## Melhoria v4.11 — Seleção de utilizador no acesso por PIN
+
+- [x] Expor os operadores ativos no painel de acesso sem revelar PINs
+- [x] Permitir selecionar o utilizador antes de introduzir o PIN
+- [x] Validar que o PIN corresponde ao utilizador selecionado
+- [x] Validar interface, testes e criar checkpoint
+
+## Correção v4.10 — Consulta operacional de Receções para Logística
+
+- [x] Identificar a consulta de Receções que ainda requer Qualidade
+- [x] Autorizar a Logística apenas na consulta operacional necessária
+- [x] Validar o perfil Logística, testes e criar checkpoint

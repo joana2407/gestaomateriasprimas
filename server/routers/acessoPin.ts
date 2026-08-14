@@ -3,17 +3,19 @@ import { z } from "zod";
 import { getSessionCookieOptions } from "../_core/cookies";
 import { criarTokenSessaoPin, PIN_SESSION_COOKIE, PIN_SESSION_MAX_AGE_MS } from "../_core/pinSession";
 import { anonymousProcedure, router } from "../_core/trpc";
-import { addAuditLog, getOperadorAtivoPorPinHash, registarAcessoOperador } from "../db";
+import { addAuditLog, getOperadorAtivoPorIdEPinHash, getOperadoresPinAtivos, registarAcessoOperador } from "../db";
 
 const pinSchema = z.string().regex(/^\d{4}$/, "Introduza um PIN de quatro dígitos.");
 const hashPin = (pin: string) => createHash("sha256").update(pin).digest("hex");
 
 export const acessoPinRouter = router({
+  operadores: anonymousProcedure.query(async () => getOperadoresPinAtivos()),
+
   entrar: anonymousProcedure
-    .input(z.object({ pin: pinSchema }))
+    .input(z.object({ operadorId: z.number().int().positive(), pin: pinSchema }))
     .mutation(async ({ input, ctx }) => {
-      const operador = await getOperadorAtivoPorPinHash(hashPin(input.pin));
-      if (!operador) throw new Error("PIN inválido ou acesso inativo.");
+      const operador = await getOperadorAtivoPorIdEPinHash(input.operadorId, hashPin(input.pin));
+      if (!operador) throw new Error("O PIN não corresponde ao utilizador selecionado ou o acesso está inativo.");
 
       await registarAcessoOperador(operador.operadorId, operador.userId);
       const token = await criarTokenSessaoPin(operador.userId);

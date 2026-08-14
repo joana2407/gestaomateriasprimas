@@ -78,7 +78,18 @@ export async function getUserById(id: number) {
   return result[0];
 }
 
-export async function getOperadorAtivoPorPinHash(pinHash: string) {
+export async function getOperadoresPinAtivos() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    operadorId: operadoresPin.id,
+    userId: users.id,
+    name: users.name,
+    role: users.role,
+  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(eq(operadoresPin.ativo, true)).orderBy(users.name);
+}
+
+export async function getOperadorAtivoPorIdEPinHash(operadorId: number, pinHash: string) {
   const db = await getDb();
   if (!db) return undefined;
   const result = await db.select({
@@ -92,7 +103,7 @@ export async function getOperadorAtivoPorPinHash(pinHash: string) {
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,
     lastSignedIn: users.lastSignedIn,
-  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(and(eq(operadoresPin.pinHash, pinHash), eq(operadoresPin.ativo, true))).limit(1);
+  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(and(eq(operadoresPin.id, operadorId), eq(operadoresPin.pinHash, pinHash), eq(operadoresPin.ativo, true))).limit(1);
   return result[0];
 }
 
