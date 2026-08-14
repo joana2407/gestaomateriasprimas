@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 35/35 testes passados
+- [x] Total: 37/37 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -350,3 +350,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Restringir a Logística ao módulo de Receções no backend e na navegação
 - [x] Reservar à Qualidade a eliminação de receções, com registo de auditoria
 - [x] Validar permissões, testes e criar checkpoint
+
+## Regra funcional v4.7 — Alerta de observações em receções
+
+- [x] Analisar o registo de receções e o canal de notificação de Qualidade
+- [x] Notificar a Qualidade quando uma receção tiver observações
+- [x] Validar a condição de alerta, testes e criar checkpoint

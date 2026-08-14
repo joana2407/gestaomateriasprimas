@@ -159,6 +159,7 @@ export default function Rececoes() {
   const upsert = trpc.rececoes.upsert.useMutation({
     onSuccess: data => {
       toast.success(data.conformidade === "nao_conforme" ? "Receção registada como não conforme" : "Receção registada com sucesso");
+      if (data.notificacaoQualidadeEnviada) toast.info("A Qualidade foi notificada das observações.");
       setDialogOpen(false);
       refetch();
     },

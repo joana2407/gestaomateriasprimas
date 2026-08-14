@@ -11,6 +11,8 @@ import {
 } from "../db";
 import { calcularConformidadeRececao, type ControlosRececao } from "../../shared/rececao-controlos";
 import { UNIDADES_RECECAO_IDS } from "../../shared/rececao-unidades";
+import { resumirObservacoesRececao, temObservacoesRececao } from "../../shared/rececao-observacoes";
+import { notifyOwner } from "../_core/notification";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -102,7 +104,18 @@ export const rececoesRouter = router({
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
-      return { id, conformidade };
+      let notificacaoQualidadeEnviada = false;
+      if (temObservacoesRececao(input.observacoes)) {
+        try {
+          notificacaoQualidadeEnviada = await notifyOwner({
+            title: `Receção #${id} com observações`,
+            content: `A matéria-prima “${materiaPrima.nome}” foi ${input.id ? "atualizada" : "registada"} com observações por ${ctx.user.name ?? ctx.user.email ?? "um utilizador"}.\n\nObservações: ${resumirObservacoesRececao(input.observacoes!)}`,
+          });
+        } catch (error) {
+          console.warn("[Receções] Não foi possível enviar a notificação de Qualidade", error);
+        }
+      }
+      return { id, conformidade, notificacaoQualidadeEnviada };
     }),
 
   delete: qualidadeProcedure
