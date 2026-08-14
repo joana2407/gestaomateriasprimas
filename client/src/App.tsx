@@ -15,6 +15,7 @@ import FichasProduto from "./pages/FichasProduto";
 import Historico from "./pages/Historico";
 import Importacao from "./pages/Importacao";
 import Fabricas from "./pages/Fabricas";
+import Rececoes from "./pages/Rececoes";
 
 function Router() {
   return (
@@ -27,6 +28,7 @@ function Router() {
       <Route path="/receitas" component={Receitas} />
       <Route path="/produtos" component={Produtos} />
       <Route path="/sequenciamento" component={Sequenciamento} />
+      <Route path="/rececoes" component={Rececoes} />
       <Route path="/fichas-produto" component={FichasProduto} />
       <Route path="/historico" component={Historico} />
       <Route path="/importacao" component={Importacao} />
@@ -50,4 +52,3 @@ function App() {
 }
 
 export default App;
-

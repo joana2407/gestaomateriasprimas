@@ -15,6 +15,13 @@
       "when": 1785259413052,
       "tag": "0001_complex_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1786696673101,
+      "tag": "0002_create_rececoes_materias_primas",
+      "breakpoints": true
     }
   ]
 }

@@ -252,6 +252,34 @@ export const fichasTecnicasProduto = mysqlTable("fichas_tecnicas_produto", {
 });
 export type FichaTecnicaProduto = typeof fichasTecnicasProduto.$inferSelect;
 
+// ─── RECEÇÕES DE MATÉRIAS-PRIMAS ──────────────────────────────────────────────
+// Cada receção é registada na fábrica e no armazém de destino. Os pontos C/NC/NA
+// do controlo de receção são mantidos no campo JSON para preservar o modelo
+// operacional e permitir acrescentar verificações sem alterar a estrutura base.
+export const rececoesMateriasPrimas = mysqlTable("rececoes_materias_primas", {
+  id: int("id").autoincrement().primaryKey(),
+  fabricaId: int("fabrica_id").notNull().references(() => fabricas.id),
+  armazem: mysqlEnum("armazem", ["ambiente_secos", "frio", "embalagens"]).notNull(),
+  dataRececao: timestamp("data_rececao").notNull(),
+  fornecedorId: int("fornecedor_id").notNull().references(() => fornecedores.id),
+  materiaPrimaId: int("materia_prima_id").notNull().references(() => materiasPrimas.id),
+  validade: date("validade"),
+  lote: varchar("lote", { length: 100 }),
+  quantidade: float("quantidade").notNull(),
+  unidade: mysqlEnum("unidade", ["kg", "g", "l", "un", "caixa", "saco", "palete", "bigbag"]).default("kg").notNull(),
+  controlos: json("controlos"),
+  conformidade: mysqlEnum("conformidade", ["conforme", "nao_conforme", "pendente"]).default("pendente").notNull(),
+  numeroPaletesLpr: int("numero_paletes_lpr"),
+  responsavel: varchar("responsavel", { length: 150 }).notNull(),
+  numeroGuia: varchar("numero_guia", { length: 100 }),
+  observacoes: text("observacoes"),
+  motivoNaoConformidade: text("motivo_nao_conformidade"),
+  registadoPor: int("registado_por").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RececaoMateriaPrima = typeof rececoesMateriasPrimas.$inferSelect;
+
 // ─── HISTÓRICO DE VALIDAÇÕES DE MP ───────────────────────────────────────────
 export const validacoesMp = mysqlTable("validacoes_mp", {
   id: int("id").autoincrement().primaryKey(),

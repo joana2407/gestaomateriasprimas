@@ -12,6 +12,7 @@ import {
   mpFornecedores,
   perfilAlergenicoProduto,
   produtos,
+  rececoesMateriasPrimas,
   receitas,
   users,
 } from "../drizzle/schema";
@@ -369,6 +370,60 @@ export async function associarReceitaAoProduto(produtoId: number, receitaId: num
   if (!db) throw new Error("DB not available");
   await db.update(produtos).set({ receitaId, updatedAt: new Date() }).where(eq(produtos.id, produtoId));
   await db.delete(perfilAlergenicoProduto).where(eq(perfilAlergenicoProduto.produtoId, produtoId));
+}
+
+// ─── RECEÇÕES DE MATÉRIAS-PRIMAS ──────────────────────────────────────────────
+export async function getRececoesMateriasPrimas(filtros?: { fabricaId?: number; armazem?: string; conformidade?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  const condicoes = [];
+  if (filtros?.fabricaId) condicoes.push(eq(rececoesMateriasPrimas.fabricaId, filtros.fabricaId));
+  if (filtros?.armazem) condicoes.push(eq(rececoesMateriasPrimas.armazem, filtros.armazem as any));
+  if (filtros?.conformidade) condicoes.push(eq(rececoesMateriasPrimas.conformidade, filtros.conformidade as any));
+  const query = db.select({
+    id: rececoesMateriasPrimas.id,
+    fabricaId: rececoesMateriasPrimas.fabricaId,
+    armazem: rececoesMateriasPrimas.armazem,
+    dataRececao: rececoesMateriasPrimas.dataRececao,
+    fornecedorId: rececoesMateriasPrimas.fornecedorId,
+    fornecedorNome: fornecedores.nome,
+    materiaPrimaId: rececoesMateriasPrimas.materiaPrimaId,
+    materiaPrimaNome: materiasPrimas.nome,
+    validade: rececoesMateriasPrimas.validade,
+    lote: rececoesMateriasPrimas.lote,
+    quantidade: rececoesMateriasPrimas.quantidade,
+    unidade: rececoesMateriasPrimas.unidade,
+    controlos: rececoesMateriasPrimas.controlos,
+    conformidade: rececoesMateriasPrimas.conformidade,
+    numeroPaletesLpr: rececoesMateriasPrimas.numeroPaletesLpr,
+    responsavel: rececoesMateriasPrimas.responsavel,
+    numeroGuia: rececoesMateriasPrimas.numeroGuia,
+    observacoes: rececoesMateriasPrimas.observacoes,
+    motivoNaoConformidade: rececoesMateriasPrimas.motivoNaoConformidade,
+    createdAt: rececoesMateriasPrimas.createdAt,
+  }).from(rececoesMateriasPrimas)
+    .innerJoin(fornecedores, eq(rececoesMateriasPrimas.fornecedorId, fornecedores.id))
+    .innerJoin(materiasPrimas, eq(rececoesMateriasPrimas.materiaPrimaId, materiasPrimas.id));
+  if (condicoes.length) return query.where(and(...condicoes)).orderBy(desc(rececoesMateriasPrimas.dataRececao));
+  return query.orderBy(desc(rececoesMateriasPrimas.dataRececao));
+}
+
+export async function getRececaoMateriaPrimaById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id)).limit(1);
+  return result[0];
+}
+
+export async function upsertRececaoMateriaPrima(data: typeof rececoesMateriasPrimas.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  if (data.id) {
+    await db.update(rececoesMateriasPrimas).set({ ...data, updatedAt: new Date() }).where(eq(rececoesMateriasPrimas.id, data.id));
+    return data.id;
+  }
+  const result = await db.insert(rececoesMateriasPrimas).values(data);
+  return (result[0] as any).insertId as number;
 }
 
 // ─── PERFIL ALERGÉNICO ────────────────────────────────────────────────────────

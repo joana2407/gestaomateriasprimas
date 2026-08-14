@@ -3,7 +3,7 @@ import { startLogin } from "@/const";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, BarChart3, BookOpen, ChevronRight,
-  ClipboardList, Factory, FileText, FlaskConical,
+  ClipboardCheck, ClipboardList, Factory, FileText, FlaskConical,
   Home, LogOut, Menu, Package, Settings, ShieldCheck, Upload, Users, X
 } from "lucide-react";
 import { useState } from "react";
@@ -15,6 +15,7 @@ const NAV_ITEMS = [
   { href: "/materias-primas", icon: Package, label: "Matérias-Primas", group: "gestao" },
   { href: "/fornecedores", icon: Users, label: "Fornecedores", group: "gestao" },
   { href: "/fichas-tecnicas", icon: Upload, label: "Fichas Técnicas", group: "gestao" },
+  { href: "/rececoes", icon: ClipboardCheck, label: "Receções", group: "gestao" },
   { href: "/receitas", icon: BookOpen, label: "Receitas", group: "producao" },
   { href: "/produtos", icon: FlaskConical, label: "Produtos", group: "producao" },
   { href: "/sequenciamento", icon: ClipboardList, label: "Sequenciamento", group: "producao" },
@@ -175,4 +176,3 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
     </div>
   );
 }
-

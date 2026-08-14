@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 19/19 testes passados
+- [x] Total: 24/24 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -298,3 +298,12 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Permitir pesquisa, associação, substituição e remoção segura da receita associada
 - [x] Verificar a integração com o cálculo de perfil alergénico e a geração de FTP
 - [x] Atualizar testes, validar visualmente e criar checkpoint
+
+## Melhoria v4.0 — Receção de Matérias-Primas
+
+- [x] Extrair e confirmar os campos de controlo do modelo de receção fornecido
+- [x] Criar o modelo de dados de receções, incluindo fábrica, armazém, fornecedor, MP, lote, validade, quantidade e responsável
+- [x] Disponibilizar os três armazéns por fábrica: Ambiente/Secos, Frio e Embalagens
+- [x] Registar os controlos de veículo, MP saco/granel, palete, produto e decisão de conformidade
+- [x] Criar uma interface de registo e consulta com filtros, indicadores de conformidade e tratamento de não conformidades
+- [x] Validar testes, interface e criar checkpoint
