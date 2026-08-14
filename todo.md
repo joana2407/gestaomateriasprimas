@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 38/38 testes passados
+- [x] Total: 40/40 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -364,3 +364,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Guardar uma notificação interna ao registar observações numa receção
 - [x] Implementar o centro de notificações e a abertura direta da receção
 - [x] Validar testes, interface e criar checkpoint
+
+## Regra funcional v4.9 — Controlo de acesso por PIN
+
+- [x] Definir operadores, perfis e regras de sessão por PIN
+- [x] Criar persistência de PIN com hash e migração dos operadores iniciais
+- [x] Implementar autenticação e encerramento de sessão por PIN
+- [x] Aplicar a sessão por PIN às permissões e à interface
+- [x] Validar perfis, segurança e testes e criar checkpoint

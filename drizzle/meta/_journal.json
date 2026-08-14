@@ -50,6 +50,13 @@
       "when": 1786703383655,
       "tag": "0006_create_notificacoes_qualidade",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1786704648213,
+      "tag": "0007_create_operadores_pin",
+      "breakpoints": true
     }
   ]
 }

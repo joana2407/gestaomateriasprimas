@@ -12,6 +12,7 @@ import {
   materiasPrimasFabricas,
   mpFornecedores,
   notificacoesQualidade,
+  operadoresPin,
   perfilAlergenicoProduto,
   produtos,
   rececoesMateriasPrimas,
@@ -68,6 +69,39 @@ export async function atualizarPerfilUtilizador(id: number, role: "logistica" | 
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
+}
+
+export async function getUserById(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(users).where(eq(users.id, id)).limit(1);
+  return result[0];
+}
+
+export async function getOperadorAtivoPorPinHash(pinHash: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select({
+    operadorId: operadoresPin.id,
+    userId: users.id,
+    openId: users.openId,
+    name: users.name,
+    email: users.email,
+    loginMethod: users.loginMethod,
+    role: users.role,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt,
+    lastSignedIn: users.lastSignedIn,
+  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(and(eq(operadoresPin.pinHash, pinHash), eq(operadoresPin.ativo, true))).limit(1);
+  return result[0];
+}
+
+export async function registarAcessoOperador(operadorId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const agora = new Date();
+  await db.update(operadoresPin).set({ ultimoAcessoEm: agora }).where(eq(operadoresPin.id, operadorId));
+  await db.update(users).set({ lastSignedIn: agora }).where(eq(users.id, userId));
 }
 
 // ─── FÁBRICAS ─────────────────────────────────────────────────────────────────

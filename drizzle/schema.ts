@@ -27,6 +27,18 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
+// ─── OPERADORES COM ACESSO POR PIN ────────────────────────────────────────────
+export const operadoresPin = mysqlTable("operadores_pin", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("user_id").notNull().references(() => users.id).unique(),
+  pinHash: varchar("pin_hash", { length: 64 }).notNull().unique(),
+  ativo: boolean("ativo").default(true).notNull(),
+  ultimoAcessoEm: timestamp("ultimo_acesso_em"),
+  criadoEm: timestamp("criado_em").defaultNow().notNull(),
+  atualizadoEm: timestamp("atualizado_em").defaultNow().onUpdateNow().notNull(),
+});
+export type OperadorPin = typeof operadoresPin.$inferSelect;
+
 // ─── FÁBRICAS ─────────────────────────────────────────────────────────────────
 export const fabricas = mysqlTable("fabricas", {
   id: int("id").autoincrement().primaryKey(),

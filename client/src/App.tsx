@@ -19,6 +19,7 @@ import Rececoes from "./pages/Rececoes";
 import Utilizadores from "./pages/Utilizadores";
 import Notificacoes from "./pages/Notificacoes";
 import { useAuth } from "./_core/hooks/useAuth";
+import AcessoPin from "./pages/AcessoPin";
 
 function QualidadeRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
@@ -50,13 +51,19 @@ function Router() {
   );
 }
 
+function AppAccessGate() {
+  const { isAuthenticated, loading } = useAuth();
+  if (loading) return <div className="min-h-screen grid place-items-center text-sm text-muted-foreground">A verificar acesso...</div>;
+  return isAuthenticated ? <Router /> : <AcessoPin />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
           <Toaster richColors position="top-right" />
-          <Router />
+          <AppAccessGate />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

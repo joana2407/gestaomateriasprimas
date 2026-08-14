@@ -13,6 +13,8 @@ import { importacaoRouter } from "./routers/importacao";
 import { rececoesRouter } from "./routers/rececoes";
 import { utilizadoresRouter } from "./routers/utilizadores";
 import { notificacoesRouter } from "./routers/notificacoes";
+import { acessoPinRouter } from "./routers/acessoPin";
+import { PIN_SESSION_COOKIE } from "./_core/pinSession";
 
 export const appRouter = router({
   system: systemRouter,
@@ -21,6 +23,7 @@ export const appRouter = router({
     logout: anonymousProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      ctx.res.clearCookie(PIN_SESSION_COOKIE, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
   }),
@@ -35,6 +38,7 @@ export const appRouter = router({
   rececoes: rececoesRouter,
   utilizadores: utilizadoresRouter,
   notificacoes: notificacoesRouter,
+  acessoPin: acessoPinRouter,
 });
 
 export type AppRouter = typeof appRouter;
