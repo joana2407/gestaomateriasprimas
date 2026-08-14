@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 24/24 testes passados
+- [x] Total: 27/27 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -313,3 +313,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Inspecionar o painel de controlos de receção em desktop e mobile
 - [x] Corrigir sobreposições com uma grelha responsiva e áreas de ação separadas
 - [x] Validar visualmente, executar testes e criar checkpoint
+
+## Regra funcional v4.2 — Estado operacional por MP × Fábrica
+
+- [x] Analisar as dependências do estado global de MP e os dados atuais por fábrica
+- [x] Criar a relação MP × Fábrica com estado Ativa, Para testes ou Inativa
+- [x] Migrar os estados existentes sem perder a associação atual das MP às fábricas
+- [x] Atualizar os formulários, badges, filtros e validações para usar o estado da fábrica selecionada
+- [x] Validar a regra com testes e criar checkpoint

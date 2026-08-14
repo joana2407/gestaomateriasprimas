@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
+import { ESTADOS_MP_FABRICA, getEstadoMpFabrica, type EstadoMpFabrica } from "../../../shared/mp-factory-status";
 import {
   AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
   Package, Plus, Search, Star, Trash2, X, GripVertical, Truck, Info, Upload, Calendar, CheckCircle2
@@ -43,6 +44,7 @@ interface MPFormData {
   nome: string;
   codigo: string;
   fabricasIds: number[];
+  fabricasEstado: Array<{ fabricaId: number; estado: EstadoMpFabrica }>;
   alergeniosFormulacao: AlergenioId[];
   alergeniosContaminacao: AlergenioId[];
   observacoes: string;
@@ -63,8 +65,6 @@ interface MPFormData {
   // Estado de completude
   statusMp?: "completo" | "pendente" | "incompleto";
   observacoesPendencia?: string | null;
-  // Categorização e validação
-  categoria?: "em_utilizacao" | "obsoleta" | "para_testes";
   dataValidacao?: Date;
 }
 
@@ -77,14 +77,13 @@ const normalizarFornecedor = (value?: string | null) =>
     .toLocaleLowerCase();
 
 const EMPTY_FORM: MPFormData = {
-  nome: "", codigo: "", fabricasIds: [],
+  nome: "", codigo: "", fabricasIds: [], fabricasEstado: [],
   alergeniosFormulacao: [], alergeniosContaminacao: [],
   observacoes: "", tipo: "simples", paisOrigem: "",
   subIngredientes: [], fornecedoresMp: [],
   formaFornecimento: null, kgPorSaco: null, sacosPorPalete: null, kgPorBigbag: null, observacoesLogistica: null,
   formasFornecimento: [], unidadesPorCaixa: null, caixasPorPalete: null,
   statusMp: "completo", observacoesPendencia: null,
-  categoria: "em_utilizacao",
 };
 
 export default function MateriasPrimas() {
@@ -93,7 +92,7 @@ export default function MateriasPrimas() {
   const [fabricaFilter, setFabricaFilter] = useState<string>("all");
   const [fornecedorFilter, setFornecedorFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [categoriaFilter, setCategoriaFilter] = useState<string>("all");
+  const [estadoFabricaFilter, setEstadoFabricaFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -181,10 +180,13 @@ export default function MateriasPrimas() {
       const matchFornecedor = fornecedorFilter === "all" ||
         ((mp as any).fornecedoresIds as number[] ?? []).some((id: number) => String(id) === fornecedorFilter);
       const matchStatus = statusFilter === "all" || ((mp as any).statusMp ?? "completo") === statusFilter;
-      const matchCategoria = categoriaFilter === "all" || ((mp as any).categoria ?? "em_utilizacao") === categoriaFilter;
-      return matchSearch && matchFornecedor && matchStatus && matchCategoria;
+      const estadosPorFabrica = ((mp as any).fabricasEstado ?? []) as Array<{ fabricaId: number; estado: EstadoMpFabrica }>;
+      const matchEstadoFabrica = estadoFabricaFilter === "all" || estadosPorFabrica.some(rel =>
+        rel.estado === estadoFabricaFilter && (fabricaFilter === "all" || rel.fabricaId === Number(fabricaFilter))
+      );
+      return matchSearch && matchFornecedor && matchStatus && matchEstadoFabrica;
     });
-  }, [mps, search, fornecedorFilter, statusFilter, categoriaFilter]);
+  }, [mps, search, fornecedorFilter, statusFilter, estadoFabricaFilter, fabricaFilter]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
   const openEdit = useCallback(async (mpId: number) => {
@@ -198,6 +200,7 @@ export default function MateriasPrimas() {
         nome: mpDetalhes.nome,
         codigo: mpDetalhes.codigo ?? "",
         fabricasIds: (mpDetalhes.fabricasIds as number[]) ?? [],
+        fabricasEstado: ((mpDetalhes as any).fabricasEstado ?? []).map((rel: any) => ({ fabricaId: rel.fabricaId, estado: rel.estado as EstadoMpFabrica })),
         alergeniosFormulacao: (mpDetalhes.alergeniosFormulacao as AlergenioId[]) ?? [],
         alergeniosContaminacao: (mpDetalhes.alergeniosContaminacao as AlergenioId[]) ?? [],
         observacoes: mpDetalhes.observacoes ?? "",
@@ -226,7 +229,6 @@ export default function MateriasPrimas() {
         caixasPorPalete: (mpDetalhes as any).caixasPorPalete ?? null,
         statusMp: (mpDetalhes as any).statusMp ?? "completo",
         observacoesPendencia: (mpDetalhes as any).observacoesPendencia ?? null,
-        categoria: (mpDetalhes as any).categoria ?? "em_utilizacao",
         dataValidacao: (mpDetalhes as any).dataValidacao ? new Date((mpDetalhes as any).dataValidacao) : undefined,
       });
       setActiveTab("alergenios");
@@ -241,12 +243,15 @@ export default function MateriasPrimas() {
       .sort((a, b) => new Date(b.dataValidade).getTime() - new Date(a.dataValidade).getTime())[0];
 
   const toggleFabrica = (fabId: number) =>
-    setForm(f => ({
-      ...f,
-      fabricasIds: f.fabricasIds.includes(fabId)
-        ? f.fabricasIds.filter(id => id !== fabId)
-        : [...f.fabricasIds, fabId],
-    }));
+    setForm(f => {
+      const associada = f.fabricasIds.includes(fabId);
+      return associada
+        ? { ...f, fabricasIds: f.fabricasIds.filter(id => id !== fabId), fabricasEstado: f.fabricasEstado.filter(rel => rel.fabricaId !== fabId) }
+        : { ...f, fabricasIds: [...f.fabricasIds, fabId], fabricasEstado: [...f.fabricasEstado, { fabricaId: fabId, estado: "ativa" }] };
+    });
+
+  const setEstadoFabrica = (fabricaId: number, estado: EstadoMpFabrica) =>
+    setForm(f => ({ ...f, fabricasEstado: f.fabricasEstado.map(rel => rel.fabricaId === fabricaId ? { ...rel, estado } : rel) }));
 
   const addFornecedor = (fornId: number) => {
     if (form.fornecedoresMp.some(f => f.fornecedorId === fornId)) return;
@@ -413,20 +418,20 @@ export default function MateriasPrimas() {
               <SelectItem value="incompleto">✗ Incompleto</SelectItem>
             </SelectContent>
           </Select>
-          <Select value={categoriaFilter} onValueChange={setCategoriaFilter}>
+          <Select value={estadoFabricaFilter} onValueChange={setEstadoFabricaFilter}>
             <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="Todas as categorias" />
+              <SelectValue placeholder="Estado operacional" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todas as categorias</SelectItem>
-              <SelectItem value="em_utilizacao">✓ Ativa</SelectItem>
+              <SelectItem value="all">Estado: todos</SelectItem>
+              <SelectItem value="ativa">✓ Ativa</SelectItem>
               <SelectItem value="para_testes">🧪 Testes</SelectItem>
-              <SelectItem value="obsoleta">✗ Inativa</SelectItem>
+              <SelectItem value="inativa">✗ Inativa</SelectItem>
             </SelectContent>
           </Select>
-          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all" || categoriaFilter !== "all") && (
+          {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all" || estadoFabricaFilter !== "all") && (
             <button
-              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); setStatusFilter("all"); setCategoriaFilter("all"); }}
+              onClick={() => { setSearch(""); setFabricaFilter("all"); setFornecedorFilter("all"); setStatusFilter("all"); setEstadoFabricaFilter("all"); }}
               className="flex items-center gap-1.5 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors border border-border/60 shrink-0"
             >
               <X className="w-3.5 h-3.5" /> Limpar filtros
@@ -435,7 +440,7 @@ export default function MateriasPrimas() {
         </div>
 
         {/* Contador de resultados com filtros ativos */}
-        {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all") && (
+        {(search || fabricaFilter !== "all" || fornecedorFilter !== "all" || statusFilter !== "all" || estadoFabricaFilter !== "all") && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span>{filtered.length} resultado{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}</span>
             {fornecedorFilter !== "all" && (
@@ -516,26 +521,16 @@ export default function MateriasPrimas() {
                         );
                       })()}
 
-                      {/* Badge de categoria */}
-                      {(() => {
-                        const cat = (mp as any).categoria ?? "em_utilizacao";
-                        const catConfig: Record<string, {label: string; color: string}> = {
-                          em_utilizacao: { label: "✓ Ativa", color: "bg-green-50 text-green-700 border-green-200" },
-                          para_testes: { label: "🧪 Testes", color: "bg-blue-50 text-blue-700 border-blue-200" },
-                          obsoleta: { label: "✗ Inativa", color: "bg-red-50 text-red-700 border-red-200" },
-                        };
-                        const config = catConfig[cat] || catConfig.em_utilizacao;
-                        return (
-                          <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium", config.color)}>
-                            {config.label}
-                          </span>
-                        );
-                      })()}
                     </div>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      {mpFabricas.map(f => (
-                        <FactoryBadge key={f.id} nome={f.nome} codigo={f.codigo} size="sm" />
-                      ))}
+                      {mpFabricas.map(f => {
+                        const relacao = (((mp as any).fabricasEstado ?? []) as Array<{ fabricaId: number; estado: EstadoMpFabrica }>).find(rel => rel.fabricaId === f.id);
+                        const estado = getEstadoMpFabrica(relacao?.estado);
+                        return <span key={f.id} className="inline-flex items-center gap-1">
+                          <FactoryBadge nome={f.nome} codigo={f.codigo} size="sm" />
+                          <span className={cn("text-[10px] px-1.5 py-0.5 rounded-full border font-medium", estado.className)}>{estado.shortLabel}</span>
+                        </span>;
+                      })}
                       {(mp as any).dataValidacao && (
                         <span className="flex items-center gap-1 text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
                           <CheckCircle2 className="w-3 h-3" />
@@ -1267,30 +1262,26 @@ export default function MateriasPrimas() {
               {/* Tab: Estado de Completude */}
               {activeTab === "estado" && (
                 <div className="space-y-5">
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-foreground">Categorização da MP</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {([
-                        { id: "em_utilizacao", label: "✓ Ativa", icon: "✓", color: "bg-green-50 border-green-200 text-green-700" },
-                        { id: "para_testes", label: "🧪 Testes", icon: "🧪", color: "bg-blue-50 border-blue-200 text-blue-700" },
-                        { id: "obsoleta", label: "✗ Inativa", icon: "✗", color: "bg-red-50 border-red-200 text-red-700" },
-                      ] as const).map(opt => (
-                        <button
-                          key={opt.id}
-                          type="button"
-                          onClick={() => setForm(f => ({ ...f, categoria: opt.id }))}
-                          className={cn(
-                            "flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-xs font-medium transition-all",
-                            form.categoria === opt.id
-                              ? `${opt.color} border-current`
-                              : `bg-muted/30 border-border text-muted-foreground hover:border-primary/40 hover:text-foreground`
-                          )}
-                        >
-                          <span>{opt.icon}</span>
-                          {opt.label}
-                        </button>
-                      ))}
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-xs font-semibold text-foreground">Estado operacional por fábrica</label>
+                      <p className="mt-1 text-[11px] text-muted-foreground">O estado é específico de cada unidade. A mesma MP pode estar ativa numa fábrica e em testes ou inativa noutra.</p>
                     </div>
+                    {form.fabricasEstado.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-border px-3 py-4 text-xs text-muted-foreground">Selecione pelo menos uma fábrica no separador Alergénios para definir o respetivo estado operacional.</div>
+                    ) : (
+                      <div className="space-y-2">
+                        {form.fabricasEstado.map(rel => {
+                          const fabrica = fabricas?.find(item => item.id === rel.fabricaId);
+                          return <div key={rel.fabricaId} className="rounded-xl border border-border/60 bg-muted/20 p-3">
+                            <div className="flex items-center justify-between gap-3 mb-3"><span className="text-xs font-semibold">{fabrica?.nome ?? `Fábrica #${rel.fabricaId}`}</span><span className={cn("text-[10px] px-2 py-0.5 rounded-full border font-medium", getEstadoMpFabrica(rel.estado).className)}>{getEstadoMpFabrica(rel.estado).label}</span></div>
+                            <div className="grid grid-cols-3 gap-2">
+                              {ESTADOS_MP_FABRICA.map(opt => <button key={opt.id} type="button" onClick={() => setEstadoFabrica(rel.fabricaId, opt.id)} className={cn("flex items-center justify-center gap-1 px-2 py-2 rounded-lg border text-[11px] font-medium transition-all", rel.estado === opt.id ? `${opt.className} border-current` : "bg-background border-border text-muted-foreground hover:border-primary/40 hover:text-foreground")}><span>{opt.icon}</span>{opt.shortLabel}</button>)}
+                            </div>
+                          </div>;
+                        })}
+                      </div>
+                    )}
                   </div>
 
                   
@@ -1370,6 +1361,7 @@ export default function MateriasPrimas() {
 
 function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, any> }) {
   const { data: mpDetalhes } = trpc.materiasPrimas.byId.useQuery({ id: mp.id });
+  const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: fichasMp } = trpc.fichasTecnicas.list.useQuery({ materiaPrimaId: mp.id });
   const { data: validacoesMp } = trpc.materiasPrimas.validacoes.useQuery({ mpId: mp.id });
   const utils = trpc.useUtils();
@@ -1451,6 +1443,7 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
   const statusMp: "completo" | "pendente" | "incompleto" = (mpDetalhes as any)?.statusMp ?? (mp as any)?.statusMp ?? "completo";
   const observacoesPendencia = (mpDetalhes as any)?.observacoesPendencia ?? (mp as any)?.observacoesPendencia;
   const ultimaValidacao = (mpDetalhes as any)?.dataValidacao ?? (mp as any)?.dataValidacao;
+  const estadosPorFabrica = ((mpDetalhes as any)?.fabricasEstado ?? (mp as any)?.fabricasEstado ?? []) as Array<{ fabricaId: number; estado: EstadoMpFabrica }>;
   const FORMA_LABELS: Record<string, { label: string; icon: string }> = {
     saco: { label: "Saco", icon: "🧺" },
     granel: { label: "Granel", icon: "🏗️" },
@@ -1489,6 +1482,20 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
             </div>
           </div>
         )}
+
+        <div>
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Estado Operacional por Fábrica</p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {estadosPorFabrica.map(rel => {
+              const fabrica = fabricas?.find(item => item.id === rel.fabricaId);
+              const estado = getEstadoMpFabrica(rel.estado);
+              return <div key={rel.fabricaId} className="flex items-center justify-between gap-3 rounded-xl border border-border/60 bg-card px-3.5 py-3">
+                <span className="text-xs font-semibold truncate">{fabrica?.nome ?? `Fábrica #${rel.fabricaId}`}</span>
+                <span className={cn("shrink-0 text-[10px] px-2 py-0.5 rounded-full border font-medium", estado.className)}>{estado.label}</span>
+              </div>;
+            })}
+          </div>
+        </div>
 
         {/* ── Perfil Alergénico ── */}
         <div>

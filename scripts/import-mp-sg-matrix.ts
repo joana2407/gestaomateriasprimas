@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { eq } from "drizzle-orm";
-import { auditLog, fabricas, materiasPrimas } from "../drizzle/schema";
+import { auditLog, fabricas, materiasPrimas, materiasPrimasFabricas } from "../drizzle/schema";
 import { getDb } from "../server/db";
 import { normalizeImportName } from "../shared/receitas-import";
 import { matrixSymbolsToAllergenArrays } from "../shared/mp-sg-matrix";
@@ -104,6 +104,11 @@ async function main() {
               observacoesPendencia: global.observacoesPendencia || pendingNote(record.sourceRow),
               updatedAt: new Date(),
             }).where(eq(materiasPrimas.id, global.id));
+            await tx.insert(materiasPrimasFabricas).values({
+              materiaPrimaId: global.id,
+              fabricaId: factory.id,
+              estado: "ativa",
+            }).onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
           }
           mp = { ...global, fabricasIds: ids, statusMp: "pendente" as const } as typeof global;
           currentByFactoryName.set(normalizeImportName(mp.nome), mp);
@@ -121,11 +126,11 @@ async function main() {
           tipo: "simples" as const,
           statusMp: "pendente" as const,
           observacoesPendencia: pendingNote(record.sourceRow),
-          categoria: "em_utilizacao" as const,
           ativa: true,
         };
         const result = await tx.insert(materiasPrimas).values(createdValues);
         const id = Number((result[0] as any).insertId);
+        await tx.insert(materiasPrimasFabricas).values({ materiaPrimaId: id, fabricaId: factory.id, estado: "ativa" });
         mp = { ...createdValues, id } as typeof mp;
         currentByFactoryName.set(normalizeImportName(mp.nome), mp);
         currentByAnyName.set(normalizeImportName(mp.nome), mp);

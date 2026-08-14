@@ -9,6 +9,7 @@ import {
   float,
   json,
   date,
+  uniqueIndex,
 } from "drizzle-orm/mysql-core";
 
 // ─── USERS ────────────────────────────────────────────────────────────────────
@@ -99,7 +100,8 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   // Estado de completude
   statusMp: mysqlEnum("status_mp", ["completo", "pendente", "incompleto"]).default("completo"),
   observacoesPendencia: text("observacoes_pendencia"),
-  // Categorização da MP
+  // Campo legado; o estado operacional corrente vive em materias_primas_fabricas.
+  // Mantido temporariamente para compatibilidade com registos históricos.
   categoria: mysqlEnum("categoria", ["em_utilizacao", "obsoleta", "para_testes"]).default("em_utilizacao").notNull(),
   // Data da última validação
   dataValidacao: date("dataValidacao"),
@@ -108,6 +110,20 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type MateriaPrima = typeof materiasPrimas.$inferSelect;
+
+// ─── RELAÇÃO MP ↔ FÁBRICAS ───────────────────────────────────────────────────
+// Uma MP pode ter um estado operacional distinto em cada unidade fabril.
+export const materiasPrimasFabricas = mysqlTable("materias_primas_fabricas", {
+  id: int("id").autoincrement().primaryKey(),
+  materiaPrimaId: int("materia_prima_id").notNull().references(() => materiasPrimas.id),
+  fabricaId: int("fabrica_id").notNull().references(() => fabricas.id),
+  estado: mysqlEnum("estado", ["ativa", "para_testes", "inativa"]).default("ativa").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => [
+  uniqueIndex("materias_primas_fabricas_mp_fabrica_unique").on(table.materiaPrimaId, table.fabricaId),
+]);
+export type MateriaPrimaFabrica = typeof materiasPrimasFabricas.$inferSelect;
 
 // ─── RELAÇÃO MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────
 export const mpFornecedores = mysqlTable("mp_fornecedores", {

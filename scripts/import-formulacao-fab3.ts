@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { desc, eq } from "drizzle-orm";
-import { auditLog, fabricas, ingredientesReceita, materiasPrimas, receitas } from "../drizzle/schema";
+import { auditLog, fabricas, ingredientesReceita, materiasPrimas, materiasPrimasFabricas, receitas } from "../drizzle/schema";
 import { getDb } from "../server/db";
 import { buildFormulacaoRecipeDescription, FORMULACAO_ALIASES, normalizeImportName } from "../shared/receitas-import";
 
@@ -85,6 +85,11 @@ async function main() {
             observacoesPendencia: appendPendingNote(global.observacoesPendencia, "Associada à Fábrica III pela migração da aba formulação; validar FT e perfil de alergénios."),
             updatedAt: new Date(),
           }).where(eq(materiasPrimas.id, global.id));
+          await tx.insert(materiasPrimasFabricas).values({
+            materiaPrimaId: global.id,
+            fabricaId: factory.id,
+            estado: "ativa",
+          }).onDuplicateKeyUpdate({ set: { updatedAt: new Date() } });
           const promoted = { ...global, fabricasIds: ids, statusMp: "pendente" as const } as MpRow;
           currentFactoryMps.push(promoted);
           currentByName.set(normalizeImportName(promoted.nome), promoted);
@@ -102,11 +107,11 @@ async function main() {
         tipo: "simples" as const,
         statusMp: "pendente" as const,
         observacoesPendencia: "Criada automaticamente pela migração da aba formulação; validar fornecedor, FT e perfil de alergénios.",
-        categoria: "em_utilizacao" as const,
         ativa: true,
       };
       const result = await tx.insert(materiasPrimas).values(createdValues);
       const id = Number((result[0] as any).insertId);
+      await tx.insert(materiasPrimasFabricas).values({ materiaPrimaId: id, fabricaId: factory.id, estado: "ativa" });
       const created = { ...createdValues, id } as MpRow;
       currentFactoryMps.push(created);
       currentByName.set(normalizeImportName(created.nome), created);

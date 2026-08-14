@@ -3,7 +3,7 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb,
   getMateriasPrimas, getMateriaPrimaById, upsertMateriaPrima,
   deleteMateriaPrima, addAuditLog, getFornecedores,
-  getMpFornecedores, setMpFornecedores
+  getMpFornecedores, setMpFornecedores, getMpFabricas, setMpFabricas
 } from "../db";
 import { desc, eq } from "drizzle-orm";
 import { validacoesMp, materiasPrimas } from "../../drizzle/schema";
@@ -39,7 +39,8 @@ export const materiasPrimasRouter = router({
       const mp = await getMateriaPrimaById(input.id);
       if (!mp) return null;
       const fornecedoresMp = await getMpFornecedores(input.id);
-      return { ...mp, fornecedoresMp };
+      const fabricasEstado = await getMpFabricas(input.id);
+      return { ...mp, fabricasIds: fabricasEstado.map(rel => rel.fabricaId), fabricasEstado, fornecedoresMp };
     }),
 
   upsert: protectedProcedure
@@ -48,6 +49,10 @@ export const materiasPrimasRouter = router({
       nome: z.string().min(1),
       codigo: z.string().optional(),
       fabricasIds: z.array(z.number()).optional(),
+      fabricasEstado: z.array(z.object({
+        fabricaId: z.number(),
+        estado: z.enum(["ativa", "para_testes", "inativa"]),
+      })).optional(),
       alergeniosFormulacao: z.array(AlergenioIdSchema).optional(),
       alergeniosContaminacao: z.array(AlergenioIdSchema).optional(),
       observacoes: z.string().optional(),
@@ -68,13 +73,12 @@ export const materiasPrimasRouter = router({
       // Estado de completude
       statusMp: z.enum(["completo", "pendente", "incompleto"]).optional(),
       observacoesPendencia: z.string().optional().nullable(),
-      // Categorização e validação
-      categoria: z.enum(["em_utilizacao", "obsoleta", "para_testes"]).optional(),
       dataValidacao: z.date().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
       // Verificar bloqueio de glúten na Fábrica III
-      if (input.fabricasIds?.includes(3) || input.fabricasIds?.some(id => id === 3)) {
+      const fabricasSelecionadas = input.fabricasEstado?.map(rel => rel.fabricaId) ?? input.fabricasIds ?? [];
+      if (fabricasSelecionadas.includes(3)) {
         if (input.alergeniosFormulacao?.includes("gluten")) {
           throw new TRPCError({
             code: "BAD_REQUEST",
@@ -83,8 +87,13 @@ export const materiasPrimasRouter = router({
         }
       }
       const anterior = input.id ? await getMateriaPrimaById(input.id) : null;
-      const { fornecedoresMp, ...mpData } = input;
-      const id = await upsertMateriaPrima(mpData);
+      const { fornecedoresMp, fabricasEstado, fabricasIds: _legacyFabricasIds, ...mpData } = input;
+      const estadosNormalizados = fabricasEstado ?? fabricasSelecionadas.map(fabricaId => ({ fabricaId, estado: "ativa" as const }));
+      const mpDataComFabricas = { ...mpData, fabricasIds: estadosNormalizados.map(rel => rel.fabricaId) };
+      const id = await upsertMateriaPrima(mpDataComFabricas);
+      if (fabricasEstado !== undefined || _legacyFabricasIds !== undefined) {
+        await setMpFabricas(id, estadosNormalizados);
+      }
       // Atualizar relação N:N com fornecedores
       if (fornecedoresMp !== undefined) {
         await setMpFornecedores(id, fornecedoresMp);
@@ -94,7 +103,7 @@ export const materiasPrimasRouter = router({
         entidadeId: id,
         acao: input.id ? "atualizado" : "criado",
         dadosAnteriores: anterior,
-        dadosNovos: mpData,
+        dadosNovos: { ...mpDataComFabricas, fabricasEstado: estadosNormalizados },
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });

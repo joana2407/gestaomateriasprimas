@@ -9,6 +9,7 @@ import {
   ingredientesReceita,
   InsertUser,
   materiasPrimas,
+  materiasPrimasFabricas,
   mpFornecedores,
   perfilAlergenicoProduto,
   produtos,
@@ -140,10 +141,15 @@ export async function getMateriasPrimas(fabricaId?: number) {
   const db = await getDb();
   if (!db) return [];
   const rows = await db.select().from(materiasPrimas).where(eq(materiasPrimas.ativa, true));
-  const filtered = !fabricaId ? rows : rows.filter(mp => {
-    const ids = (mp.fabricasIds as number[] | null) ?? [];
-    return ids.includes(fabricaId);
-  });
+  const allMpFabricas = await db.select().from(materiasPrimasFabricas);
+  const fabricasMap = new Map<number, Array<{ fabricaId: number; estado: "ativa" | "para_testes" | "inativa" }>>();
+  for (const rel of allMpFabricas) {
+    if (!fabricasMap.has(rel.materiaPrimaId)) fabricasMap.set(rel.materiaPrimaId, []);
+    fabricasMap.get(rel.materiaPrimaId)!.push({ fabricaId: rel.fabricaId, estado: rel.estado });
+  }
+  const filtered = !fabricaId ? rows : rows.filter(mp =>
+    (fabricasMap.get(mp.id) ?? []).some(rel => rel.fabricaId === fabricaId)
+  );
   // Enriquecer com fornecedores associados (tabela mp_fornecedores)
   const allMpFornecedores = await db.select().from(mpFornecedores).where(eq(mpFornecedores.ativo, true));
   const fornMap = new Map<number, Array<{ fornecedorId: number; preferencial: boolean | null }>>();
@@ -153,6 +159,8 @@ export async function getMateriasPrimas(fabricaId?: number) {
   }
   return filtered.map(mp => ({
     ...mp,
+    fabricasIds: (fabricasMap.get(mp.id) ?? []).map(rel => rel.fabricaId),
+    fabricasEstado: fabricasMap.get(mp.id) ?? [],
     fornecedoresIds: (fornMap.get(mp.id) ?? []).map(f => f.fornecedorId),
   }));
 }
@@ -173,6 +181,29 @@ export async function upsertMateriaPrima(data: typeof materiasPrimas.$inferInser
   }
   const result = await db.insert(materiasPrimas).values(data);
   return (result[0] as any).insertId as number;
+}
+
+export async function getMpFabricas(materiaPrimaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(materiasPrimasFabricas)
+    .where(eq(materiasPrimasFabricas.materiaPrimaId, materiaPrimaId));
+}
+
+export async function setMpFabricas(
+  materiaPrimaId: number,
+  fabricasEstado: Array<{ fabricaId: number; estado: "ativa" | "para_testes" | "inativa" }>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(materiasPrimasFabricas).where(eq(materiasPrimasFabricas.materiaPrimaId, materiaPrimaId));
+  for (const rel of fabricasEstado) {
+    await db.insert(materiasPrimasFabricas).values({
+      materiaPrimaId,
+      fabricaId: rel.fabricaId,
+      estado: rel.estado,
+    });
+  }
 }
 
 // ─── MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────────────
