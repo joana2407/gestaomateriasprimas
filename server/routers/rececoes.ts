@@ -3,6 +3,7 @@ import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   addAuditLog,
   getMateriasPrimas,
+  getMpFornecedores,
   getRececaoMateriaPrimaById,
   getRececoesMateriasPrimas,
   upsertRececaoMateriaPrima,
@@ -66,6 +67,10 @@ export const rececoesRouter = router({
       const fabricasMp = (materiaPrima.fabricasIds as number[] | null) ?? [];
       if (!fabricasMp.includes(input.fabricaId)) {
         throw new Error("A matéria-prima selecionada não está disponível na fábrica indicada");
+      }
+      const fornecedoresAprovados = await getMpFornecedores(input.materiaPrimaId);
+      if (!fornecedoresAprovados.some(rel => rel.fornecedorId === input.fornecedorId)) {
+        throw new Error("A matéria-prima selecionada não está aprovada para o fornecedor indicado");
       }
 
       const controlos = input.controlos as ControlosRececao;

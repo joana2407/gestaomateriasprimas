@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 27/27 testes passados
+- [x] Total: 30/30 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -327,3 +327,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Verificar o rótulo do separador indicado em Matérias-Primas
 - [x] Alterar para “Estado” e validar a interface
 - [x] Criar checkpoint da correção visual
+
+## Correção v4.4 — Receções por fornecedor aprovado
+
+- [x] Analisar o formulário de receções e a associação MP–Fornecedor
+- [x] Filtrar as MP pelo fornecedor aprovado e pela fábrica selecionada
+- [x] Limpar a MP selecionada quando o fornecedor ou fábrica deixam de ser compatíveis
+- [x] Corrigir o aviso ResizeObserver em Receções
+- [x] Validar testes, interface e criar checkpoint

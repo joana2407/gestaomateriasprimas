@@ -2,7 +2,7 @@ import { SigaLayout } from "@/components/SigaLayout";
 import { FactoryBadge } from "@/components/FactoryBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import {
   type ControlosRececao,
   type EstadoControloRececao,
 } from "../../../shared/rececao-controlos";
+import { mpAprovadaParaRececao } from "../../../shared/rececao-fornecedor";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -168,10 +169,9 @@ export default function Rececoes() {
       .some(value => (value ?? "").toLowerCase().includes(term));
   }), [rececoes, search]);
 
-  const materiasDaFabrica = useMemo(() => (materiasPrimas ?? []).filter(mp => {
-    const ids = (mp.fabricasIds as number[] | null) ?? [];
-    return form.fabricaId > 0 && ids.includes(form.fabricaId);
-  }), [materiasPrimas, form.fabricaId]);
+  const materiasAprovadas = useMemo(() => (materiasPrimas ?? []).filter(mp =>
+    mpAprovadaParaRececao(mp, form.fabricaId, form.fornecedorId)
+  ), [materiasPrimas, form.fabricaId, form.fornecedorId]);
 
   const conformidadeCalculada = calcularConformidadeRececao(form.controlos);
   const selectedArmazem = ARMAZENS_RECECAO.find(armazem => armazem.id === form.armazem);
@@ -290,7 +290,7 @@ export default function Rececoes() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
-          <DialogHeader><DialogTitle className="flex items-center gap-2"><ClipboardCheck className="w-5 h-5 text-primary" />{form.id ? "Editar receção" : "Registar receção"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><ClipboardCheck className="w-5 h-5 text-primary" />{form.id ? "Editar receção" : "Registar receção"}</DialogTitle><DialogDescription className="sr-only">Selecione a fábrica, o fornecedor e uma matéria-prima aprovada para registar a receção e os respetivos controlos.</DialogDescription></DialogHeader>
           <div className="space-y-6 pt-2">
             <section className="rounded-xl border border-border/70 overflow-hidden"><div className="px-4 py-3 bg-muted/40 flex items-center gap-2"><Warehouse className="w-4 h-4 text-primary" /><p className="text-sm font-semibold">Destino e identificação</p></div><div className="p-4 grid md:grid-cols-2 xl:grid-cols-4 gap-4">
               <Field label="Fábrica *"><Select value={form.fabricaId ? String(form.fabricaId) : "none"} onValueChange={value => setForm(current => ({ ...current, fabricaId: Number(value), materiaPrimaId: 0 }))}><SelectTrigger><SelectValue placeholder="Selecionar fábrica" /></SelectTrigger><SelectContent>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select></Field>
@@ -300,8 +300,8 @@ export default function Rececoes() {
             </div></section>
 
             <section className="rounded-xl border border-border/70 overflow-hidden"><div className="px-4 py-3 bg-muted/40 flex items-center gap-2"><PackageCheck className="w-4 h-4 text-primary" /><p className="text-sm font-semibold">Matéria-prima e lote</p></div><div className="p-4 grid md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <Field label="Fornecedor *"><Select value={form.fornecedorId ? String(form.fornecedorId) : "none"} onValueChange={value => setForm(current => ({ ...current, fornecedorId: Number(value) }))}><SelectTrigger><SelectValue placeholder="Selecionar fornecedor" /></SelectTrigger><SelectContent>{fornecedores?.map(fornecedor => <SelectItem key={fornecedor.id} value={String(fornecedor.id)}>{fornecedor.nome}</SelectItem>)}</SelectContent></Select></Field>
-              <Field label="Matéria-prima *"><Select value={form.materiaPrimaId ? String(form.materiaPrimaId) : "none"} onValueChange={value => setForm(current => ({ ...current, materiaPrimaId: Number(value) }))}><SelectTrigger><SelectValue placeholder={form.fabricaId ? "Selecionar MP" : "Escolha primeiro a fábrica"} /></SelectTrigger><SelectContent>{materiasDaFabrica.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>)}</SelectContent></Select></Field>
+              <Field label="Fornecedor *"><Select value={form.fornecedorId ? String(form.fornecedorId) : "none"} onValueChange={value => setForm(current => ({ ...current, fornecedorId: Number(value), materiaPrimaId: 0 }))}><SelectTrigger><SelectValue placeholder="Selecionar fornecedor" /></SelectTrigger><SelectContent>{fornecedores?.map(fornecedor => <SelectItem key={fornecedor.id} value={String(fornecedor.id)}>{fornecedor.nome}</SelectItem>)}</SelectContent></Select></Field>
+              <Field label="Matéria-prima *"><Select disabled={!form.fabricaId || !form.fornecedorId} value={form.materiaPrimaId ? String(form.materiaPrimaId) : "none"} onValueChange={value => setForm(current => ({ ...current, materiaPrimaId: Number(value) }))}><SelectTrigger><SelectValue placeholder={!form.fabricaId ? "Escolha primeiro a fábrica" : !form.fornecedorId ? "Escolha primeiro o fornecedor" : "Selecionar MP aprovada"} /></SelectTrigger><SelectContent>{materiasAprovadas.length > 0 ? materiasAprovadas.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>) : <div className="px-2 py-3 text-xs text-muted-foreground">Não existem MP aprovadas para este fornecedor nesta fábrica.</div>}</SelectContent></Select></Field>
               <Field label="Lote"><Input value={form.lote} onChange={event => setForm(current => ({ ...current, lote: event.target.value }))} placeholder="Lote do fornecedor" /></Field>
               <Field label="Validade"><Input type="date" value={form.validade} onChange={event => setForm(current => ({ ...current, validade: event.target.value }))} /></Field>
               <Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={form.quantidade || ""} onChange={event => setForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} placeholder="0" /></Field>

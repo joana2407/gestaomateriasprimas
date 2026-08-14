@@ -10,6 +10,15 @@ import "./index.css";
 
 const queryClient = new QueryClient();
 
+// Radix UI pode acionar este aviso transitório durante a reposição de popovers.
+// Não representa uma falha da aplicação nem deve ser recolhido como erro de negócio.
+window.addEventListener("error", event => {
+  if (event.message?.includes("ResizeObserver loop")) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }
+}, true);
+
 const redirectToLoginIfUnauthorized = (error: unknown) => {
   if (!(error instanceof TRPCClientError)) return;
   if (typeof window === "undefined") return;
