@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { qualidadeProcedure, rececoesProcedure, router } from "../_core/trpc";
 import {
   addAuditLog,
+  deleteRececaoMateriaPrima,
   getMateriasPrimas,
   getMpFornecedores,
   getRececaoMateriaPrimaById,
@@ -47,7 +48,7 @@ const rececaoInput = z.object({
 });
 
 export const rececoesRouter = router({
-  list: publicProcedure
+  list: rececoesProcedure
     .input(z.object({
       fabricaId: z.number().optional(),
       armazem: z.enum(["ambiente_secos", "frio", "embalagens"]).optional(),
@@ -55,11 +56,11 @@ export const rececoesRouter = router({
     }).optional())
     .query(({ input }) => getRececoesMateriasPrimas(input)),
 
-  byId: publicProcedure
+  byId: rececoesProcedure
     .input(z.object({ id: z.number() }))
     .query(({ input }) => getRececaoMateriaPrimaById(input.id)),
 
-  upsert: protectedProcedure
+  upsert: rececoesProcedure
     .input(rececaoInput)
     .mutation(async ({ input, ctx }) => {
       const materiasPrimas = await getMateriasPrimas();
@@ -102,5 +103,22 @@ export const rececoesRouter = router({
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
       return { id, conformidade };
+    }),
+
+  delete: qualidadeProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      const rececao = await getRececaoMateriaPrimaById(input.id);
+      if (!rececao) throw new Error("Receção não encontrada");
+      await deleteRececaoMateriaPrima(input.id);
+      await addAuditLog({
+        entidade: "rececao_mp",
+        entidadeId: input.id,
+        acao: "eliminado",
+        dadosAnteriores: rececao,
+        userId: ctx.user.id,
+        userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
+      });
+      return { success: true } as const;
     }),
 });

@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 32/32 testes passados
+- [x] Total: 35/35 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -342,3 +342,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Alterar as unidades disponíveis para Kg, Lt e Ton
 - [x] Alterar o rótulo para “Fecho da boca de carga do silo”
 - [x] Validar a alteração e criar checkpoint
+
+## Regra funcional v4.6 — Perfis Logística e Qualidade
+
+- [x] Analisar o modelo atual de utilizadores, permissões e operações de receções
+- [x] Criar os perfis Logística e Qualidade no modelo de utilizadores
+- [x] Restringir a Logística ao módulo de Receções no backend e na navegação
+- [x] Reservar à Qualidade a eliminação de receções, com registo de auditoria
+- [x] Validar permissões, testes e criar checkpoint

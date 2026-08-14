@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
+import { PERFIL_ACESSO_LABEL, type PerfilAcesso } from "../../../shared/perfis-acesso";
 
 const NAV_ITEMS = [
   { href: "/", icon: Home, label: "Dashboard", group: "principal" },
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/fichas-produto", icon: FileText, label: "FT de Produto", group: "documentos" },
   { href: "/historico", icon: BarChart3, label: "Histórico", group: "documentos" },
   { href: "/importacao", icon: Settings, label: "Importação", group: "config" },
+  { href: "/utilizadores", icon: ShieldCheck, label: "Utilizadores", group: "config" },
 ];
 
 const GROUPS = [
@@ -43,6 +45,8 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
   const [location] = useLocation();
   const { user, isAuthenticated, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isLogistica = user?.role === "logistica";
+  const navItemsVisiveis = isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS;
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -62,7 +66,8 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
         {GROUPS.map(group => {
-          const items = NAV_ITEMS.filter(i => i.group === group.key);
+          const items = navItemsVisiveis.filter(i => i.group === group.key);
+          if (items.length === 0) return null;
           return (
             <div key={group.key}>
               <div className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
@@ -105,7 +110,7 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-xs font-medium truncate">{user.name ?? user.email}</div>
-              <div className="text-[10px] text-muted-foreground capitalize">{user.role}</div>
+              <div className="text-[10px] text-muted-foreground">{PERFIL_ACESSO_LABEL[user.role as PerfilAcesso] ?? user.role}</div>
             </div>
             <button
               onClick={() => logout()}

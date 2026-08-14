@@ -2,6 +2,7 @@ import { SigaLayout } from "@/components/SigaLayout";
 import { FactoryBadge } from "@/components/FactoryBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -28,6 +29,7 @@ import {
   Search,
   Thermometer,
   Truck,
+  Trash2,
   Warehouse,
   XCircle,
 } from "lucide-react";
@@ -143,6 +145,7 @@ export default function Rececoes() {
   const [armazemFilter, setArmazemFilter] = useState("all");
   const [conformidadeFilter, setConformidadeFilter] = useState("all");
   const [form, setForm] = useState<RececaoForm>(() => emptyForm(user?.name ?? ""));
+  const [rececaoParaEliminar, setRececaoParaEliminar] = useState<any | null>(null);
 
   const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: fornecedores } = trpc.fornecedores.list.useQuery();
@@ -161,6 +164,14 @@ export default function Rececoes() {
     },
     onError: error => toast.error(error.message),
   });
+  const eliminar = trpc.rececoes.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Receção eliminada com sucesso.");
+      setRececaoParaEliminar(null);
+      refetch();
+    },
+    onError: error => toast.error(error.message),
+  });
 
   const filteredRececoes = useMemo(() => (rececoes ?? []).filter(rececao => {
     const term = search.trim().toLowerCase();
@@ -174,6 +185,7 @@ export default function Rececoes() {
 
   const conformidadeCalculada = calcularConformidadeRececao(form.controlos);
   const selectedArmazem = ARMAZENS_RECECAO.find(armazem => armazem.id === form.armazem);
+  const podeEliminar = user?.role === "qualidade";
 
   function abrirNovaRececao() {
     const fabricaId = fabricaFilter !== "all" ? Number(fabricaFilter) : fabricas?.[0]?.id ?? 0;
@@ -281,7 +293,7 @@ export default function Rececoes() {
             return <div key={rececao.id} className="card-elegant p-4 flex flex-col lg:flex-row lg:items-center gap-4">
               <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rececao.conformidade === "conforme" ? "bg-emerald-50" : rececao.conformidade === "nao_conforme" ? "bg-red-50" : "bg-amber-50")}><PackageCheck className={cn("w-5 h-5", config.className.split(" ")[1])} /></div>
               <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold">{rececao.materiaPrimaNome}</p><Badge variant="outline" className="font-normal text-[10px]">{armazem?.label}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{rececao.fornecedorNome}{rececao.lote ? ` · Lote ${rececao.lote}` : ""}{rececao.numeroGuia ? ` · Guia ${rececao.numeroGuia}` : ""}</p><div className="mt-2 flex gap-2 flex-wrap">{fabrica && <FactoryBadge nome={fabrica.nome} codigo={fabrica.codigo} size="sm" />}<span className="text-[10px] text-muted-foreground">{new Date(rececao.dataRececao).toLocaleDateString("pt-PT")}</span><span className="text-[10px] text-muted-foreground">{rececao.quantidade} {formatarUnidadeRececao(rececao.unidade as UnidadeRececao)}</span></div></div>
-              <div className="flex items-center gap-3 justify-between lg:justify-end"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span>{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}</div>
+              <div className="flex items-center gap-3 justify-between lg:justify-end"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span>{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
             </div>;
           })}
         </div>
@@ -321,6 +333,12 @@ export default function Rececoes() {
           </div>
         </DialogContent>
       </Dialog>
+      <AlertDialog open={Boolean(rececaoParaEliminar)} onOpenChange={open => !open && setRececaoParaEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Eliminar receção?</AlertDialogTitle><AlertDialogDescription>Esta ação elimina de forma permanente a receção de <strong>{rececaoParaEliminar?.materiaPrimaNome}</strong>{rececaoParaEliminar?.lote ? ` do lote ${rececaoParaEliminar.lote}` : ""}. O registo da eliminação ficará no histórico.</AlertDialogDescription></AlertDialogHeader>
+          <AlertDialogFooter><AlertDialogCancel disabled={eliminar.isPending}>Cancelar</AlertDialogCancel><AlertDialogAction className="bg-red-600 hover:bg-red-700" disabled={eliminar.isPending} onClick={event => { event.preventDefault(); if (rececaoParaEliminar) eliminar.mutate({ id: rececaoParaEliminar.id }); }}>{eliminar.isPending ? "A eliminar..." : "Eliminar receção"}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SigaLayout>
   );
 }

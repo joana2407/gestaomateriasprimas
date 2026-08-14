@@ -57,6 +57,18 @@ export async function getUserByOpenId(openId: string) {
   return result[0];
 }
 
+export async function getUtilizadores() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(users).orderBy(desc(users.lastSignedIn));
+}
+
+export async function atualizarPerfilUtilizador(id: number, role: "logistica" | "qualidade") {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
+}
+
 // ─── FÁBRICAS ─────────────────────────────────────────────────────────────────
 export async function getFabricas() {
   const db = await getDb();
@@ -455,6 +467,12 @@ export async function upsertRececaoMateriaPrima(data: typeof rececoesMateriasPri
   }
   const result = await db.insert(rececoesMateriasPrimas).values(data);
   return (result[0] as any).insertId as number;
+}
+
+export async function deleteRececaoMateriaPrima(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id));
 }
 
 // ─── PERFIL ALERGÉNICO ────────────────────────────────────────────────────────
