@@ -644,7 +644,7 @@ export default function MateriasPrimas() {
                 </div>
 
                 {isExpanded && (
-                  <MPDetalhe mp={mp} fornecedorMap={fornecedorMap} />
+                  <MPDetalhe mp={mp} fornecedorMap={fornecedorMap} onTransferir={user?.role === "qualidade" ? () => abrirTransferencia(mp) : undefined} />
                 )}
               </div>
             );
@@ -1423,13 +1423,17 @@ export default function MateriasPrimas() {
   );
 }
 
-function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, any> }) {
+function MPDetalhe({ mp, fornecedorMap, onTransferir }: { mp: any; fornecedorMap: Map<number, any>; onTransferir?: () => void }) {
   const { data: mpDetalhes } = trpc.materiasPrimas.byId.useQuery({ id: mp.id });
   const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: fichasMp } = trpc.fichasTecnicas.list.useQuery({ materiaPrimaId: mp.id });
   const { data: validacoesMp } = trpc.materiasPrimas.validacoes.useQuery({ mpId: mp.id });
   const utils = trpc.useUtils();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const { data: transferencias } = trpc.materiasPrimas.transferencias.useQuery(
+    { materiaPrimaId: mp.id },
+    { enabled: user?.role === "qualidade" }
+  );
 
   // Estado para o formulário de upload de FT inline
   const [uploadingFornId, setUploadingFornId] = useState<number | null>(null);
@@ -1559,7 +1563,23 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
               </div>;
             })}
           </div>
+          {onTransferir && (
+            <Button variant="outline" size="sm" onClick={onTransferir} className="mt-3 gap-2">
+              <ArrowRightLeft className="w-3.5 h-3.5" /> Transferir para outra fábrica
+            </Button>
+          )}
         </div>
+
+        {user?.role === "qualidade" && (
+          <div className="border-t border-border/40 pt-4">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2"><ArrowRightLeft className="w-3.5 h-3.5 text-primary" />Histórico de transferências</p>
+            {(transferencias?.length ?? 0) > 0 ? <div className="space-y-2">{transferencias?.map((transferencia: any) => {
+              const origem = fabricas?.find(item => item.id === transferencia.fabricaOrigemId);
+              const destino = fabricas?.find(item => item.id === transferencia.fabricaDestinoId);
+              return <div key={transferencia.id} className="rounded-lg border border-border/60 bg-card px-3 py-2.5 text-xs"><div className="flex flex-wrap items-center gap-1.5 font-medium"><span>{origem?.nome ?? `Fábrica #${transferencia.fabricaOrigemId}`}</span><ArrowRightLeft className="w-3 h-3 text-primary" /><span>{destino?.nome ?? `Fábrica #${transferencia.fabricaDestinoId}`}</span>{transferencia.manterNaOrigem && <span className="ml-1 rounded-full bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-700">Mantida na origem</span>}</div><p className="mt-1 text-[11px] text-muted-foreground">{new Date(transferencia.createdAt).toLocaleString("pt-PT")}{transferencia.observacoes ? ` · ${transferencia.observacoes}` : ""}</p></div>;
+            })}</div> : <p className="rounded-lg border border-dashed border-border/60 px-3 py-3 text-xs italic text-muted-foreground">Ainda não existem transferências registadas para esta matéria-prima.</p>}
+          </div>
+        )}
 
         {/* ── Perfil Alergénico ── */}
         <div>

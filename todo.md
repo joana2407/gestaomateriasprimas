@@ -431,3 +431,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Tornar explícita a limitação do perfil Logística e disponibilizar troca de utilizador
 - [x] Corrigir o bloqueio que impede navegar nos módulos autorizados
 - [x] Validar o acesso às páginas e criar checkpoint
+
+## Correção v4.19 — Visibilidade de transferências de MP
+
+- [x] Localizar a ação de transferência e a condição de visibilidade atual
+- [x] Expor a transferência num local visível do painel de Matérias-Primas para Qualidade
+- [x] Validar o acesso e criar checkpoint
