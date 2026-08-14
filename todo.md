@@ -321,3 +321,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Migrar os estados existentes sem perder a associação atual das MP às fábricas
 - [x] Atualizar os formulários, badges, filtros e validações para usar o estado da fábrica selecionada
 - [x] Validar a regra com testes e criar checkpoint
+
+## Correção v4.3 — Rótulo do separador Estado
+
+- [x] Verificar o rótulo do separador indicado em Matérias-Primas
+- [x] Alterar para “Estado” e validar a interface
+- [x] Criar checkpoint da correção visual
