@@ -307,3 +307,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Registar os controlos de veículo, MP saco/granel, palete, produto e decisão de conformidade
 - [x] Criar uma interface de registo e consulta com filtros, indicadores de conformidade e tratamento de não conformidades
 - [x] Validar testes, interface e criar checkpoint
+
+## Correção v4.1 — Legibilidade dos Controlos de Receção
+
+- [x] Inspecionar o painel de controlos de receção em desktop e mobile
+- [x] Corrigir sobreposições com uma grelha responsiva e áreas de ação separadas
+- [x] Validar visualmente, executar testes e criar checkpoint

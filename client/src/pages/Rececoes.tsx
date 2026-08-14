@@ -98,7 +98,7 @@ function EstadoControlo({
   compact?: boolean;
 }) {
   return (
-    <div className={cn("grid grid-cols-3 gap-1", compact && "w-32")}> 
+    <div className={cn("grid grid-cols-3 gap-1 shrink-0 w-full", compact && "sm:w-36")}>
       {ESTADOS_CONTROLO_RECECAO.map(estado => (
         <button
           key={estado.id}
@@ -106,7 +106,7 @@ function EstadoControlo({
           title={estado.label}
           onClick={() => onChange(estado.id)}
           className={cn(
-            "h-8 rounded-md border text-[10px] font-semibold transition-colors",
+            "h-8 min-w-0 rounded-md border text-[10px] font-semibold transition-colors",
             value === estado.id
               ? estado.id === "c"
                 ? "bg-emerald-600 border-emerald-600 text-white"
@@ -125,7 +125,7 @@ function EstadoControlo({
 
 function ControloRow({ label, value, onChange, help }: { label: string; value?: EstadoControloRececao; onChange: (estado: EstadoControloRececao) => void; help?: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/50 last:border-0">
+    <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_9rem] items-center gap-2 sm:gap-3 py-3 border-b border-border/50 last:border-0">
       <div className="min-w-0">
         <p className="text-xs font-medium">{label}</p>
         {help && <p className="text-[10px] text-muted-foreground mt-0.5">{help}</p>}
@@ -310,9 +310,9 @@ export default function Rececoes() {
               <Field label="Responsável *"><Input value={form.responsavel} onChange={event => setForm(current => ({ ...current, responsavel: event.target.value }))} placeholder="Nome do responsável" /></Field>
             </div></section>
 
-            <section className="rounded-xl border border-border/70 overflow-hidden"><div className="px-4 py-3 bg-muted/40 flex flex-col sm:flex-row sm:items-center gap-2 justify-between"><div className="flex items-center gap-2"><Truck className="w-4 h-4 text-primary" /><p className="text-sm font-semibold">Pontos de controlo</p></div><ConformidadeBadge estado={conformidadeCalculada} /></div><div className="p-4 grid xl:grid-cols-3 gap-4">
-              <ControlCard title="MP em saco" icon={<Thermometer className="w-4 h-4" />}><div className="flex items-center justify-between gap-3 py-2.5 border-b border-border/50"><div><p className="text-xs font-medium">Temperatura</p><Input type="number" step="0.1" value={form.controlos.temperaturaMpSaco?.valor ?? ""} onChange={event => setControl("temperaturaMpSaco", { ...form.controlos.temperaturaMpSaco, valor: event.target.value === "" ? null : Number(event.target.value) })} placeholder="ºC (opcional)" className="h-7 mt-1 text-xs w-28" /></div><EstadoControlo value={form.controlos.temperaturaMpSaco?.estado} onChange={estado => setControl("temperaturaMpSaco", { ...form.controlos.temperaturaMpSaco, estado })} compact /></div><ControloRow label="Limpeza" value={form.controlos.limpeza} onChange={estado => setControl("limpeza", estado)} /><ControloRow label="Resíduos de infestação" value={form.controlos.residuosInfestacao} onChange={estado => setControl("residuosInfestacao", estado)} /><ControloRow label="Acondicionamento" value={form.controlos.acondicionamento} onChange={estado => setControl("acondicionamento", estado)} /></ControlCard>
-              <ControlCard title="MP a granel" icon={<Truck className="w-4 h-4" />}><div className="grid grid-cols-2 gap-3 py-2.5 border-b border-border/50"><Field label="Nº de selo"><Input value={form.controlos.numeroSelo ?? ""} onChange={event => setControl("numeroSelo", event.target.value)} placeholder="Selo" /></Field><Field label="Nº de silo"><Input value={form.controlos.numeroSilo ?? ""} onChange={event => setControl("numeroSilo", event.target.value)} placeholder="Silo" /></Field></div><ControloRow label="Crivo" value={form.controlos.crivo} onChange={estado => setControl("crivo", estado)} /><ControloRow label="Fecho da boca de carga" value={form.controlos.fechoBocaCarga} onChange={estado => setControl("fechoBocaCarga", estado)} /></ControlCard>
+            <section className="rounded-xl border border-border/70 overflow-hidden"><div className="px-4 py-3 bg-muted/40 flex flex-col sm:flex-row sm:items-center gap-2 justify-between"><div className="flex items-center gap-2"><Truck className="w-4 h-4 text-primary" /><p className="text-sm font-semibold">Pontos de controlo</p></div><ConformidadeBadge estado={conformidadeCalculada} /></div><div className="p-4 grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
+              <ControlCard title="MP em saco" icon={<Thermometer className="w-4 h-4" />}><div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_9rem] items-end gap-2 sm:gap-3 py-3 border-b border-border/50"><div className="min-w-0"><p className="text-xs font-medium">Temperatura</p><Input type="number" step="0.1" value={form.controlos.temperaturaMpSaco?.valor ?? ""} onChange={event => setControl("temperaturaMpSaco", { ...form.controlos.temperaturaMpSaco, valor: event.target.value === "" ? null : Number(event.target.value) })} placeholder="ºC (opcional)" className="h-8 mt-1 text-xs w-full max-w-36" /></div><EstadoControlo value={form.controlos.temperaturaMpSaco?.estado} onChange={estado => setControl("temperaturaMpSaco", { ...form.controlos.temperaturaMpSaco, estado })} compact /></div><ControloRow label="Limpeza" value={form.controlos.limpeza} onChange={estado => setControl("limpeza", estado)} /><ControloRow label="Resíduos de infestação" value={form.controlos.residuosInfestacao} onChange={estado => setControl("residuosInfestacao", estado)} /><ControloRow label="Acondicionamento" value={form.controlos.acondicionamento} onChange={estado => setControl("acondicionamento", estado)} /></ControlCard>
+              <ControlCard title="MP a granel" icon={<Truck className="w-4 h-4" />}><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-3 border-b border-border/50"><Field label="Nº de selo"><Input value={form.controlos.numeroSelo ?? ""} onChange={event => setControl("numeroSelo", event.target.value)} placeholder="Selo" /></Field><Field label="Nº de silo"><Input value={form.controlos.numeroSilo ?? ""} onChange={event => setControl("numeroSilo", event.target.value)} placeholder="Silo" /></Field></div><ControloRow label="Crivo" value={form.controlos.crivo} onChange={estado => setControl("crivo", estado)} /><ControloRow label="Fecho da boca de carga" value={form.controlos.fechoBocaCarga} onChange={estado => setControl("fechoBocaCarga", estado)} /></ControlCard>
               <ControlCard title="Produto" icon={<PackageCheck className="w-4 h-4" />}><ControloRow label="Aspeto macroscópico" value={form.controlos.aspetoMacroscopico} onChange={estado => setControl("aspetoMacroscopico", estado)} /><ControloRow label="Presença de matérias estranhas" value={form.controlos.materiasEstranhas} onChange={estado => setControl("materiasEstranhas", estado)} /><ControloRow label="Infestação" value={form.controlos.infestacaoProduto} onChange={estado => setControl("infestacaoProduto", estado)} /><ControloRow label="Datas de validade" value={form.controlos.datasValidade} onChange={estado => setControl("datasValidade", estado)} /></ControlCard>
             </div></section>
 
@@ -331,7 +331,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function ControlCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
-  return <div className="rounded-xl border border-border/70 bg-background overflow-hidden"><div className="px-3 py-2.5 bg-muted/30 flex items-center gap-2 text-xs font-semibold">{icon}{title}</div><div className="px-3">{children}</div></div>;
+  return <div className="min-w-0 rounded-xl border border-border/70 bg-background overflow-hidden"><div className="px-3 py-2.5 bg-muted/30 flex items-center gap-2 text-xs font-semibold">{icon}{title}</div><div className="px-3">{children}</div></div>;
 }
 
 function ConformidadeBadge({ estado }: { estado: "conforme" | "nao_conforme" | "pendente" }) {
