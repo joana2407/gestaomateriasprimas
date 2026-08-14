@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 47/47 testes passados
+- [x] Total: 51/51 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -437,3 +437,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Localizar a ação de transferência e a condição de visibilidade atual
 - [x] Expor a transferência num local visível do painel de Matérias-Primas para Qualidade
 - [x] Validar o acesso e criar checkpoint
+
+## Correção v4.20 — Transferência física de stock em Receções
+
+- [x] Remover a transferência do detalhe de Matérias-Primas
+- [x] Adaptar a transferência a movimento físico com data, quantidade, responsável e motivo
+- [x] Criar a ação de transferência entre fábricas no painel de Receções
+- [x] Validar rastreabilidade, testes e criar checkpoint

@@ -3,10 +3,8 @@ import { protectedProcedure, publicProcedure, qualidadeProcedure, router } from 
 import { getDb,
   getMateriasPrimas, getMateriaPrimaById, upsertMateriaPrima,
   deleteMateriaPrima, addAuditLog, getFornecedores,
-  getMpFornecedores, setMpFornecedores, getMpFabricas, setMpFabricas,
-  getTransferenciasMateriaPrima, transferirMateriaPrimaEntreFabricas
+  getMpFornecedores, setMpFornecedores, getMpFabricas, setMpFabricas
 } from "../db";
-import { validarTransferenciaMp } from "../../shared/mp-transferencia";
 import { desc, eq } from "drizzle-orm";
 import { validacoesMp, materiasPrimas } from "../../drizzle/schema";
 import { TRPCError } from "@trpc/server";
@@ -154,35 +152,4 @@ export const materiasPrimasRouter = router({
       return { success: true };
     }),
 
-  transferencias: qualidadeProcedure
-    .input(z.object({ materiaPrimaId: z.number().int().positive() }))
-    .query(async ({ input }) => getTransferenciasMateriaPrima(input.materiaPrimaId)),
-
-  transferir: qualidadeProcedure
-    .input(z.object({
-      materiaPrimaId: z.number().int().positive(),
-      fabricaOrigemId: z.number().int().positive(),
-      fabricaDestinoId: z.number().int().positive(),
-      estadoDestino: z.enum(["ativa", "para_testes", "inativa"]).default("ativa"),
-      manterNaOrigem: z.boolean().default(false),
-      observacoes: z.string().trim().max(2000).optional(),
-    }))
-    .mutation(async ({ input, ctx }) => {
-      validarTransferenciaMp(input);
-      const mp = await getMateriaPrimaById(input.materiaPrimaId);
-      if (!mp) throw new TRPCError({ code: "NOT_FOUND", message: "Matéria-prima não encontrada." });
-      if (input.fabricaDestinoId === 3 && (mp.alergeniosFormulacao as string[] | null)?.includes("gluten")) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: "A Fábrica III não aceita matérias-primas com glúten via formulação." });
-      }
-      const transferenciaId = await transferirMateriaPrimaEntreFabricas({ ...input, transferidoPor: ctx.user.id });
-      await addAuditLog({
-        entidade: "transferencia_mp",
-        entidadeId: transferenciaId,
-        acao: "atualizado",
-        dadosNovos: { materiaPrimaId: input.materiaPrimaId, fabricaOrigemId: input.fabricaOrigemId, fabricaDestinoId: input.fabricaDestinoId, estadoDestino: input.estadoDestino, manterNaOrigem: input.manterNaOrigem, observacoes: input.observacoes ?? null },
-        userId: ctx.user.id,
-        userName: ctx.user.name ?? ctx.user.email ?? "Qualidade",
-      });
-      return { id: transferenciaId };
-    }),
 });

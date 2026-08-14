@@ -331,8 +331,11 @@ export async function transferirMateriaPrimaEntreFabricas(data: {
   materiaPrimaId: number;
   fabricaOrigemId: number;
   fabricaDestinoId: number;
-  estadoDestino: "ativa" | "para_testes" | "inativa";
-  manterNaOrigem: boolean;
+  dataTransferencia: Date;
+  quantidade: number;
+  unidade: "kg" | "lt" | "ton";
+  responsavel: string;
+  motivo: string;
   observacoes?: string | null;
   transferidoPor: number;
 }) {
@@ -349,23 +352,26 @@ export async function transferirMateriaPrimaEntreFabricas(data: {
       eq(materiasPrimasFabricas.materiaPrimaId, data.materiaPrimaId),
       eq(materiasPrimasFabricas.fabricaId, data.fabricaDestinoId),
     )).limit(1);
-    if (destino[0]) throw new Error("A matéria-prima já está associada à fábrica de destino.");
-
-    await tx.insert(materiasPrimasFabricas).values({
-      materiaPrimaId: data.materiaPrimaId,
-      fabricaId: data.fabricaDestinoId,
-      estado: data.estadoDestino,
-    });
-    if (!data.manterNaOrigem) {
-      await tx.delete(materiasPrimasFabricas).where(eq(materiasPrimasFabricas.id, origem[0].id));
+    const estadoDestino = destino[0]?.estado ?? origem[0].estado;
+    if (!destino[0]) {
+      await tx.insert(materiasPrimasFabricas).values({
+        materiaPrimaId: data.materiaPrimaId,
+        fabricaId: data.fabricaDestinoId,
+        estado: estadoDestino,
+      });
     }
     const resultado = await tx.insert(transferenciasMateriasPrimas).values({
       materiaPrimaId: data.materiaPrimaId,
       fabricaOrigemId: data.fabricaOrigemId,
       fabricaDestinoId: data.fabricaDestinoId,
+      dataTransferencia: data.dataTransferencia,
+      quantidade: data.quantidade,
+      unidade: data.unidade,
+      responsavel: data.responsavel,
+      motivo: data.motivo,
       estadoOrigem: origem[0].estado,
-      estadoDestino: data.estadoDestino,
-      manterNaOrigem: data.manterNaOrigem,
+      estadoDestino,
+      manterNaOrigem: true,
       observacoes: data.observacoes ?? null,
       transferidoPor: data.transferidoPor,
     });
@@ -379,6 +385,13 @@ export async function getTransferenciasMateriaPrima(materiaPrimaId: number) {
   return db.select().from(transferenciasMateriasPrimas)
     .where(eq(transferenciasMateriasPrimas.materiaPrimaId, materiaPrimaId))
     .orderBy(desc(transferenciasMateriasPrimas.createdAt));
+}
+
+export async function getTransferenciasStock() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(transferenciasMateriasPrimas)
+    .orderBy(desc(transferenciasMateriasPrimas.dataTransferencia));
 }
 
 // ─── MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────────────
