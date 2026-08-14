@@ -1,12 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { validarTransferenciaStock } from "../shared/transferencia-stock";
+import { calcularQuantidadeDisponivel, validarTransferenciaStock } from "../shared/transferencia-stock";
 
 const transferenciaValida = {
-  fabricaOrigemId: 1,
+  rececaoOrigemId: 20,
   fabricaDestinoId: 2,
   dataTransferencia: new Date("2026-08-14T12:00:00Z"),
   quantidade: 250,
-  unidade: "kg" as const,
   responsavel: "Joana Pina",
   motivo: "Reposição de stock para produção",
 };
@@ -24,7 +23,12 @@ describe("validarTransferenciaStock", () => {
     expect(() => validarTransferenciaStock({ ...transferenciaValida, responsavel: "", motivo: "" })).toThrow("responsável");
   });
 
-  it("impede transferências para a própria fábrica", () => {
-    expect(() => validarTransferenciaStock({ ...transferenciaValida, fabricaDestinoId: 1 })).toThrow("destino deve ser diferente");
+  it("exige uma receção de origem identificada", () => {
+    expect(() => validarTransferenciaStock({ ...transferenciaValida, rececaoOrigemId: 0 })).toThrow("receção e o lote");
+  });
+
+  it("calcula o saldo disponível sem permitir valores negativos", () => {
+    expect(calcularQuantidadeDisponivel(100, 35)).toBe(65);
+    expect(calcularQuantidadeDisponivel(100, 120)).toBe(0);
   });
 });

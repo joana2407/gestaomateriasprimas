@@ -142,6 +142,7 @@ export type MateriaPrimaFabrica = typeof materiasPrimasFabricas.$inferSelect;
 // os estados operacionais de origem/destino e o utilizador responsável.
 export const transferenciasMateriasPrimas = mysqlTable("transferencias_materias_primas", {
   id: int("id").autoincrement().primaryKey(),
+  rececaoOrigemId: int("rececao_origem_id").notNull().references(() => rececoesMateriasPrimas.id),
   materiaPrimaId: int("materia_prima_id").notNull().references(() => materiasPrimas.id),
   fabricaOrigemId: int("fabrica_origem_id").notNull().references(() => fabricas.id),
   fabricaDestinoId: int("fabrica_destino_id").notNull().references(() => fabricas.id),

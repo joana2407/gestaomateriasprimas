@@ -59,12 +59,10 @@ type RececaoForm = {
 };
 
 type TransferenciaStockForm = {
-  materiaPrimaId: number;
-  fabricaOrigemId: number;
+  rececaoOrigemId: number;
   fabricaDestinoId: number;
   dataTransferencia: string;
   quantidade: number;
-  unidade: UnidadeRececao;
   responsavel: string;
   motivo: string;
   observacoes: string;
@@ -99,14 +97,12 @@ function emptyForm(responsavel = "", fabricaId = 0): RececaoForm {
   };
 }
 
-function emptyTransferenciaStock(responsavel = "", fabricaOrigemId = 0): TransferenciaStockForm {
+function emptyTransferenciaStock(responsavel = "", rececaoOrigemId = 0): TransferenciaStockForm {
   return {
-    materiaPrimaId: 0,
-    fabricaOrigemId,
+    rececaoOrigemId,
     fabricaDestinoId: 0,
     dataTransferencia: todayInput(),
     quantidade: 0,
-    unidade: "kg",
     responsavel,
     motivo: "",
     observacoes: "",
@@ -259,20 +255,28 @@ export default function Rececoes() {
     setDialogOpen(true);
   }
 
-  function abrirTransferenciaStock() {
-    const fabricaOrigemId = fabricaFilter !== "all" ? Number(fabricaFilter) : fabricas?.[0]?.id ?? 0;
-    setTransferenciaForm(emptyTransferenciaStock(user?.name ?? "", fabricaOrigemId));
+  function abrirTransferenciaStock(rececao: any) {
+    setTransferenciaForm(emptyTransferenciaStock(user?.name ?? "", rececao.id));
     setTransferenciaDialogOpen(true);
   }
 
-  const materiasNaOrigem = useMemo(() => (materiasPrimas ?? []).filter(mp =>
-    ((mp.fabricasIds as number[] | null) ?? []).includes(transferenciaForm.fabricaOrigemId)
-  ), [materiasPrimas, transferenciaForm.fabricaOrigemId]);
+  const rececaoOrigemTransferencia = useMemo(() => (rececoes ?? []).find(rececao => rececao.id === transferenciaForm.rececaoOrigemId), [rececoes, transferenciaForm.rececaoOrigemId]);
+  const quantidadeTransferidaPorRececao = useMemo(() => new Map<number, number>((transferenciasStock ?? []).reduce((map, transferencia) => {
+    map.set(transferencia.rececaoOrigemId, (map.get(transferencia.rececaoOrigemId) ?? 0) + transferencia.quantidade);
+    return map;
+  }, new Map<number, number>())), [transferenciasStock]);
+  const quantidadeDisponivelTransferencia = rececaoOrigemTransferencia
+    ? Math.max(0, rececaoOrigemTransferencia.quantidade - (quantidadeTransferidaPorRececao.get(rececaoOrigemTransferencia.id) ?? 0))
+    : 0;
 
   function guardarTransferenciaStock() {
     const transferencia = transferenciaForm;
-    if (!transferencia.materiaPrimaId || !transferencia.fabricaOrigemId || !transferencia.fabricaDestinoId || !transferencia.dataTransferencia || !transferencia.quantidade || !transferencia.responsavel.trim() || !transferencia.motivo.trim()) {
-      toast.error("Preencha origem, destino, matéria-prima, data, quantidade, responsável e motivo.");
+    if (!transferencia.rececaoOrigemId || !transferencia.fabricaDestinoId || !transferencia.dataTransferencia || !transferencia.quantidade || !transferencia.responsavel.trim() || !transferencia.motivo.trim()) {
+      toast.error("Preencha destino, data, quantidade, responsável e motivo.");
+      return;
+    }
+    if (transferencia.quantidade > quantidadeDisponivelTransferencia) {
+      toast.error("A quantidade indicada excede o saldo disponível neste lote.");
       return;
     }
     transferirStock.mutate({
@@ -359,7 +363,7 @@ export default function Rececoes() {
     <SigaLayout
       title="Receções de Matérias-Primas"
       subtitle={`${filteredRececoes.length} de ${rececoes?.length ?? 0} receções no registo`}
-      actions={isAuthenticated ? <div className="flex items-center gap-2"><Button size="sm" variant="outline" onClick={abrirTransferenciaStock} className="gap-1.5" disabled={!podeTransferirStock}><ArrowRightLeft className="w-3.5 h-3.5" />Transferir stock</Button><Button size="sm" onClick={abrirNovaRececao} className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova receção</Button></div> : undefined}
+      actions={isAuthenticated ? <Button size="sm" onClick={abrirNovaRececao} className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova receção</Button> : undefined}
     >
       <div className="space-y-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -389,12 +393,12 @@ export default function Rececoes() {
             return <div key={rececao.id} className="card-elegant p-4 flex flex-col lg:flex-row lg:items-center gap-4">
               <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rececao.conformidade === "conforme" ? "bg-emerald-50" : rececao.conformidade === "nao_conforme" ? "bg-red-50" : "bg-amber-50")}><PackageCheck className={cn("w-5 h-5", config.className.split(" ")[1])} /></div>
               <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold">{rececao.materiaPrimaNome}</p><Badge variant="outline" className="font-normal text-[10px]">{armazem?.label}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{rececao.fornecedorNome}{rececao.lote ? ` · Lote ${rececao.lote}` : ""}{rececao.numeroGuia ? ` · Guia ${rececao.numeroGuia}` : ""}</p><div className="mt-2 flex gap-2 flex-wrap">{fabrica && <FactoryBadge nome={fabrica.nome} codigo={fabrica.codigo} size="sm" />}<span className="text-[10px] text-muted-foreground">{new Date(rececao.dataRececao).toLocaleDateString("pt-PT")}</span><span className="text-[10px] text-muted-foreground">{rececao.quantidade} {formatarUnidadeRececao(rececao.unidade as UnidadeRececao)}</span></div></div>
-              <div className="flex items-center gap-3 justify-between lg:justify-end"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span>{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
+              <div className="flex items-center gap-2 justify-between lg:justify-end flex-wrap"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span>{podeTransferirStock && rececao.lote && (quantidadeTransferidaPorRececao.get(rececao.id) ?? 0) < rececao.quantidade && <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirTransferenciaStock(rececao)}><ArrowRightLeft className="w-3.5 h-3.5" />Transferir lote</Button>}{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
             </div>;
           })}
         </div>
 
-        {podeTransferirStock && <section className="card-elegant overflow-hidden"><div className="flex items-center justify-between gap-3 border-b border-border/60 px-4 py-3"><div className="flex items-center gap-2"><ArrowRightLeft className="w-4 h-4 text-primary" /><div><p className="text-sm font-semibold">Transferências físicas de stock</p><p className="text-[11px] text-muted-foreground">Movimentos entre fábricas registados neste módulo.</p></div></div><Button variant="ghost" size="sm" onClick={abrirTransferenciaStock}>Registar transferência</Button></div><div className="divide-y divide-border/50">{(transferenciasStock?.length ?? 0) > 0 ? transferenciasStock?.slice(0, 8).map(transferencia => { const mp = materiasPrimas?.find(item => item.id === transferencia.materiaPrimaId); const origem = fabricas?.find(item => item.id === transferencia.fabricaOrigemId); const destino = fabricas?.find(item => item.id === transferencia.fabricaDestinoId); return <div key={transferencia.id} className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 py-3 text-xs"><div className="min-w-0 flex-1"><p className="font-medium">{mp?.nome ?? `MP #${transferencia.materiaPrimaId}`}</p><p className="mt-0.5 text-muted-foreground">{origem?.nome ?? "Origem"} <ArrowRightLeft className="mx-1 inline h-3 w-3 text-primary" /> {destino?.nome ?? "Destino"} · {transferencia.motivo}</p></div><div className="flex flex-wrap items-center gap-2 text-muted-foreground"><span>{new Date(transferencia.dataTransferencia).toLocaleDateString("pt-PT")}</span><Badge variant="outline">{transferencia.quantidade} {formatarUnidadeRececao(transferencia.unidade as UnidadeRececao)}</Badge><span>{transferencia.responsavel}</span></div></div>; }) : <p className="px-4 py-5 text-xs italic text-muted-foreground">Ainda não existem transferências de stock registadas.</p>}</div></section>}
+        {podeTransferirStock && <section className="card-elegant overflow-hidden"><div className="border-b border-border/60 px-4 py-3"><div className="flex items-center gap-2"><ArrowRightLeft className="w-4 h-4 text-primary" /><div><p className="text-sm font-semibold">Transferências físicas de stock</p><p className="text-[11px] text-muted-foreground">Movimentos associados à receção e ao lote de origem.</p></div></div></div><div className="divide-y divide-border/50">{(transferenciasStock?.length ?? 0) > 0 ? transferenciasStock?.slice(0, 8).map(transferencia => { const rececaoOrigem = rececoes?.find(rececao => rececao.id === transferencia.rececaoOrigemId); const mp = materiasPrimas?.find(item => item.id === transferencia.materiaPrimaId); const origem = fabricas?.find(item => item.id === transferencia.fabricaOrigemId); const destino = fabricas?.find(item => item.id === transferencia.fabricaDestinoId); return <div key={transferencia.id} className="flex flex-col sm:flex-row sm:items-center gap-2 px-4 py-3 text-xs"><div className="min-w-0 flex-1"><p className="font-medium">{mp?.nome ?? `MP #${transferencia.materiaPrimaId}`} {rececaoOrigem?.lote ? `· Lote ${rececaoOrigem.lote}` : ""}</p><p className="mt-0.5 text-muted-foreground">{origem?.nome ?? "Origem"} <ArrowRightLeft className="mx-1 inline h-3 w-3 text-primary" /> {destino?.nome ?? "Destino"} · {transferencia.motivo}</p></div><div className="flex flex-wrap items-center gap-2 text-muted-foreground"><span>{new Date(transferencia.dataTransferencia).toLocaleDateString("pt-PT")}</span><Badge variant="outline">{transferencia.quantidade} {formatarUnidadeRececao(transferencia.unidade as UnidadeRececao)}</Badge><span>{transferencia.responsavel}</span></div></div>; }) : <p className="px-4 py-5 text-xs italic text-muted-foreground">Ainda não existem transferências de stock registadas.</p>}</div></section>}
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -432,7 +436,14 @@ export default function Rececoes() {
         </DialogContent>
       </Dialog>
       <Dialog open={transferenciaDialogOpen} onOpenChange={setTransferenciaDialogOpen}>
-        <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[92vh] overflow-y-auto p-4 sm:p-6"><DialogHeader><DialogTitle className="flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-primary" />Transferir stock entre fábricas</DialogTitle><DialogDescription>Registe o movimento físico de matéria-prima. A operação fica auditada no histórico.</DialogDescription></DialogHeader><div className="space-y-5 pt-3"><div className="grid [grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4"><Field label="Fábrica de origem *"><Select value={transferenciaForm.fabricaOrigemId ? String(transferenciaForm.fabricaOrigemId) : "none"} onValueChange={value => setTransferenciaForm(current => ({ ...current, fabricaOrigemId: Number(value), materiaPrimaId: 0, fabricaDestinoId: 0 }))}><SelectTrigger><SelectValue placeholder="Selecionar origem" /></SelectTrigger><SelectContent>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select></Field><Field label="Fábrica de destino *"><Select disabled={!transferenciaForm.fabricaOrigemId} value={transferenciaForm.fabricaDestinoId ? String(transferenciaForm.fabricaDestinoId) : "none"} onValueChange={value => setTransferenciaForm(current => ({ ...current, fabricaDestinoId: Number(value) }))}><SelectTrigger><SelectValue placeholder="Selecionar destino" /></SelectTrigger><SelectContent>{fabricas?.filter(fabrica => fabrica.id !== transferenciaForm.fabricaOrigemId).map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select></Field><Field label="Matéria-prima *"><Select disabled={!transferenciaForm.fabricaOrigemId} value={transferenciaForm.materiaPrimaId ? String(transferenciaForm.materiaPrimaId) : "none"} onValueChange={value => setTransferenciaForm(current => ({ ...current, materiaPrimaId: Number(value) }))}><SelectTrigger><SelectValue placeholder="Selecionar MP na origem" /></SelectTrigger><SelectContent>{materiasNaOrigem.length > 0 ? materiasNaOrigem.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>) : <div className="px-2 py-3 text-xs text-muted-foreground">Não existem MP disponíveis nesta fábrica.</div>}</SelectContent></Select></Field><Field label="Data da transferência *"><Input type="date" value={transferenciaForm.dataTransferencia} onChange={event => setTransferenciaForm(current => ({ ...current, dataTransferencia: event.target.value }))} /></Field><Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={transferenciaForm.quantidade || ""} onChange={event => setTransferenciaForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} /></Field><Field label="Unidade *"><Select value={transferenciaForm.unidade} onValueChange={value => setTransferenciaForm(current => ({ ...current, unidade: value as UnidadeRececao }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNIDADES_RECECAO.map(unidade => <SelectItem key={unidade.value} value={unidade.value}>{unidade.label}</SelectItem>)}</SelectContent></Select></Field><Field label="Responsável pela transferência *"><Input value={transferenciaForm.responsavel} onChange={event => setTransferenciaForm(current => ({ ...current, responsavel: event.target.value }))} placeholder="Nome do responsável" /></Field></div><Field label="Motivo da transferência *"><Textarea value={transferenciaForm.motivo} onChange={event => setTransferenciaForm(current => ({ ...current, motivo: event.target.value }))} placeholder="Ex.: Reposição de stock, apoio à produção, transferência de lote..." /></Field><Field label="Observações"><Textarea value={transferenciaForm.observacoes} onChange={event => setTransferenciaForm(current => ({ ...current, observacoes: event.target.value }))} placeholder="Lote, condições de transporte ou outras notas (opcional)" /></Field><div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border/60"><Button variant="outline" onClick={() => setTransferenciaDialogOpen(false)}>Cancelar</Button><Button onClick={guardarTransferenciaStock} disabled={transferirStock.isPending}>{transferirStock.isPending ? "A registar..." : "Registar transferência"}</Button></div></div></DialogContent>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-primary" />Transferir stock do lote recebido</DialogTitle><DialogDescription>O movimento fica associado a esta receção, matéria-prima e lote de origem.</DialogDescription></DialogHeader>
+          {rececaoOrigemTransferencia && <div className="space-y-5 pt-3">
+            <div className="rounded-xl border border-primary/20 bg-primary/5 p-4"><p className="text-[10px] font-semibold uppercase tracking-wide text-primary">Receção de origem</p><p className="mt-1 text-sm font-semibold">{rececaoOrigemTransferencia.materiaPrimaNome}</p><p className="mt-1 text-xs text-muted-foreground">Lote {rececaoOrigemTransferencia.lote} · {new Date(rececaoOrigemTransferencia.dataRececao).toLocaleDateString("pt-PT")} · Saldo disponível: <strong>{quantidadeDisponivelTransferencia} {formatarUnidadeRececao(rececaoOrigemTransferencia.unidade as UnidadeRececao)}</strong></p></div>
+            <div className="grid [grid-template-columns:repeat(auto-fit,minmax(min(100%,14rem),1fr))] gap-4"><Field label="Fábrica de destino *"><Select value={transferenciaForm.fabricaDestinoId ? String(transferenciaForm.fabricaDestinoId) : "none"} onValueChange={value => setTransferenciaForm(current => ({ ...current, fabricaDestinoId: Number(value) }))}><SelectTrigger><SelectValue placeholder="Selecionar destino" /></SelectTrigger><SelectContent>{fabricas?.filter(fabrica => fabrica.id !== rececaoOrigemTransferencia.fabricaId).map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select></Field><Field label="Data da transferência *"><Input type="date" value={transferenciaForm.dataTransferencia} onChange={event => setTransferenciaForm(current => ({ ...current, dataTransferencia: event.target.value }))} /></Field><Field label={`Quantidade * (máx. ${quantidadeDisponivelTransferencia})`}><Input type="number" min="0" max={quantidadeDisponivelTransferencia} step="0.001" value={transferenciaForm.quantidade || ""} onChange={event => setTransferenciaForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} /></Field><Field label="Unidade"><div className="h-10 rounded-md border border-input bg-muted/40 px-3 py-2 text-sm">{formatarUnidadeRececao(rececaoOrigemTransferencia.unidade as UnidadeRececao)}</div></Field><Field label="Responsável pela transferência *"><Input value={transferenciaForm.responsavel} onChange={event => setTransferenciaForm(current => ({ ...current, responsavel: event.target.value }))} placeholder="Nome do responsável" /></Field></div>
+            <Field label="Motivo da transferência *"><Textarea value={transferenciaForm.motivo} onChange={event => setTransferenciaForm(current => ({ ...current, motivo: event.target.value }))} placeholder="Ex.: Reposição de stock, apoio à produção, transferência de lote..." /></Field><Field label="Observações"><Textarea value={transferenciaForm.observacoes} onChange={event => setTransferenciaForm(current => ({ ...current, observacoes: event.target.value }))} placeholder="Condições de transporte ou outras notas (opcional)" /></Field><div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-3 border-t border-border/60"><Button variant="outline" onClick={() => setTransferenciaDialogOpen(false)}>Cancelar</Button><Button onClick={guardarTransferenciaStock} disabled={transferirStock.isPending || quantidadeDisponivelTransferencia <= 0}>{transferirStock.isPending ? "A registar..." : "Registar transferência"}</Button></div>
+          </div>}
+        </DialogContent>
       </Dialog>
       <AlertDialog open={Boolean(rececaoParaEliminar)} onOpenChange={open => !open && setRececaoParaEliminar(null)}>
         <AlertDialogContent>

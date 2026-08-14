@@ -56,12 +56,10 @@ const rececaoInput = z.object({
 });
 
 const transferenciaStockInput = z.object({
-  materiaPrimaId: z.number().int().positive(),
-  fabricaOrigemId: z.number().int().positive(),
+  rececaoOrigemId: z.number().int().positive(),
   fabricaDestinoId: z.number().int().positive(),
   dataTransferencia: z.date(),
   quantidade: z.number().positive(),
-  unidade: z.enum(UNIDADES_RECECAO_IDS),
   responsavel: z.string().min(2).max(150),
   motivo: z.string().min(3).max(5000),
   observacoes: z.string().max(5000).nullable().optional(),
@@ -95,13 +93,8 @@ export const rececoesRouter = router({
     .input(transferenciaStockInput)
     .mutation(async ({ input, ctx }) => {
       validarTransferenciaStock(input);
-      const materiasPrimas = await getMateriasPrimas();
-      const materiaPrima = materiasPrimas.find(mp => mp.id === input.materiaPrimaId);
-      if (!materiaPrima) throw new Error("Matéria-prima não encontrada.");
-      const fabricasMp = (materiaPrima.fabricasIds as number[] | null) ?? [];
-      if (!fabricasMp.includes(input.fabricaOrigemId)) {
-        throw new Error("A matéria-prima não está disponível na fábrica de origem.");
-      }
+      const rececao = await getRececaoMateriaPrimaById(input.rececaoOrigemId);
+      if (!rececao) throw new Error("A receção de origem não foi encontrada.");
       const id = await transferirMateriaPrimaEntreFabricas({
         ...input,
         observacoes: input.observacoes?.trim() || null,
@@ -111,7 +104,7 @@ export const rececoesRouter = router({
         entidade: "transferencia_stock_mp",
         entidadeId: id,
         acao: "criado",
-        dadosNovos: { ...input, materiaPrima: materiaPrima.nome },
+        dadosNovos: { ...input, materiaPrimaId: rececao.materiaPrimaId, lote: rececao.lote, fabricaOrigemId: rececao.fabricaId, unidade: rececao.unidade },
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });

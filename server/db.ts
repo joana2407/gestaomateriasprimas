@@ -21,6 +21,7 @@ import {
   users,
 } from "../drizzle/schema";
 import { documentosFornecedor } from "../drizzle/schema";
+import { calcularQuantidadeDisponivel } from "../shared/transferencia-stock";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -328,12 +329,10 @@ export async function setMpFabricas(
 }
 
 export async function transferirMateriaPrimaEntreFabricas(data: {
-  materiaPrimaId: number;
-  fabricaOrigemId: number;
+  rececaoOrigemId: number;
   fabricaDestinoId: number;
   dataTransferencia: Date;
   quantidade: number;
-  unidade: "kg" | "lt" | "ton";
   responsavel: string;
   motivo: string;
   observacoes?: string | null;
@@ -342,31 +341,47 @@ export async function transferirMateriaPrimaEntreFabricas(data: {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   return db.transaction(async tx => {
+    const rececaoOrigem = await tx.select().from(rececoesMateriasPrimas)
+      .where(eq(rececoesMateriasPrimas.id, data.rececaoOrigemId)).limit(1);
+    const rececao = rececaoOrigem[0];
+    if (!rececao) throw new Error("A receção de origem não foi encontrada.");
+    if (!rececao.lote?.trim()) throw new Error("A transferência exige uma receção com lote identificado.");
+    if (rececao.fabricaId === data.fabricaDestinoId) throw new Error("A fábrica de destino deve ser diferente da origem.");
+
+    const transferido = await tx.select({ total: sql<number>`COALESCE(SUM(${transferenciasMateriasPrimas.quantidade}), 0)` })
+      .from(transferenciasMateriasPrimas)
+      .where(eq(transferenciasMateriasPrimas.rececaoOrigemId, rececao.id));
+    const quantidadeDisponivel = calcularQuantidadeDisponivel(rececao.quantidade, Number(transferido[0]?.total ?? 0));
+    if (data.quantidade > quantidadeDisponivel + 0.000001) {
+      throw new Error(`Quantidade indisponível para este lote. Disponível: ${quantidadeDisponivel} ${rececao.unidade}.`);
+    }
+
     const origem = await tx.select().from(materiasPrimasFabricas).where(and(
-      eq(materiasPrimasFabricas.materiaPrimaId, data.materiaPrimaId),
-      eq(materiasPrimasFabricas.fabricaId, data.fabricaOrigemId),
+      eq(materiasPrimasFabricas.materiaPrimaId, rececao.materiaPrimaId),
+      eq(materiasPrimasFabricas.fabricaId, rececao.fabricaId),
     )).limit(1);
     if (!origem[0]) throw new Error("A matéria-prima não está associada à fábrica de origem.");
 
     const destino = await tx.select().from(materiasPrimasFabricas).where(and(
-      eq(materiasPrimasFabricas.materiaPrimaId, data.materiaPrimaId),
+      eq(materiasPrimasFabricas.materiaPrimaId, rececao.materiaPrimaId),
       eq(materiasPrimasFabricas.fabricaId, data.fabricaDestinoId),
     )).limit(1);
     const estadoDestino = destino[0]?.estado ?? origem[0].estado;
     if (!destino[0]) {
       await tx.insert(materiasPrimasFabricas).values({
-        materiaPrimaId: data.materiaPrimaId,
+        materiaPrimaId: rececao.materiaPrimaId,
         fabricaId: data.fabricaDestinoId,
         estado: estadoDestino,
       });
     }
     const resultado = await tx.insert(transferenciasMateriasPrimas).values({
-      materiaPrimaId: data.materiaPrimaId,
-      fabricaOrigemId: data.fabricaOrigemId,
+      rececaoOrigemId: rececao.id,
+      materiaPrimaId: rececao.materiaPrimaId,
+      fabricaOrigemId: rececao.fabricaId,
       fabricaDestinoId: data.fabricaDestinoId,
       dataTransferencia: data.dataTransferencia,
       quantidade: data.quantidade,
-      unidade: data.unidade,
+      unidade: rececao.unidade,
       responsavel: data.responsavel,
       motivo: data.motivo,
       estadoOrigem: origem[0].estado,
