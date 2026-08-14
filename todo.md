@@ -424,3 +424,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Criar transferência auditada de uma MP para uma fábrica de destino
 - [x] Tornar explícito o campo Responsável pela receção no formulário e no histórico
 - [x] Validar rastreabilidade, testes e criar checkpoint
+
+## Correção v4.18 — Navegação após acesso por PIN
+
+- [x] Inspecionar sessão PIN, rotas protegidas e registos do navegador
+- [x] Tornar explícita a limitação do perfil Logística e disponibilizar troca de utilizador
+- [x] Corrigir o bloqueio que impede navegar nos módulos autorizados
+- [x] Validar o acesso às páginas e criar checkpoint

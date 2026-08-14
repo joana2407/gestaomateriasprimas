@@ -169,12 +169,28 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
             {title && <h1 className="text-base font-semibold text-foreground truncate">{title}</h1>}
             {subtitle && <p className="text-xs text-muted-foreground truncate">{subtitle}</p>}
           </div>
+          {isAuthenticated && user && (
+            <button
+              onClick={() => logout()}
+              className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+              title="Terminar sessão e trocar de utilizador"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Trocar utilizador</span>
+            </button>
+          )}
           {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
         </header>
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="p-4 sm:p-6">
+            {isLogistica && (
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-3 text-xs text-sky-800">
+                <span><strong>Perfil Logística:</strong> este acesso está autorizado apenas para o módulo de Receções.</span>
+                <button onClick={() => logout()} className="font-semibold text-sky-900 underline underline-offset-2 text-left sm:text-right">Trocar para utilizador de Qualidade</button>
+              </div>
+            )}
             {children}
           </div>
         </main>
