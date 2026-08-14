@@ -405,3 +405,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Inspecionar atualizações repetidas e registos do navegador em Receções
 - [x] Corrigir a origem do efeito de piscar
 - [x] Validar estabilidade, testes e criar checkpoint
+
+## Correção v4.15 — Dimensionamento fluído do formulário de Receções
+
+- [x] Analisar os pontos de compressão de campos e textos em tablet e telemóvel
+- [x] Aplicar grelhas fluídas, larguras mínimas e quebras seguras aos campos
+- [x] Validar em telemóvel, tablet e desktop e criar checkpoint
