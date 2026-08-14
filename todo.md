@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 43/43 testes passados
+- [x] Total: 44/44 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -411,3 +411,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Analisar os pontos de compressão de campos e textos em tablet e telemóvel
 - [x] Aplicar grelhas fluídas, larguras mínimas e quebras seguras aos campos
 - [x] Validar em telemóvel, tablet e desktop e criar checkpoint
+
+## Melhoria v4.16 — Intervalo de datas nas Receções
+
+- [x] Analisar o formato das datas e os filtros existentes nas Receções
+- [x] Adicionar data inicial e data final à pesquisa combinada
+- [x] Validar filtro, testes e criar checkpoint

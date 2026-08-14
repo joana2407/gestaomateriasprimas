@@ -148,6 +148,8 @@ export default function Rececoes() {
   const [conformidadeFilter, setConformidadeFilter] = useState("all");
   const [fornecedorFilter, setFornecedorFilter] = useState("all");
   const [materiaPrimaFilter, setMateriaPrimaFilter] = useState("all");
+  const [dataInicialFilter, setDataInicialFilter] = useState("");
+  const [dataFinalFilter, setDataFinalFilter] = useState("");
   const [form, setForm] = useState<RececaoForm>(() => emptyForm(user?.name ?? ""));
   const [rececaoParaEliminar, setRececaoParaEliminar] = useState<any | null>(null);
   const [rececaoDiretaId, setRececaoDiretaId] = useState<number | null>(() => {
@@ -188,9 +190,11 @@ export default function Rececoes() {
     pesquisa: search,
     fornecedorId: fornecedorFilter === "all" ? undefined : Number(fornecedorFilter),
     materiaPrimaId: materiaPrimaFilter === "all" ? undefined : Number(materiaPrimaFilter),
-  }), [rececoes, search, fornecedorFilter, materiaPrimaFilter]);
+    dataInicial: dataInicialFilter || undefined,
+    dataFinal: dataFinalFilter || undefined,
+  }), [rececoes, search, fornecedorFilter, materiaPrimaFilter, dataInicialFilter, dataFinalFilter]);
 
-  const temFiltrosAtivos = search.trim() || fabricaFilter !== "all" || armazemFilter !== "all" || conformidadeFilter !== "all" || fornecedorFilter !== "all" || materiaPrimaFilter !== "all";
+  const temFiltrosAtivos = search.trim() || fabricaFilter !== "all" || armazemFilter !== "all" || conformidadeFilter !== "all" || fornecedorFilter !== "all" || materiaPrimaFilter !== "all" || dataInicialFilter || dataFinalFilter;
   function limparFiltros() {
     setSearch("");
     setFabricaFilter("all");
@@ -198,6 +202,8 @@ export default function Rececoes() {
     setConformidadeFilter("all");
     setFornecedorFilter("all");
     setMateriaPrimaFilter("all");
+    setDataInicialFilter("");
+    setDataFinalFilter("");
   }
 
   const materiasAprovadas = useMemo(() => (materiasPrimas ?? []).filter(mp =>
@@ -308,7 +314,7 @@ export default function Rececoes() {
           })}
         </div>
 
-        <div className="card-elegant p-3 sm:p-4"><div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-2.5"><div className="relative sm:col-span-2 xl:col-span-2 min-w-0"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="MP, fornecedor, lote ou guia" className="pl-9 w-full" /></div><Select value={fabricaFilter} onValueChange={setFabricaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as fábricas" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as fábricas</SelectItem>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select><Select value={armazemFilter} onValueChange={setArmazemFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os armazéns" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os armazéns</SelectItem>{ARMAZENS_RECECAO.map(armazem => <SelectItem key={armazem.id} value={armazem.id}>{armazem.label}</SelectItem>)}</SelectContent></Select><Select value={fornecedorFilter} onValueChange={setFornecedorFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os fornecedores" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os fornecedores</SelectItem>{fornecedores?.map(fornecedor => <SelectItem key={fornecedor.id} value={String(fornecedor.id)}>{fornecedor.nome}</SelectItem>)}</SelectContent></Select><Select value={materiaPrimaFilter} onValueChange={setMateriaPrimaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as MP" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as MP</SelectItem>{materiasPrimas?.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>)}</SelectContent></Select></div>{temFiltrosAtivos && <div className="mt-2.5 flex justify-end"><Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={limparFiltros}><RotateCcw className="w-3.5 h-3.5" />Limpar filtros</Button></div>}</div>
+        <div className="card-elegant p-3 sm:p-4"><div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5"><div className="relative sm:col-span-2 xl:col-span-2 min-w-0"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="MP, fornecedor, lote ou guia" className="pl-9 w-full" /></div><Select value={fabricaFilter} onValueChange={setFabricaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as fábricas" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as fábricas</SelectItem>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select><Select value={armazemFilter} onValueChange={setArmazemFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os armazéns" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os armazéns</SelectItem>{ARMAZENS_RECECAO.map(armazem => <SelectItem key={armazem.id} value={armazem.id}>{armazem.label}</SelectItem>)}</SelectContent></Select><Select value={fornecedorFilter} onValueChange={setFornecedorFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os fornecedores" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os fornecedores</SelectItem>{fornecedores?.map(fornecedor => <SelectItem key={fornecedor.id} value={String(fornecedor.id)}>{fornecedor.nome}</SelectItem>)}</SelectContent></Select><Select value={materiaPrimaFilter} onValueChange={setMateriaPrimaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as MP" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as MP</SelectItem>{materiasPrimas?.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>)}</SelectContent></Select><Field label="Data inicial"><Input type="date" value={dataInicialFilter} onChange={event => setDataInicialFilter(event.target.value)} /></Field><Field label="Data final"><Input type="date" min={dataInicialFilter || undefined} value={dataFinalFilter} onChange={event => setDataFinalFilter(event.target.value)} /></Field></div>{temFiltrosAtivos && <div className="mt-2.5 flex justify-end"><Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={limparFiltros}><RotateCcw className="w-3.5 h-3.5" />Limpar filtros</Button></div>}</div>
 
         <div className="space-y-2">
           {filteredRececoes.length === 0 ? <div className="card-elegant p-12 text-center"><ClipboardCheck className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" /><p className="text-sm font-medium">Ainda não existem receções neste filtro</p><p className="text-xs text-muted-foreground mt-1">Registe a primeira receção para iniciar o controlo de conformidade.</p></div> : filteredRececoes.map(rececao => {
