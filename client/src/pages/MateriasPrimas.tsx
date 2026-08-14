@@ -12,12 +12,13 @@ import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import { ESTADOS_MP_FABRICA, getEstadoMpFabrica, type EstadoMpFabrica } from "../../../shared/mp-factory-status";
 import {
-  AlertTriangle, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
+  AlertTriangle, ArrowRightLeft, ChevronDown, ChevronUp, Edit2, ExternalLink, FileText, Globe, Layers,
   Package, Plus, Search, Star, Trash2, X, GripVertical, Truck, Info, Upload, Calendar, CheckCircle2
 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
@@ -87,7 +88,7 @@ const EMPTY_FORM: MPFormData = {
 };
 
 export default function MateriasPrimas() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [search, setSearch] = useState("");
   const [fabricaFilter, setFabricaFilter] = useState<string>("all");
   const [fornecedorFilter, setFornecedorFilter] = useState<string>("all");
@@ -108,6 +109,12 @@ export default function MateriasPrimas() {
   const [novoFornecedorErros, setNovoFornecedorErros] = useState<{ nome?: string; codigo?: string }>({});
   const [novoFornecedorStatus, setNovoFornecedorStatus] = useState<"completo" | "pendente" | "incompleto">("pendente");
   const [novoFornecedorObservacoes, setNovoFornecedorObservacoes] = useState("");
+  const [transferenciaMp, setTransferenciaMp] = useState<any | null>(null);
+  const [fabricaOrigemTransferencia, setFabricaOrigemTransferencia] = useState(0);
+  const [fabricaDestinoTransferencia, setFabricaDestinoTransferencia] = useState(0);
+  const [estadoDestinoTransferencia, setEstadoDestinoTransferencia] = useState<EstadoMpFabrica>("ativa");
+  const [manterNaOrigem, setManterNaOrigem] = useState(false);
+  const [observacoesTransferencia, setObservacoesTransferencia] = useState("");
 
   // Ler parâmetro ?expand=ID da URL para abrir MP diretamente (vindo do painel de fornecedor)
   useEffect(() => {
@@ -157,6 +164,15 @@ export default function MateriasPrimas() {
     onSuccess: () => { toast.success("MP removida"); refetch(); },
     onError: (e) => toast.error(e.message),
   });
+  const transferirMp = trpc.materiasPrimas.transferir.useMutation({
+    onSuccess: () => {
+      toast.success("Matéria-prima transferida e registada no histórico.");
+      setTransferenciaMp(null);
+      setObservacoesTransferencia("");
+      refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
 
   const fornecedorMap = useMemo(() => new Map((fornecedores ?? []).map(f => [f.id, f])), [fornecedores]);
 
@@ -189,6 +205,17 @@ export default function MateriasPrimas() {
   }, [mps, search, fornecedorFilter, statusFilter, estadoFabricaFilter, fabricaFilter]);
 
   const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
+  const abrirTransferencia = (mp: any) => {
+    const relacoes = ((mp.fabricasEstado ?? []) as Array<{ fabricaId: number; estado: EstadoMpFabrica }>);
+    const origem = relacoes[0]?.fabricaId ?? 0;
+    const destino = (fabricas ?? []).find(fabrica => fabrica.id !== origem && !relacoes.some(rel => rel.fabricaId === fabrica.id))?.id ?? 0;
+    setTransferenciaMp(mp);
+    setFabricaOrigemTransferencia(origem);
+    setFabricaDestinoTransferencia(destino);
+    setEstadoDestinoTransferencia("ativa");
+    setManterNaOrigem(false);
+    setObservacoesTransferencia("");
+  };
   const openEdit = useCallback(async (mpId: number) => {
     setLoadingEdit(true);
     try {
@@ -563,6 +590,16 @@ export default function MateriasPrimas() {
                     </div>
                     {isAuthenticated && (
                       <>
+                        {user?.role === "qualidade" && (
+                          <button
+                            type="button"
+                            onClick={e => { e.stopPropagation(); abrirTransferencia(mp); }}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            title="Transferir entre fábricas"
+                          >
+                            <ArrowRightLeft className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <button
                           onClick={e => { e.stopPropagation(); openEdit(mp.id); }}
                           className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
@@ -1353,6 +1390,33 @@ export default function MateriasPrimas() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!transferenciaMp} onOpenChange={open => { if (!open) setTransferenciaMp(null); }}>
+        <DialogContent className="w-[calc(100vw-1.5rem)] max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ArrowRightLeft className="w-5 h-5 text-primary" />Transferir matéria-prima</DialogTitle>
+          </DialogHeader>
+          {transferenciaMp && (() => {
+            const relacoes = (transferenciaMp.fabricasEstado ?? []) as Array<{ fabricaId: number; estado: EstadoMpFabrica }>;
+            const destinosDisponiveis = (fabricas ?? []).filter(fabrica => fabrica.id !== fabricaOrigemTransferencia && !relacoes.some(rel => rel.fabricaId === fabrica.id));
+            return <div className="space-y-4 pt-2">
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-3">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-primary">Matéria-prima</p>
+                <p className="mt-1 text-sm font-semibold">{transferenciaMp.nome}</p>
+                {transferenciaMp.codigo && <p className="text-xs text-muted-foreground">{transferenciaMp.codigo}</p>}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5"><label className="text-xs font-medium text-muted-foreground">Fábrica de origem *</label><Select value={fabricaOrigemTransferencia ? String(fabricaOrigemTransferencia) : undefined} onValueChange={value => { const origem = Number(value); setFabricaOrigemTransferencia(origem); setFabricaDestinoTransferencia((fabricas ?? []).find(fabrica => fabrica.id !== origem && !relacoes.some(rel => rel.fabricaId === fabrica.id))?.id ?? 0); }}><SelectTrigger className="w-full"><SelectValue placeholder="Selecionar origem" /></SelectTrigger><SelectContent>{relacoes.map(rel => { const fabrica = fabricas?.find(item => item.id === rel.fabricaId); return <SelectItem key={rel.fabricaId} value={String(rel.fabricaId)}>{fabrica?.nome ?? `Fábrica #${rel.fabricaId}`}</SelectItem>; })}</SelectContent></Select></div>
+                <div className="space-y-1.5"><label className="text-xs font-medium text-muted-foreground">Fábrica de destino *</label><Select value={fabricaDestinoTransferencia ? String(fabricaDestinoTransferencia) : undefined} onValueChange={value => setFabricaDestinoTransferencia(Number(value))}><SelectTrigger className="w-full"><SelectValue placeholder="Selecionar destino" /></SelectTrigger><SelectContent>{destinosDisponiveis.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select></div>
+              </div>
+              <div className="space-y-1.5"><label className="text-xs font-medium text-muted-foreground">Estado operacional no destino</label><div className="grid grid-cols-3 gap-2">{ESTADOS_MP_FABRICA.map(estado => <button key={estado.id} type="button" onClick={() => setEstadoDestinoTransferencia(estado.id)} className={cn("rounded-lg border px-2 py-2 text-[11px] font-medium transition-colors", estadoDestinoTransferencia === estado.id ? `${estado.className} border-current` : "border-border bg-background text-muted-foreground hover:border-primary/40")}>{estado.shortLabel}</button>)}</div></div>
+              <label className="flex items-start gap-2.5 rounded-xl border border-border/70 bg-muted/20 p-3 cursor-pointer"><input type="checkbox" checked={manterNaOrigem} onChange={event => setManterNaOrigem(event.target.checked)} className="mt-0.5" /><span><span className="block text-xs font-semibold">Manter disponível na origem</span><span className="block mt-0.5 text-[11px] text-muted-foreground">Se não selecionar, a associação à fábrica de origem é removida após a transferência.</span></span></label>
+              <div className="space-y-1.5"><label className="text-xs font-medium text-muted-foreground">Observações da transferência</label><Textarea value={observacoesTransferencia} onChange={event => setObservacoesTransferencia(event.target.value)} placeholder="Motivo, lote, condições ou instruções relevantes..." className="min-h-20 resize-y" /></div>
+              <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1"><Button variant="outline" onClick={() => setTransferenciaMp(null)}>Cancelar</Button><Button onClick={() => transferirMp.mutate({ materiaPrimaId: transferenciaMp.id, fabricaOrigemId: fabricaOrigemTransferencia, fabricaDestinoId: fabricaDestinoTransferencia, estadoDestino: estadoDestinoTransferencia, manterNaOrigem, observacoes: observacoesTransferencia || undefined })} disabled={!fabricaOrigemTransferencia || !fabricaDestinoTransferencia || transferirMp.isPending}>{transferirMp.isPending ? "A transferir..." : "Confirmar transferência"}</Button></div>
+            </div>;
+          })()}
         </DialogContent>
       </Dialog>
     </SigaLayout>

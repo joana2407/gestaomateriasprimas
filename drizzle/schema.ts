@@ -137,6 +137,23 @@ export const materiasPrimasFabricas = mysqlTable("materias_primas_fabricas", {
 ]);
 export type MateriaPrimaFabrica = typeof materiasPrimasFabricas.$inferSelect;
 
+// ─── TRANSFERÊNCIAS DE MP ENTRE FÁBRICAS ──────────────────────────────────────
+// Regista cada movimento de disponibilidade de uma MP entre unidades, incluindo
+// os estados operacionais de origem/destino e o utilizador responsável.
+export const transferenciasMateriasPrimas = mysqlTable("transferencias_materias_primas", {
+  id: int("id").autoincrement().primaryKey(),
+  materiaPrimaId: int("materia_prima_id").notNull().references(() => materiasPrimas.id),
+  fabricaOrigemId: int("fabrica_origem_id").notNull().references(() => fabricas.id),
+  fabricaDestinoId: int("fabrica_destino_id").notNull().references(() => fabricas.id),
+  estadoOrigem: mysqlEnum("estado_origem", ["ativa", "para_testes", "inativa"]).notNull(),
+  estadoDestino: mysqlEnum("estado_destino", ["ativa", "para_testes", "inativa"]).notNull(),
+  manterNaOrigem: boolean("manter_na_origem").default(false).notNull(),
+  observacoes: text("observacoes"),
+  transferidoPor: int("transferido_por").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type TransferenciaMateriaPrima = typeof transferenciasMateriasPrimas.$inferSelect;
+
 // ─── RELAÇÃO MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────
 export const mpFornecedores = mysqlTable("mp_fornecedores", {
   id: int("id").autoincrement().primaryKey(),

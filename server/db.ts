@@ -17,6 +17,7 @@ import {
   produtos,
   rececoesMateriasPrimas,
   receitas,
+  transferenciasMateriasPrimas,
   users,
 } from "../drizzle/schema";
 import { documentosFornecedor } from "../drizzle/schema";
@@ -324,6 +325,60 @@ export async function setMpFabricas(
       estado: rel.estado,
     });
   }
+}
+
+export async function transferirMateriaPrimaEntreFabricas(data: {
+  materiaPrimaId: number;
+  fabricaOrigemId: number;
+  fabricaDestinoId: number;
+  estadoDestino: "ativa" | "para_testes" | "inativa";
+  manterNaOrigem: boolean;
+  observacoes?: string | null;
+  transferidoPor: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  return db.transaction(async tx => {
+    const origem = await tx.select().from(materiasPrimasFabricas).where(and(
+      eq(materiasPrimasFabricas.materiaPrimaId, data.materiaPrimaId),
+      eq(materiasPrimasFabricas.fabricaId, data.fabricaOrigemId),
+    )).limit(1);
+    if (!origem[0]) throw new Error("A matéria-prima não está associada à fábrica de origem.");
+
+    const destino = await tx.select().from(materiasPrimasFabricas).where(and(
+      eq(materiasPrimasFabricas.materiaPrimaId, data.materiaPrimaId),
+      eq(materiasPrimasFabricas.fabricaId, data.fabricaDestinoId),
+    )).limit(1);
+    if (destino[0]) throw new Error("A matéria-prima já está associada à fábrica de destino.");
+
+    await tx.insert(materiasPrimasFabricas).values({
+      materiaPrimaId: data.materiaPrimaId,
+      fabricaId: data.fabricaDestinoId,
+      estado: data.estadoDestino,
+    });
+    if (!data.manterNaOrigem) {
+      await tx.delete(materiasPrimasFabricas).where(eq(materiasPrimasFabricas.id, origem[0].id));
+    }
+    const resultado = await tx.insert(transferenciasMateriasPrimas).values({
+      materiaPrimaId: data.materiaPrimaId,
+      fabricaOrigemId: data.fabricaOrigemId,
+      fabricaDestinoId: data.fabricaDestinoId,
+      estadoOrigem: origem[0].estado,
+      estadoDestino: data.estadoDestino,
+      manterNaOrigem: data.manterNaOrigem,
+      observacoes: data.observacoes ?? null,
+      transferidoPor: data.transferidoPor,
+    });
+    return (resultado[0] as any).insertId as number;
+  });
+}
+
+export async function getTransferenciasMateriaPrima(materiaPrimaId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(transferenciasMateriasPrimas)
+    .where(eq(transferenciasMateriasPrimas.materiaPrimaId, materiaPrimaId))
+    .orderBy(desc(transferenciasMateriasPrimas.createdAt));
 }
 
 // ─── MP ↔ FORNECEDORES (N:N) ─────────────────────────────────────────────────

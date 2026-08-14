@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 44/44 testes passados
+- [x] Total: 47/47 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -417,3 +417,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Analisar o formato das datas e os filtros existentes nas Receções
 - [x] Adicionar data inicial e data final à pesquisa combinada
 - [x] Validar filtro, testes e criar checkpoint
+
+## Melhoria v4.17 — Transferências de MP e responsável de receção
+
+- [x] Analisar associações MP × Fábrica e o registo atual de receções
+- [x] Criar transferência auditada de uma MP para uma fábrica de destino
+- [x] Tornar explícito o campo Responsável pela receção no formulário e no histórico
+- [x] Validar rastreabilidade, testes e criar checkpoint

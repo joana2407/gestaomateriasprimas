@@ -257,7 +257,7 @@ export default function Rececoes() {
 
   function guardar() {
     if (!form.fabricaId || !form.fornecedorId || !form.materiaPrimaId || !form.dataRececao || !form.quantidade || !form.responsavel.trim()) {
-      toast.error("Preencha fábrica, fornecedor, matéria-prima, data, quantidade e responsável.");
+      toast.error("Preencha fábrica, fornecedor, matéria-prima, data, quantidade e responsável pela receção.");
       return;
     }
     if (conformidadeCalculada === "nao_conforme" && !form.motivoNaoConformidade.trim()) {
@@ -350,7 +350,7 @@ export default function Rececoes() {
               <Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={form.quantidade || ""} onChange={event => setForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} placeholder="0" /></Field>
               <Field label="Unidade"><Select value={form.unidade} onValueChange={value => setForm(current => ({ ...current, unidade: value as RececaoForm["unidade"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNIDADES_RECECAO.map(unidade => <SelectItem key={unidade.value} value={unidade.value}>{unidade.label}</SelectItem>)}</SelectContent></Select></Field>
               <Field label="Nº de paletes LPR"><Input type="number" min="0" value={form.numeroPaletesLpr} onChange={event => setForm(current => ({ ...current, numeroPaletesLpr: event.target.value }))} placeholder="0" /></Field>
-              <Field label="Responsável *"><Input value={form.responsavel} onChange={event => setForm(current => ({ ...current, responsavel: event.target.value }))} placeholder="Nome do responsável" /></Field>
+              <Field label="Responsável pela receção *"><Input value={form.responsavel} onChange={event => setForm(current => ({ ...current, responsavel: event.target.value }))} placeholder="Nome de quem registou ou recebeu a MP" /></Field>
             </div></section>
 
             <section className="rounded-xl border border-border/70 overflow-hidden"><div className="px-4 py-3 bg-muted/40 flex flex-col sm:flex-row sm:items-center gap-2 justify-between"><div className="flex items-center gap-2"><Truck className="w-4 h-4 text-primary shrink-0" /><p className="text-sm font-semibold leading-snug">Pontos de controlo</p></div><ConformidadeBadge estado={conformidadeCalculada} /></div><div className="p-4 grid [grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr))] gap-4">

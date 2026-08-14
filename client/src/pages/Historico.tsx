@@ -19,6 +19,7 @@ const ENTIDADE_LABELS: Record<string, string> = {
   receita: "Receita",
   produto: "Produto",
   rececao_mp: "Receção de MP",
+  transferencia_mp: "Transferência de MP entre fábricas",
   ficha_tecnica_fornecedor: "FT Fornecedor",
   ficha_tecnica_produto: "FT Produto",
 };
