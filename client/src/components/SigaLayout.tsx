@@ -2,7 +2,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { cn } from "@/lib/utils";
 import {
-  AlertTriangle, BarChart3, BookOpen, ChevronRight,
+  AlertTriangle, BarChart3, Bell, BookOpen, ChevronRight,
   ClipboardCheck, ClipboardList, Factory, FileText, FlaskConical,
   Home, LogOut, Menu, Package, Settings, ShieldCheck, Upload, Users, X
 } from "lucide-react";
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { href: "/sequenciamento", icon: ClipboardList, label: "Sequenciamento", group: "producao" },
   { href: "/fichas-produto", icon: FileText, label: "FT de Produto", group: "documentos" },
   { href: "/historico", icon: BarChart3, label: "Histórico", group: "documentos" },
+  { href: "/notificacoes", icon: Bell, label: "Notificações", group: "documentos" },
   { href: "/importacao", icon: Settings, label: "Importação", group: "config" },
   { href: "/utilizadores", icon: ShieldCheck, label: "Utilizadores", group: "config" },
 ];

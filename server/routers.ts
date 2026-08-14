@@ -12,6 +12,7 @@ import { dashboardRouter } from "./routers/dashboard";
 import { importacaoRouter } from "./routers/importacao";
 import { rececoesRouter } from "./routers/rececoes";
 import { utilizadoresRouter } from "./routers/utilizadores";
+import { notificacoesRouter } from "./routers/notificacoes";
 
 export const appRouter = router({
   system: systemRouter,
@@ -33,6 +34,7 @@ export const appRouter = router({
   importacao: importacaoRouter,
   rececoes: rececoesRouter,
   utilizadores: utilizadoresRouter,
+  notificacoes: notificacoesRouter,
 });
 
 export type AppRouter = typeof appRouter;

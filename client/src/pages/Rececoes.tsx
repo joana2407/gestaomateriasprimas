@@ -33,7 +33,7 @@ import {
   Warehouse,
   XCircle,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 type RececaoForm = {
@@ -146,6 +146,11 @@ export default function Rececoes() {
   const [conformidadeFilter, setConformidadeFilter] = useState("all");
   const [form, setForm] = useState<RececaoForm>(() => emptyForm(user?.name ?? ""));
   const [rececaoParaEliminar, setRececaoParaEliminar] = useState<any | null>(null);
+  const [rececaoDiretaId, setRececaoDiretaId] = useState<number | null>(() => {
+    if (typeof window === "undefined") return null;
+    const value = Number(new URLSearchParams(window.location.search).get("rececaoId"));
+    return Number.isInteger(value) && value > 0 ? value : null;
+  });
 
   const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: fornecedores } = trpc.fornecedores.list.useQuery();
@@ -215,6 +220,15 @@ export default function Rececoes() {
     });
     setDialogOpen(true);
   }
+
+  useEffect(() => {
+    if (!rececaoDiretaId || !rececoes) return;
+    const rececao = rececoes.find(item => item.id === rececaoDiretaId);
+    if (!rececao) return;
+    editarRececao(rececao);
+    setRececaoDiretaId(null);
+    window.history.replaceState({}, "", "/rececoes");
+  }, [rececaoDiretaId, rececoes]);
 
   function setControl<K extends keyof ControlosRececao>(key: K, value: ControlosRececao[K]) {
     setForm(current => ({ ...current, controlos: { ...current.controlos, [key]: value } }));

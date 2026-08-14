@@ -11,6 +11,7 @@ import {
   materiasPrimas,
   materiasPrimasFabricas,
   mpFornecedores,
+  notificacoesQualidade,
   perfilAlergenicoProduto,
   produtos,
   rececoesMateriasPrimas,
@@ -473,6 +474,26 @@ export async function deleteRececaoMateriaPrima(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.delete(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id));
+}
+
+// ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────
+export async function criarNotificacaoQualidade(data: typeof notificacoesQualidade.$inferInsert) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const result = await db.insert(notificacoesQualidade).values(data);
+  return (result[0] as any).insertId as number;
+}
+
+export async function getNotificacoesQualidade() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(notificacoesQualidade).orderBy(desc(notificacoesQualidade.criadaEm));
+}
+
+export async function marcarNotificacaoQualidade(id: number, lida: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(notificacoesQualidade).set({ lida, lidaEm: lida ? new Date() : null }).where(eq(notificacoesQualidade.id, id));
 }
 
 // ─── PERFIL ALERGÉNICO ────────────────────────────────────────────────────────

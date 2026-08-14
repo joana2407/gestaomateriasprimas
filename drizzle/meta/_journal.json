@@ -43,6 +43,13 @@
       "when": 1786702585144,
       "tag": "0005_migrate_user_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1786703383655,
+      "tag": "0006_create_notificacoes_qualidade",
+      "breakpoints": true
     }
   ]
 }

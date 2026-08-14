@@ -296,6 +296,20 @@ export const rececoesMateriasPrimas = mysqlTable("rececoes_materias_primas", {
 });
 export type RececaoMateriaPrima = typeof rececoesMateriasPrimas.$inferSelect;
 
+// ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────
+export const notificacoesQualidade = mysqlTable("notificacoes_qualidade", {
+  id: int("id").autoincrement().primaryKey(),
+  tipo: mysqlEnum("tipo", ["rececao_observacoes"]).default("rececao_observacoes").notNull(),
+  titulo: varchar("titulo", { length: 255 }).notNull(),
+  mensagem: text("mensagem").notNull(),
+  link: varchar("link", { length: 1000 }).notNull(),
+  rececaoId: int("rececao_id").references(() => rececoesMateriasPrimas.id),
+  lida: boolean("lida").default(false).notNull(),
+  lidaEm: timestamp("lida_em"),
+  criadaEm: timestamp("criada_em").defaultNow().notNull(),
+});
+export type NotificacaoQualidade = typeof notificacoesQualidade.$inferSelect;
+
 // ─── HISTÓRICO DE VALIDAÇÕES DE MP ───────────────────────────────────────────
 export const validacoesMp = mysqlTable("validacoes_mp", {
   id: int("id").autoincrement().primaryKey(),

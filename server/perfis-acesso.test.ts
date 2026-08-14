@@ -27,4 +27,9 @@ describe("perfis Logística e Qualidade", () => {
     const caller = appRouter.createCaller(criarContexto("logistica"));
     await expect(caller.rececoes.delete({ id: 1 })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
+
+  it("bloqueia o centro de notificações para o perfil de Logística", async () => {
+    const caller = appRouter.createCaller(criarContexto("logistica"));
+    await expect(caller.notificacoes.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
+  });
 });

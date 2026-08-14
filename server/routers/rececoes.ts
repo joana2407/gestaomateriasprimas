@@ -2,6 +2,7 @@ import { z } from "zod";
 import { qualidadeProcedure, rececoesProcedure, router } from "../_core/trpc";
 import {
   addAuditLog,
+  criarNotificacaoQualidade,
   deleteRececaoMateriaPrima,
   getMateriasPrimas,
   getMpFornecedores,
@@ -106,10 +107,21 @@ export const rececoesRouter = router({
       });
       let notificacaoQualidadeEnviada = false;
       if (temObservacoesRececao(input.observacoes)) {
+        const protocolo = (ctx.req.get("x-forwarded-proto") ?? ctx.req.protocol ?? "https").split(",")[0].trim();
+        const host = ctx.req.get("x-forwarded-host") ?? ctx.req.get("host");
+        const linkRececao = host ? `${protocolo}://${host}/rececoes?rececaoId=${id}` : `/rececoes?rececaoId=${id}`;
+        const titulo = `Receção #${id} com observações`;
+        const mensagem = `A matéria-prima “${materiaPrima.nome}” foi ${input.id ? "atualizada" : "registada"} com observações por ${ctx.user.name ?? ctx.user.email ?? "um utilizador"}.\n\nObservações: ${resumirObservacoesRececao(input.observacoes!)}`;
+        await criarNotificacaoQualidade({
+          titulo,
+          mensagem,
+          link: linkRececao,
+          rececaoId: id,
+        });
         try {
           notificacaoQualidadeEnviada = await notifyOwner({
-            title: `Receção #${id} com observações`,
-            content: `A matéria-prima “${materiaPrima.nome}” foi ${input.id ? "atualizada" : "registada"} com observações por ${ctx.user.name ?? ctx.user.email ?? "um utilizador"}.\n\nObservações: ${resumirObservacoesRececao(input.observacoes!)}`,
+            title: titulo,
+            content: `${mensagem}\n\nVer detalhes da receção: ${linkRececao}`,
           });
         } catch (error) {
           console.warn("[Receções] Não foi possível enviar a notificação de Qualidade", error);

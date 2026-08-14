@@ -17,6 +17,7 @@ import Importacao from "./pages/Importacao";
 import Fabricas from "./pages/Fabricas";
 import Rececoes from "./pages/Rececoes";
 import Utilizadores from "./pages/Utilizadores";
+import Notificacoes from "./pages/Notificacoes";
 import { useAuth } from "./_core/hooks/useAuth";
 
 function QualidadeRoute({ component: Component }: { component: React.ComponentType }) {
@@ -40,6 +41,7 @@ function Router() {
       <Route path="/rececoes" component={Rececoes} />
       <Route path="/fichas-produto" component={() => <QualidadeRoute component={FichasProduto} />} />
       <Route path="/historico" component={() => <QualidadeRoute component={Historico} />} />
+      <Route path="/notificacoes" component={() => <QualidadeRoute component={Notificacoes} />} />
       <Route path="/importacao" component={() => <QualidadeRoute component={Importacao} />} />
       <Route path="/utilizadores" component={() => <QualidadeRoute component={Utilizadores} />} />
       <Route path="/404" component={NotFound} />

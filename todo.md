@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 37/37 testes passados
+- [x] Total: 38/38 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -356,3 +356,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Analisar o registo de receções e o canal de notificação de Qualidade
 - [x] Notificar a Qualidade quando uma receção tiver observações
 - [x] Validar a condição de alerta, testes e criar checkpoint
+
+## Melhoria v4.8 — Centro de notificações de Qualidade
+
+- [x] Definir o modelo de notificações de Qualidade e o link direto à receção
+- [x] Criar persistência, rotas e estados lida/não lida
+- [x] Guardar uma notificação interna ao registar observações numa receção
+- [x] Implementar o centro de notificações e a abertura direta da receção
+- [x] Validar testes, interface e criar checkpoint
