@@ -9,6 +9,7 @@ import {
   upsertRececaoMateriaPrima,
 } from "../db";
 import { calcularConformidadeRececao, type ControlosRececao } from "../../shared/rececao-controlos";
+import { UNIDADES_RECECAO_IDS } from "../../shared/rececao-unidades";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -36,7 +37,7 @@ const rececaoInput = z.object({
   validade: z.date().nullable().optional(),
   lote: z.string().max(100).nullable().optional(),
   quantidade: z.number().positive(),
-  unidade: z.enum(["kg", "g", "l", "un", "caixa", "saco", "palete", "bigbag"]),
+  unidade: z.enum(UNIDADES_RECECAO_IDS),
   controlos: controlosSchema,
   numeroPaletesLpr: z.number().int().min(0).nullable().optional(),
   responsavel: z.string().min(2).max(150),

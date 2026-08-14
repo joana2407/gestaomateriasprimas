@@ -282,7 +282,7 @@ export const rececoesMateriasPrimas = mysqlTable("rececoes_materias_primas", {
   validade: date("validade"),
   lote: varchar("lote", { length: 100 }),
   quantidade: float("quantidade").notNull(),
-  unidade: mysqlEnum("unidade", ["kg", "g", "l", "un", "caixa", "saco", "palete", "bigbag"]).default("kg").notNull(),
+  unidade: mysqlEnum("unidade", ["kg", "lt", "ton"]).default("kg").notNull(),
   controlos: json("controlos"),
   conformidade: mysqlEnum("conformidade", ["conforme", "nao_conforme", "pendente"]).default("pendente").notNull(),
   numeroPaletesLpr: int("numero_paletes_lpr"),

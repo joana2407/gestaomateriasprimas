@@ -29,6 +29,13 @@
       "when": 1786698006064,
       "tag": "0003_create_materias_primas_fabricas",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786701037210,
+      "tag": "0004_update_rececao_unidades",
+      "breakpoints": true
     }
   ]
 }

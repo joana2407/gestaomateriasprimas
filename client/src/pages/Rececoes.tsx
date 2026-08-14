@@ -17,6 +17,7 @@ import {
   type EstadoControloRececao,
 } from "../../../shared/rececao-controlos";
 import { mpAprovadaParaRececao } from "../../../shared/rececao-fornecedor";
+import { formatarUnidadeRececao, UNIDADES_RECECAO, type UnidadeRececao } from "../../../shared/rececao-unidades";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -43,7 +44,7 @@ type RececaoForm = {
   validade: string;
   lote: string;
   quantidade: number;
-  unidade: "kg" | "g" | "l" | "un" | "caixa" | "saco" | "palete" | "bigbag";
+  unidade: UnidadeRececao;
   controlos: ControlosRececao;
   numeroPaletesLpr: string;
   responsavel: string;
@@ -51,8 +52,6 @@ type RececaoForm = {
   observacoes: string;
   motivoNaoConformidade: string;
 };
-
-const FORMAS_UNIDADE = ["kg", "g", "l", "un", "caixa", "saco", "palete", "bigbag"] as const;
 
 function todayInput() {
   return new Date().toISOString().slice(0, 10);
@@ -281,7 +280,7 @@ export default function Rececoes() {
             const Icon = config.icon;
             return <div key={rececao.id} className="card-elegant p-4 flex flex-col lg:flex-row lg:items-center gap-4">
               <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rececao.conformidade === "conforme" ? "bg-emerald-50" : rececao.conformidade === "nao_conforme" ? "bg-red-50" : "bg-amber-50")}><PackageCheck className={cn("w-5 h-5", config.className.split(" ")[1])} /></div>
-              <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold">{rececao.materiaPrimaNome}</p><Badge variant="outline" className="font-normal text-[10px]">{armazem?.label}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{rececao.fornecedorNome}{rececao.lote ? ` · Lote ${rececao.lote}` : ""}{rececao.numeroGuia ? ` · Guia ${rececao.numeroGuia}` : ""}</p><div className="mt-2 flex gap-2 flex-wrap">{fabrica && <FactoryBadge nome={fabrica.nome} codigo={fabrica.codigo} size="sm" />}<span className="text-[10px] text-muted-foreground">{new Date(rececao.dataRececao).toLocaleDateString("pt-PT")}</span><span className="text-[10px] text-muted-foreground">{rececao.quantidade} {rececao.unidade}</span></div></div>
+              <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold">{rececao.materiaPrimaNome}</p><Badge variant="outline" className="font-normal text-[10px]">{armazem?.label}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{rececao.fornecedorNome}{rececao.lote ? ` · Lote ${rececao.lote}` : ""}{rececao.numeroGuia ? ` · Guia ${rececao.numeroGuia}` : ""}</p><div className="mt-2 flex gap-2 flex-wrap">{fabrica && <FactoryBadge nome={fabrica.nome} codigo={fabrica.codigo} size="sm" />}<span className="text-[10px] text-muted-foreground">{new Date(rececao.dataRececao).toLocaleDateString("pt-PT")}</span><span className="text-[10px] text-muted-foreground">{rececao.quantidade} {formatarUnidadeRececao(rececao.unidade as UnidadeRececao)}</span></div></div>
               <div className="flex items-center gap-3 justify-between lg:justify-end"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span>{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}</div>
             </div>;
           })}
@@ -305,14 +304,14 @@ export default function Rececoes() {
               <Field label="Lote"><Input value={form.lote} onChange={event => setForm(current => ({ ...current, lote: event.target.value }))} placeholder="Lote do fornecedor" /></Field>
               <Field label="Validade"><Input type="date" value={form.validade} onChange={event => setForm(current => ({ ...current, validade: event.target.value }))} /></Field>
               <Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={form.quantidade || ""} onChange={event => setForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} placeholder="0" /></Field>
-              <Field label="Unidade"><Select value={form.unidade} onValueChange={value => setForm(current => ({ ...current, unidade: value as RececaoForm["unidade"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{FORMAS_UNIDADE.map(unidade => <SelectItem key={unidade} value={unidade}>{unidade}</SelectItem>)}</SelectContent></Select></Field>
+              <Field label="Unidade"><Select value={form.unidade} onValueChange={value => setForm(current => ({ ...current, unidade: value as RececaoForm["unidade"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNIDADES_RECECAO.map(unidade => <SelectItem key={unidade.value} value={unidade.value}>{unidade.label}</SelectItem>)}</SelectContent></Select></Field>
               <Field label="Nº de paletes LPR"><Input type="number" min="0" value={form.numeroPaletesLpr} onChange={event => setForm(current => ({ ...current, numeroPaletesLpr: event.target.value }))} placeholder="0" /></Field>
               <Field label="Responsável *"><Input value={form.responsavel} onChange={event => setForm(current => ({ ...current, responsavel: event.target.value }))} placeholder="Nome do responsável" /></Field>
             </div></section>
 
             <section className="rounded-xl border border-border/70 overflow-hidden"><div className="px-4 py-3 bg-muted/40 flex flex-col sm:flex-row sm:items-center gap-2 justify-between"><div className="flex items-center gap-2"><Truck className="w-4 h-4 text-primary" /><p className="text-sm font-semibold">Pontos de controlo</p></div><ConformidadeBadge estado={conformidadeCalculada} /></div><div className="p-4 grid lg:grid-cols-2 xl:grid-cols-3 gap-4">
               <ControlCard title="MP em saco" icon={<Thermometer className="w-4 h-4" />}><div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_9rem] items-end gap-2 sm:gap-3 py-3 border-b border-border/50"><div className="min-w-0"><p className="text-xs font-medium">Temperatura</p><Input type="number" step="0.1" value={form.controlos.temperaturaMpSaco?.valor ?? ""} onChange={event => setControl("temperaturaMpSaco", { ...form.controlos.temperaturaMpSaco, valor: event.target.value === "" ? null : Number(event.target.value) })} placeholder="ºC (opcional)" className="h-8 mt-1 text-xs w-full max-w-36" /></div><EstadoControlo value={form.controlos.temperaturaMpSaco?.estado} onChange={estado => setControl("temperaturaMpSaco", { ...form.controlos.temperaturaMpSaco, estado })} compact /></div><ControloRow label="Limpeza" value={form.controlos.limpeza} onChange={estado => setControl("limpeza", estado)} /><ControloRow label="Resíduos de infestação" value={form.controlos.residuosInfestacao} onChange={estado => setControl("residuosInfestacao", estado)} /><ControloRow label="Acondicionamento" value={form.controlos.acondicionamento} onChange={estado => setControl("acondicionamento", estado)} /></ControlCard>
-              <ControlCard title="MP a granel" icon={<Truck className="w-4 h-4" />}><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-3 border-b border-border/50"><Field label="Nº de selo"><Input value={form.controlos.numeroSelo ?? ""} onChange={event => setControl("numeroSelo", event.target.value)} placeholder="Selo" /></Field><Field label="Nº de silo"><Input value={form.controlos.numeroSilo ?? ""} onChange={event => setControl("numeroSilo", event.target.value)} placeholder="Silo" /></Field></div><ControloRow label="Crivo" value={form.controlos.crivo} onChange={estado => setControl("crivo", estado)} /><ControloRow label="Fecho da boca de carga" value={form.controlos.fechoBocaCarga} onChange={estado => setControl("fechoBocaCarga", estado)} /></ControlCard>
+              <ControlCard title="MP a granel" icon={<Truck className="w-4 h-4" />}><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 py-3 border-b border-border/50"><Field label="Nº de selo"><Input value={form.controlos.numeroSelo ?? ""} onChange={event => setControl("numeroSelo", event.target.value)} placeholder="Selo" /></Field><Field label="Nº de silo"><Input value={form.controlos.numeroSilo ?? ""} onChange={event => setControl("numeroSilo", event.target.value)} placeholder="Silo" /></Field></div><ControloRow label="Crivo" value={form.controlos.crivo} onChange={estado => setControl("crivo", estado)} /><ControloRow label="Fecho da boca de carga do silo" value={form.controlos.fechoBocaCarga} onChange={estado => setControl("fechoBocaCarga", estado)} /></ControlCard>
               <ControlCard title="Produto" icon={<PackageCheck className="w-4 h-4" />}><ControloRow label="Aspeto macroscópico" value={form.controlos.aspetoMacroscopico} onChange={estado => setControl("aspetoMacroscopico", estado)} /><ControloRow label="Presença de matérias estranhas" value={form.controlos.materiasEstranhas} onChange={estado => setControl("materiasEstranhas", estado)} /><ControloRow label="Infestação" value={form.controlos.infestacaoProduto} onChange={estado => setControl("infestacaoProduto", estado)} /><ControloRow label="Datas de validade" value={form.controlos.datasValidade} onChange={estado => setControl("datasValidade", estado)} /></ControlCard>
             </div></section>
 

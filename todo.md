@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 30/30 testes passados
+- [x] Total: 32/32 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -335,3 +335,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Limpar a MP selecionada quando o fornecedor ou fábrica deixam de ser compatíveis
 - [x] Corrigir o aviso ResizeObserver em Receções
 - [x] Validar testes, interface e criar checkpoint
+
+## Correção v4.5 — Unidades de receção
+
+- [x] Identificar as unidades usadas no formulário e no contrato de receções
+- [x] Alterar as unidades disponíveis para Kg, Lt e Ton
+- [x] Alterar o rótulo para “Fecho da boca de carga do silo”
+- [x] Validar a alteração e criar checkpoint
