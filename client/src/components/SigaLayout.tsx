@@ -174,7 +174,7 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto">
-          <div className="p-6 animate-fade-in">
+          <div className="p-4 sm:p-6">
             {children}
           </div>
         </main>

@@ -399,3 +399,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Reestruturar o formulário de registo para PC, tablet e telemóvel
 - [x] Adicionar filtros de pesquisa de receções por MP, fornecedor, lote, guia, fábrica, armazém e conformidade
 - [x] Validar interface responsiva, testes e criar checkpoint
+
+## Correção v4.14 — Estabilidade visual de Receções
+
+- [x] Inspecionar atualizações repetidas e registos do navegador em Receções
+- [x] Corrigir a origem do efeito de piscar
+- [x] Validar estabilidade, testes e criar checkpoint
