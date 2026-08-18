@@ -495,3 +495,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Identificar o tipo de fornecimento da MP na receção
 - [x] Marcar selo, silo, crivo e fecho de carga como Não Aplicável para MP em saco
 - [x] Validar formulário, detalhe de lote e criar checkpoint
+
+## Correção v4.28 — Rótulo de validação da MP
+
+- [x] Verificar o rótulo de validação indicado no detalhe da receção
+- [x] Alterar o rótulo para “Conformidade da MP”
+- [x] Validar e criar checkpoint
