@@ -501,3 +501,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Verificar o rótulo de validação indicado no detalhe da receção
 - [x] Alterar o rótulo para “Conformidade da MP”
 - [x] Validar e criar checkpoint
+
+## Correção v4.29 — Rótulo de conformidade do veículo
+
+- [x] Verificar o rótulo indicado no formulário de Receções
+- [x] Alterar o rótulo para “Conformidade do Veículo”
+- [x] Validar e criar checkpoint
