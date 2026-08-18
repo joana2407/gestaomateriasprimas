@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 54/54 testes passados
+- [x] Total: 58/58 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -472,3 +472,14 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Criar o detalhe expandido da receção e do lote
 - [x] Mostrar no detalhe o histórico completo de transferências associadas ao lote
 - [x] Validar rastreabilidade, testes e criar checkpoint
+
+## Melhoria v4.25 — Transferência acessível a todos os utilizadores
+
+- [x] Rever a autorização atual de transferência de lote
+- [x] Permitir a transferência aos utilizadores de Logística e Qualidade
+- [x] Substituir o texto da ação por ícone com tooltip acessível
+- [x] Adicionar um filtro específico por lote nas Receções
+- [x] Criar um painel informativo de receções acessível a todos os operadores
+- [x] Limitar a edição à equipa de Qualidade ou ao responsável que registou a receção
+- [x] Confirmar a eliminação de receções exclusivamente pela equipa de Qualidade
+- [x] Validar permissões, interface e criar checkpoint

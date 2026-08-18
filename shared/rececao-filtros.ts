@@ -10,6 +10,7 @@ export type RececaoPesquisavel = {
 
 export type FiltrosPesquisaRececao = {
   pesquisa: string;
+  lote?: string;
   fornecedorId?: number;
   materiaPrimaId?: number;
   dataInicial?: string;
@@ -26,11 +27,12 @@ export function filtrarRececoes<T extends RececaoPesquisavel>(rececoes: T[], fil
   return rececoes.filter(rececao => {
     const textoCorresponde = !termo || [rececao.materiaPrimaNome, rececao.fornecedorNome, rececao.lote, rececao.numeroGuia]
       .some(valor => (valor ?? "").toLowerCase().includes(termo));
+    const loteCorresponde = !filtros.lote || (rececao.lote ?? "").toLowerCase().includes(filtros.lote.trim().toLowerCase());
     const fornecedorCorresponde = !filtros.fornecedorId || rececao.fornecedorId === filtros.fornecedorId;
     const mpCorresponde = !filtros.materiaPrimaId || rececao.materiaPrimaId === filtros.materiaPrimaId;
     const dataRececao = dataIso(rececao.dataRececao);
     const dataInicialCorresponde = !filtros.dataInicial || dataRececao >= filtros.dataInicial;
     const dataFinalCorresponde = !filtros.dataFinal || dataRececao <= filtros.dataFinal;
-    return textoCorresponde && fornecedorCorresponde && mpCorresponde && dataInicialCorresponde && dataFinalCorresponde;
+    return textoCorresponde && loteCorresponde && fornecedorCorresponde && mpCorresponde && dataInicialCorresponde && dataFinalCorresponde;
   });
 }

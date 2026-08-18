@@ -21,4 +21,9 @@ describe("filtros de pesquisa de receções", () => {
     expect(filtrarRececoes(rececoes, { pesquisa: "", dataInicial: "2026-08-10", dataFinal: "2026-08-10" })).toHaveLength(1);
     expect(filtrarRececoes(rececoes, { pesquisa: "", dataInicial: "2026-08-11", dataFinal: "2026-08-20" })[0]?.materiaPrimaId).toBe(11);
   });
+
+  it("filtra por lote específico independentemente da pesquisa geral", () => {
+    expect(filtrarRececoes(rececoes, { pesquisa: "", lote: "b-02" })[0]?.materiaPrimaId).toBe(11);
+    expect(filtrarRececoes(rececoes, { pesquisa: "", lote: "inexistente" })).toHaveLength(0);
+  });
 });

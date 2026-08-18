@@ -19,6 +19,7 @@ import { UNIDADES_RECECAO_IDS } from "../../shared/rececao-unidades";
 import { resumirObservacoesRececao, temObservacoesRececao } from "../../shared/rececao-observacoes";
 import { notifyOwner } from "../_core/notification";
 import { validarTransferenciaStock } from "../../shared/transferencia-stock";
+import { podeEditarRececao } from "../../shared/rececao-permissoes";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -87,9 +88,9 @@ export const rececoesRouter = router({
     .input(z.object({ id: z.number() }))
     .query(({ input }) => getRececaoMateriaPrimaById(input.id)),
 
-  transferenciasStock: qualidadeProcedure.query(() => getTransferenciasStock()),
+  transferenciasStock: rececoesProcedure.query(() => getTransferenciasStock()),
 
-  transferirStock: qualidadeProcedure
+  transferirStock: rececoesProcedure
     .input(transferenciaStockInput)
     .mutation(async ({ input, ctx }) => {
       validarTransferenciaStock(input);
@@ -114,6 +115,13 @@ export const rececoesRouter = router({
   upsert: rececoesProcedure
     .input(rececaoInput)
     .mutation(async ({ input, ctx }) => {
+      if (input.id) {
+        const rececaoExistente = await getRececaoMateriaPrimaById(input.id);
+        if (!rececaoExistente) throw new Error("A receção a editar não foi encontrada.");
+        if (!podeEditarRececao({ role: ctx.user.role, userId: ctx.user.id, registadoPor: rececaoExistente.registadoPor })) {
+          throw new Error("Só a equipa de Qualidade ou o responsável pelo registo pode editar esta receção.");
+        }
+      }
       const materiasPrimas = await getMateriasPrimas();
       const materiaPrima = materiasPrimas.find(mp => mp.id === input.materiaPrimaId);
       if (!materiaPrima) throw new Error("Matéria-prima não encontrada ou inativa");

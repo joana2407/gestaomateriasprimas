@@ -19,6 +19,7 @@ import {
 } from "../../../shared/rececao-controlos";
 import { mpAprovadaParaRececao } from "../../../shared/rececao-fornecedor";
 import { filtrarRececoes } from "../../../shared/rececao-filtros";
+import { podeEditarRececao as podeEditarRececaoPorUtilizador } from "../../../shared/rececao-permissoes";
 import { formatarUnidadeRececao, UNIDADES_RECECAO, type UnidadeRececao } from "../../../shared/rececao-unidades";
 import {
   AlertTriangle,
@@ -175,6 +176,7 @@ export default function Rececoes() {
   const [materiaPrimaFilter, setMateriaPrimaFilter] = useState("all");
   const [dataInicialFilter, setDataInicialFilter] = useState("");
   const [dataFinalFilter, setDataFinalFilter] = useState("");
+  const [loteFilter, setLoteFilter] = useState("");
   const [form, setForm] = useState<RececaoForm>(() => emptyForm(user?.name ?? ""));
   const [transferenciaForm, setTransferenciaForm] = useState<TransferenciaStockForm>(() => emptyTransferenciaStock(user?.name ?? ""));
   const [rececaoParaEliminar, setRececaoParaEliminar] = useState<any | null>(null);
@@ -194,7 +196,7 @@ export default function Rececoes() {
     armazem: armazemFilter === "all" ? undefined : armazemFilter as "ambiente_secos" | "frio" | "embalagens",
     conformidade: conformidadeFilter === "all" ? undefined : conformidadeFilter as "conforme" | "nao_conforme" | "pendente",
   });
-  const podeTransferirStock = user?.role === "qualidade";
+  const podeTransferirStock = isAuthenticated;
   const { data: transferenciasStock, refetch: refetchTransferencias } = trpc.rececoes.transferenciasStock.useQuery(undefined, { enabled: podeTransferirStock });
 
   const upsert = trpc.rececoes.upsert.useMutation({
@@ -226,13 +228,14 @@ export default function Rececoes() {
 
   const filteredRececoes = useMemo(() => filtrarRececoes(rececoes ?? [], {
     pesquisa: search,
+    lote: loteFilter,
     fornecedorId: fornecedorFilter === "all" ? undefined : Number(fornecedorFilter),
     materiaPrimaId: materiaPrimaFilter === "all" ? undefined : Number(materiaPrimaFilter),
     dataInicial: dataInicialFilter || undefined,
     dataFinal: dataFinalFilter || undefined,
-  }), [rececoes, search, fornecedorFilter, materiaPrimaFilter, dataInicialFilter, dataFinalFilter]);
+  }), [rececoes, search, loteFilter, fornecedorFilter, materiaPrimaFilter, dataInicialFilter, dataFinalFilter]);
 
-  const temFiltrosAtivos = search.trim() || fabricaFilter !== "all" || armazemFilter !== "all" || conformidadeFilter !== "all" || fornecedorFilter !== "all" || materiaPrimaFilter !== "all" || dataInicialFilter || dataFinalFilter;
+  const temFiltrosAtivos = search.trim() || loteFilter.trim() || fabricaFilter !== "all" || armazemFilter !== "all" || conformidadeFilter !== "all" || fornecedorFilter !== "all" || materiaPrimaFilter !== "all" || dataInicialFilter || dataFinalFilter;
   function limparFiltros() {
     setSearch("");
     setFabricaFilter("all");
@@ -242,6 +245,7 @@ export default function Rececoes() {
     setMateriaPrimaFilter("all");
     setDataInicialFilter("");
     setDataFinalFilter("");
+    setLoteFilter("");
   }
 
   const materiasAprovadas = useMemo(() => (materiasPrimas ?? []).filter(mp =>
@@ -368,9 +372,10 @@ export default function Rececoes() {
     <SigaLayout
       title="Receções de Matérias-Primas"
       subtitle={`${filteredRececoes.length} de ${rececoes?.length ?? 0} receções no registo`}
-      actions={isAuthenticated ? <div className="flex flex-wrap items-center gap-2">{podeTransferirStock && <Button size="sm" variant="outline" onClick={() => { setTransferenciaForm(emptyTransferenciaStock(user?.name ?? "")); setTransferenciaDialogOpen(true); }} className="gap-1.5"><ArrowRightLeft className="w-3.5 h-3.5" /> Transferir lote</Button>}<Button size="sm" onClick={abrirNovaRececao} className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova receção</Button></div> : undefined}
+      actions={isAuthenticated ? <div className="flex flex-wrap items-center gap-2">{podeTransferirStock && <Button size="icon" variant="outline" onClick={() => { setTransferenciaForm(emptyTransferenciaStock(user?.name ?? "")); setTransferenciaDialogOpen(true); }} title="Transferir lote" aria-label="Transferir lote"><ArrowRightLeft className="w-4 h-4" /></Button>}<Button size="sm" onClick={abrirNovaRececao} className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova receção</Button></div> : undefined}
     >
       <div className="space-y-5">
+        <div className="flex items-center gap-2"><ClipboardCheck className="w-4 h-4 text-primary" /><div><p className="text-sm font-semibold">Painel informativo de receções</p><p className="text-xs text-muted-foreground">Consulta disponível para todos os operadores com acesso a Receções.</p></div></div>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {[
             { key: "all", label: "Total", value: stats.total, tone: "text-foreground", icon: ClipboardCheck },
@@ -387,7 +392,7 @@ export default function Rececoes() {
           })}
         </div>
 
-        <div className="card-elegant p-3 sm:p-4"><div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5"><div className="relative sm:col-span-2 xl:col-span-2 min-w-0"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="MP, fornecedor, lote ou guia" className="pl-9 w-full" /></div><Select value={fabricaFilter} onValueChange={setFabricaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as fábricas" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as fábricas</SelectItem>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select><Select value={armazemFilter} onValueChange={setArmazemFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os armazéns" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os armazéns</SelectItem>{ARMAZENS_RECECAO.map(armazem => <SelectItem key={armazem.id} value={armazem.id}>{armazem.label}</SelectItem>)}</SelectContent></Select><Select value={fornecedorFilter} onValueChange={setFornecedorFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os fornecedores" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os fornecedores</SelectItem>{fornecedores?.map(fornecedor => <SelectItem key={fornecedor.id} value={String(fornecedor.id)}>{fornecedor.nome}</SelectItem>)}</SelectContent></Select><Select value={materiaPrimaFilter} onValueChange={setMateriaPrimaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as MP" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as MP</SelectItem>{materiasPrimas?.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>)}</SelectContent></Select><Field label="Data inicial"><Input type="date" value={dataInicialFilter} onChange={event => setDataInicialFilter(event.target.value)} /></Field><Field label="Data final"><Input type="date" min={dataInicialFilter || undefined} value={dataFinalFilter} onChange={event => setDataFinalFilter(event.target.value)} /></Field></div>{temFiltrosAtivos && <div className="mt-2.5 flex justify-end"><Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={limparFiltros}><RotateCcw className="w-3.5 h-3.5" />Limpar filtros</Button></div>}</div>
+        <div className="card-elegant p-3 sm:p-4"><div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-6 gap-2.5"><div className="relative sm:col-span-2 xl:col-span-2 min-w-0"><Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" /><Input value={search} onChange={event => setSearch(event.target.value)} placeholder="MP, fornecedor ou guia" className="pl-9 w-full" /></div><Field label="Lote"><Input value={loteFilter} onChange={event => setLoteFilter(event.target.value)} placeholder="Pesquisar lote" /></Field><Select value={fabricaFilter} onValueChange={setFabricaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as fábricas" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as fábricas</SelectItem>{fabricas?.map(fabrica => <SelectItem key={fabrica.id} value={String(fabrica.id)}>{fabrica.nome}</SelectItem>)}</SelectContent></Select><Select value={armazemFilter} onValueChange={setArmazemFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os armazéns" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os armazéns</SelectItem>{ARMAZENS_RECECAO.map(armazem => <SelectItem key={armazem.id} value={armazem.id}>{armazem.label}</SelectItem>)}</SelectContent></Select><Select value={fornecedorFilter} onValueChange={setFornecedorFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todos os fornecedores" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os fornecedores</SelectItem>{fornecedores?.map(fornecedor => <SelectItem key={fornecedor.id} value={String(fornecedor.id)}>{fornecedor.nome}</SelectItem>)}</SelectContent></Select><Select value={materiaPrimaFilter} onValueChange={setMateriaPrimaFilter}><SelectTrigger className="w-full"><SelectValue placeholder="Todas as MP" /></SelectTrigger><SelectContent><SelectItem value="all">Todas as MP</SelectItem>{materiasPrimas?.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>)}</SelectContent></Select><Field label="Data inicial"><Input type="date" value={dataInicialFilter} onChange={event => setDataInicialFilter(event.target.value)} /></Field><Field label="Data final"><Input type="date" min={dataInicialFilter || undefined} value={dataFinalFilter} onChange={event => setDataFinalFilter(event.target.value)} /></Field></div>{temFiltrosAtivos && <div className="mt-2.5 flex justify-end"><Button variant="ghost" size="sm" className="gap-1.5 text-muted-foreground" onClick={limparFiltros}><RotateCcw className="w-3.5 h-3.5" />Limpar filtros</Button></div>}</div>
 
         <div className="space-y-2">
           {filteredRececoes.length === 0 ? <div className="card-elegant p-12 text-center"><ClipboardCheck className="w-10 h-10 mx-auto mb-3 text-muted-foreground/30" /><p className="text-sm font-medium">Ainda não existem receções neste filtro</p><p className="text-xs text-muted-foreground mt-1">Registe a primeira receção para iniciar o controlo de conformidade.</p></div> : filteredRececoes.map(rececao => {
@@ -398,7 +403,7 @@ export default function Rececoes() {
             return <div key={rececao.id} className="card-elegant p-4 flex flex-col lg:flex-row lg:items-center gap-4">
               <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rececao.conformidade === "conforme" ? "bg-emerald-50" : rececao.conformidade === "nao_conforme" ? "bg-red-50" : "bg-amber-50")}><PackageCheck className={cn("w-5 h-5", config.className.split(" ")[1])} /></div>
               <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold">{rececao.materiaPrimaNome}</p><Badge variant="outline" className="font-normal text-[10px]">{armazem?.label}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{rececao.fornecedorNome}{rececao.lote ? ` · Lote ${rececao.lote}` : ""}{rececao.numeroGuia ? ` · Guia ${rececao.numeroGuia}` : ""}</p><div className="mt-2 flex gap-2 flex-wrap">{fabrica && <FactoryBadge nome={fabrica.nome} codigo={fabrica.codigo} size="sm" />}<span className="text-[10px] text-muted-foreground">{new Date(rececao.dataRececao).toLocaleDateString("pt-PT")}</span><span className="text-[10px] text-muted-foreground">{rececao.quantidade} {formatarUnidadeRececao(rececao.unidade as UnidadeRececao)}</span></div></div>
-              <div className="flex items-center gap-2 justify-between lg:justify-end flex-wrap"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span><Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRececaoDetalheId(rececao.id)}><Eye className="w-3.5 h-3.5" />Detalhe do lote</Button>{podeTransferirStock && rececao.lote && (quantidadeTransferidaPorRececao.get(rececao.id) ?? 0) < rececao.quantidade && <Button size="sm" className="gap-1.5" onClick={() => abrirTransferenciaStock(rececao)}><ArrowRightLeft className="w-3.5 h-3.5" />Transferir lote</Button>}{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
+              <div className="flex items-center gap-2 justify-between lg:justify-end flex-wrap"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span><Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRececaoDetalheId(rececao.id)}><Eye className="w-3.5 h-3.5" />Detalhe do lote</Button>{podeTransferirStock && rececao.lote && (quantidadeTransferidaPorRececao.get(rececao.id) ?? 0) < rececao.quantidade && <Button size="icon" title="Transferir lote" aria-label="Transferir lote" onClick={() => abrirTransferenciaStock(rececao)}><ArrowRightLeft className="w-4 h-4" /></Button>}{podeEditarRececaoPorUtilizador({ role: user?.role, userId: user?.id, registadoPor: rececao.registadoPor }) && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
             </div>;
           })}
         </div>

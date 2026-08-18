@@ -637,6 +637,7 @@ export async function getRececoesMateriasPrimas(filtros?: { fabricaId?: number; 
     numeroGuia: rececoesMateriasPrimas.numeroGuia,
     observacoes: rececoesMateriasPrimas.observacoes,
     motivoNaoConformidade: rececoesMateriasPrimas.motivoNaoConformidade,
+    registadoPor: rececoesMateriasPrimas.registadoPor,
     createdAt: rececoesMateriasPrimas.createdAt,
   }).from(rececoesMateriasPrimas)
     .innerJoin(fornecedores, eq(rececoesMateriasPrimas.fornecedorId, fornecedores.id))
