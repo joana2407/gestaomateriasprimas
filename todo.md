@@ -459,3 +459,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Criar Richard Dias, Marcelo Loureiro, Pedro Magina e Pedro Lemos como utilizadores de Logística
 - [x] Permitir à Responsável de Qualidade gerir perfis, estados de acesso e permissões operacionais
 - [x] Validar apresentação no acesso por PIN, testes e criar checkpoint
+
+## Correção v4.23 — Ação de transferência de lote em Receções
+
+- [x] Inspecionar a condição que controla a visibilidade da transferência por lote
+- [x] Tornar a ação acessível no registo de receção e lote correto
+- [x] Validar a operação para Qualidade, testes e criar checkpoint
