@@ -28,6 +28,13 @@ function QualidadeRoute({ component: Component }: { component: React.ComponentTy
   return <Component />;
 }
 
+function GestaoAcessosRoute({ component: Component }: { component: React.ComponentType }) {
+  const { user, loading } = useAuth();
+  if (loading) return null;
+  if (!user?.podeGerirAcessos) return <Redirect to="/" />;
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
@@ -44,8 +51,8 @@ function Router() {
       <Route path="/historico" component={() => <QualidadeRoute component={Historico} />} />
       <Route path="/notificacoes" component={() => <QualidadeRoute component={Notificacoes} />} />
       <Route path="/importacao" component={() => <QualidadeRoute component={Importacao} />} />
-      <Route path="/utilizadores" component={() => <QualidadeRoute component={Utilizadores} />} />
-      <Route path="/configuracoes" component={() => <QualidadeRoute component={Utilizadores} />} />
+      <Route path="/utilizadores" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
+      <Route path="/configuracoes" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

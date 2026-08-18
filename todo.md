@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 52/52 testes passados
+- [x] Total: 54/54 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -452,3 +452,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Criar a ação de transferir a partir do registo da receção
 - [x] Registar data, quantidade, responsável e motivo em cada movimento
 - [x] Validar rastreabilidade, testes e criar checkpoint
+
+## Melhoria v4.22 — Utilizadores de Logística e permissões configuráveis
+
+- [x] Rever operadores existentes e o modelo de administração de permissões
+- [x] Criar Richard Dias, Marcelo Loureiro, Pedro Magina e Pedro Lemos como utilizadores de Logística
+- [x] Permitir à Responsável de Qualidade gerir perfis, estados de acesso e permissões operacionais
+- [x] Validar apresentação no acesso por PIN, testes e criar checkpoint

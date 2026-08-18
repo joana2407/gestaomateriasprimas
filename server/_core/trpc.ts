@@ -44,6 +44,16 @@ export const qualidadeProcedure = t.procedure.use(
   }),
 );
 
+export const gestaoAcessosProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+    if (!ctx.user?.podeGerirAcessos) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Esta ação está reservada à Responsável de Qualidade." });
+    }
+    return next({ ctx: { ...ctx, user: ctx.user } });
+  }),
+);
+
 // Por defeito, os routers de gestão permanecem reservados à Qualidade.
 // Receções usa explicitamente rececoesProcedure para admitir ambos os perfis.
 export const protectedProcedure = qualidadeProcedure;

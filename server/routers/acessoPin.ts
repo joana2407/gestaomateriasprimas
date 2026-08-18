@@ -37,6 +37,7 @@ export const acessoPinRouter = router({
           name: operador.name,
           email: operador.email,
           role: operador.role,
+          podeGerirAcessos: operador.podeGerirAcessos,
         },
       };
     }),

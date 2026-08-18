@@ -47,7 +47,8 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
   const { user, isAuthenticated, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isLogistica = user?.role === "logistica";
-  const navItemsVisiveis = isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS;
+  const navItemsVisiveis = (isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS)
+    .filter(item => item.href !== "/utilizadores" || user?.podeGerirAcessos);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">

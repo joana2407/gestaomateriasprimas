@@ -99,6 +99,7 @@ export async function getOperadoresPinGeriveis() {
     userId: users.id,
     name: users.name,
     role: users.role,
+    podeGerirAcessos: users.podeGerirAcessos,
     ativo: operadoresPin.ativo,
     ultimoAcessoEm: operadoresPin.ultimoAcessoEm,
     criadoEm: operadoresPin.criadoEm,
@@ -122,6 +123,7 @@ export async function getUtilizadorComPinAtivo(userId: number) {
     email: users.email,
     loginMethod: users.loginMethod,
     role: users.role,
+    podeGerirAcessos: users.podeGerirAcessos,
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,
     lastSignedIn: users.lastSignedIn,
@@ -138,7 +140,7 @@ export async function criarOperadorPin(data: { openId: string; nome: string; rol
   return { operadorId: (operadorResult[0] as any).insertId as number, userId };
 }
 
-export async function atualizarOperadorPin(operadorId: number, data: { ativo?: boolean; role?: "logistica" | "qualidade"; pinHash?: string }) {
+export async function atualizarOperadorPin(operadorId: number, data: { ativo?: boolean; role?: "logistica" | "qualidade"; pinHash?: string; podeGerirAcessos?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const operador = await db.select().from(operadoresPin).where(eq(operadoresPin.id, operadorId)).limit(1);
@@ -149,7 +151,7 @@ export async function atualizarOperadorPin(operadorId: number, data: { ativo?: b
       ...(data.pinHash !== undefined ? { pinHash: data.pinHash } : {}),
     }).where(eq(operadoresPin.id, operadorId));
   }
-  if (data.role) await db.update(users).set({ role: data.role, updatedAt: new Date() }).where(eq(users.id, operador[0].userId));
+  if (data.role || data.podeGerirAcessos !== undefined) await db.update(users).set({ ...(data.role ? { role: data.role } : {}), ...(data.podeGerirAcessos !== undefined ? { podeGerirAcessos: data.podeGerirAcessos } : {}), updatedAt: new Date() }).where(eq(users.id, operador[0].userId));
   return operador[0].userId;
 }
 
@@ -164,6 +166,7 @@ export async function getOperadorAtivoPorIdEPinHash(operadorId: number, pinHash:
     email: users.email,
     loginMethod: users.loginMethod,
     role: users.role,
+    podeGerirAcessos: users.podeGerirAcessos,
     createdAt: users.createdAt,
     updatedAt: users.updatedAt,
     lastSignedIn: users.lastSignedIn,
