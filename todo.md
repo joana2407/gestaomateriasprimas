@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 58/58 testes passados
+- [x] Total: 59/59 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -483,3 +483,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Limitar a edição à equipa de Qualidade ou ao responsável que registou a receção
 - [x] Confirmar a eliminação de receções exclusivamente pela equipa de Qualidade
 - [x] Validar permissões, interface e criar checkpoint
+
+## Melhoria v4.26 — Validações no detalhe de receção
+
+- [x] Rever a estrutura de controlos registados em cada receção
+- [x] Mostrar todas as validações efetuadas no detalhe do lote
+- [x] Validar apresentação e criar checkpoint
