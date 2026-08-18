@@ -88,7 +88,7 @@
 ## Testes
 - [x] Testes vitest para motor da árvore de decisão (Q1-Q6) — 10 testes
 - [x] Testes vitest para auth.logout — 1 teste
-- [x] Total: 59/59 testes passados
+- [x] Total: 61/61 testes passados
 
 ## Melhorias v1.1
 - [x] Eliminar fornecedores (soft-delete com confirmação AlertDialog)
@@ -489,3 +489,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever a estrutura de controlos registados em cada receção
 - [x] Mostrar todas as validações efetuadas no detalhe do lote
 - [x] Validar apresentação e criar checkpoint
+
+## Correção v4.27 — Controlos exclusivos de MP a granel
+
+- [x] Identificar o tipo de fornecimento da MP na receção
+- [x] Marcar selo, silo, crivo e fecho de carga como Não Aplicável para MP em saco
+- [x] Validar formulário, detalhe de lote e criar checkpoint
