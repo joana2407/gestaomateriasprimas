@@ -465,3 +465,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Inspecionar a condição que controla a visibilidade da transferência por lote
 - [x] Tornar a ação acessível no registo de receção e lote correto
 - [x] Validar a operação para Qualidade, testes e criar checkpoint
+
+## Correção v4.24 — Transferência e histórico por receção
+
+- [x] Expor a ação de transferência em cada matéria-prima rececionada elegível
+- [x] Criar o detalhe expandido da receção e do lote
+- [x] Mostrar no detalhe o histórico completo de transferências associadas ao lote
+- [x] Validar rastreabilidade, testes e criar checkpoint

@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Edit2,
+  Eye,
   PackageCheck,
   Plus,
   RotateCcw,
@@ -177,6 +178,7 @@ export default function Rececoes() {
   const [form, setForm] = useState<RececaoForm>(() => emptyForm(user?.name ?? ""));
   const [transferenciaForm, setTransferenciaForm] = useState<TransferenciaStockForm>(() => emptyTransferenciaStock(user?.name ?? ""));
   const [rececaoParaEliminar, setRececaoParaEliminar] = useState<any | null>(null);
+  const [rececaoDetalheId, setRececaoDetalheId] = useState<number | null>(null);
   const [rececaoDiretaId, setRececaoDiretaId] = useState<number | null>(() => {
     if (typeof window === "undefined") return null;
     const value = Number(new URLSearchParams(window.location.search).get("rececaoId"));
@@ -217,6 +219,7 @@ export default function Rececoes() {
       toast.success("Transferência de stock registada no histórico.");
       setTransferenciaDialogOpen(false);
       refetchTransferencias();
+      refetch();
     },
     onError: error => toast.error(error.message),
   });
@@ -268,6 +271,8 @@ export default function Rececoes() {
   const quantidadeDisponivelTransferencia = rececaoOrigemTransferencia
     ? Math.max(0, rececaoOrigemTransferencia.quantidade - (quantidadeTransferidaPorRececao.get(rececaoOrigemTransferencia.id) ?? 0))
     : 0;
+  const rececaoDetalhe = useMemo(() => (rececoes ?? []).find(rececao => rececao.id === rececaoDetalheId), [rececoes, rececaoDetalheId]);
+  const transferenciasDoLote = useMemo(() => (transferenciasStock ?? []).filter(transferencia => transferencia.rececaoOrigemId === rececaoDetalheId), [transferenciasStock, rececaoDetalheId]);
 
   function guardarTransferenciaStock() {
     const transferencia = transferenciaForm;
@@ -393,7 +398,7 @@ export default function Rececoes() {
             return <div key={rececao.id} className="card-elegant p-4 flex flex-col lg:flex-row lg:items-center gap-4">
               <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", rececao.conformidade === "conforme" ? "bg-emerald-50" : rececao.conformidade === "nao_conforme" ? "bg-red-50" : "bg-amber-50")}><PackageCheck className={cn("w-5 h-5", config.className.split(" ")[1])} /></div>
               <div className="min-w-0 flex-1"><div className="flex items-center gap-2 flex-wrap"><p className="text-sm font-semibold">{rececao.materiaPrimaNome}</p><Badge variant="outline" className="font-normal text-[10px]">{armazem?.label}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{rececao.fornecedorNome}{rececao.lote ? ` · Lote ${rececao.lote}` : ""}{rececao.numeroGuia ? ` · Guia ${rececao.numeroGuia}` : ""}</p><div className="mt-2 flex gap-2 flex-wrap">{fabrica && <FactoryBadge nome={fabrica.nome} codigo={fabrica.codigo} size="sm" />}<span className="text-[10px] text-muted-foreground">{new Date(rececao.dataRececao).toLocaleDateString("pt-PT")}</span><span className="text-[10px] text-muted-foreground">{rececao.quantidade} {formatarUnidadeRececao(rececao.unidade as UnidadeRececao)}</span></div></div>
-              <div className="flex items-center gap-2 justify-between lg:justify-end flex-wrap"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span>{podeTransferirStock && rececao.lote && (quantidadeTransferidaPorRececao.get(rececao.id) ?? 0) < rececao.quantidade && <Button variant="outline" size="sm" className="gap-1.5" onClick={() => abrirTransferenciaStock(rececao)}><ArrowRightLeft className="w-3.5 h-3.5" />Transferir lote</Button>}{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
+              <div className="flex items-center gap-2 justify-between lg:justify-end flex-wrap"><span className={cn("inline-flex items-center gap-1.5 border rounded-full px-2.5 py-1 text-xs font-medium", config.className)}><Icon className="w-3.5 h-3.5" />{config.label}</span><Button variant="outline" size="sm" className="gap-1.5" onClick={() => setRececaoDetalheId(rececao.id)}><Eye className="w-3.5 h-3.5" />Detalhe do lote</Button>{podeTransferirStock && rececao.lote && (quantidadeTransferidaPorRececao.get(rececao.id) ?? 0) < rececao.quantidade && <Button size="sm" className="gap-1.5" onClick={() => abrirTransferenciaStock(rececao)}><ArrowRightLeft className="w-3.5 h-3.5" />Transferir lote</Button>}{isAuthenticated && <button type="button" onClick={() => editarRececao(rececao)} className="p-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground" title="Editar receção"><Edit2 className="w-4 h-4" /></button>}{podeEliminar && <button type="button" onClick={() => setRececaoParaEliminar(rececao)} className="p-2 rounded-lg text-red-600 hover:bg-red-50" title="Eliminar receção"><Trash2 className="w-4 h-4" /></button>}</div>
             </div>;
           })}
         </div>
@@ -433,6 +438,12 @@ export default function Rececoes() {
             <Field label="Observações"><Textarea value={form.observacoes} onChange={event => setForm(current => ({ ...current, observacoes: event.target.value }))} placeholder="Observações complementares da receção..." /></Field>
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-border/60"><Button variant="outline" className="w-full sm:w-auto" onClick={() => setDialogOpen(false)}>Cancelar</Button><Button className="w-full sm:w-auto" onClick={guardar} disabled={upsert.isPending}>{upsert.isPending ? "A guardar..." : form.id ? "Guardar alterações" : "Registar receção"}</Button></div>
           </div>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={Boolean(rececaoDetalhe)} onOpenChange={open => !open && setRececaoDetalheId(null)}>
+        <DialogContent className="w-[calc(100vw-1rem)] max-w-3xl max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+          <DialogHeader><DialogTitle className="flex items-center gap-2"><PackageCheck className="w-5 h-5 text-primary" />Detalhe da receção e lote</DialogTitle><DialogDescription>Rastreabilidade completa da receção e das transferências físicas associadas ao lote.</DialogDescription></DialogHeader>
+          {rececaoDetalhe && <div className="space-y-5 pt-3"><div className="grid grid-cols-1 sm:grid-cols-2 gap-3 rounded-xl border border-border/70 bg-muted/20 p-4 text-sm"><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Matéria-prima</p><p className="mt-1 font-semibold">{rececaoDetalhe.materiaPrimaNome}</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Lote</p><p className="mt-1 font-semibold">{rececaoDetalhe.lote || "Não indicado"}</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Recebido</p><p className="mt-1">{rececaoDetalhe.quantidade} {formatarUnidadeRececao(rececaoDetalhe.unidade as UnidadeRececao)} · {new Date(rececaoDetalhe.dataRececao).toLocaleDateString("pt-PT")}</p></div><div><p className="text-[10px] uppercase tracking-wide text-muted-foreground">Responsável pela receção</p><p className="mt-1">{rececaoDetalhe.responsavel}</p></div></div><section className="rounded-xl border border-border/70 overflow-hidden"><div className="flex items-center gap-2 border-b border-border/60 px-4 py-3"><ArrowRightLeft className="w-4 h-4 text-primary" /><div><p className="text-sm font-semibold">Histórico completo de transferências</p><p className="text-[11px] text-muted-foreground">{transferenciasDoLote.length} movimento(s) associado(s) a este lote.</p></div></div><div className="divide-y divide-border/60">{transferenciasDoLote.length ? transferenciasDoLote.map(transferencia => { const destino = fabricas?.find(fabrica => fabrica.id === transferencia.fabricaDestinoId); return <div key={transferencia.id} className="p-4 text-sm"><div className="flex flex-wrap items-center justify-between gap-2"><p className="font-medium">{transferencia.quantidade} {formatarUnidadeRececao(transferencia.unidade as UnidadeRececao)} para {destino?.nome ?? "Fábrica de destino"}</p><span className="text-xs text-muted-foreground">{new Date(transferencia.dataTransferencia).toLocaleDateString("pt-PT")}</span></div><p className="mt-1 text-xs text-muted-foreground">Responsável: {transferencia.responsavel} · Motivo: {transferencia.motivo}</p>{transferencia.observacoes && <p className="mt-1 text-xs text-muted-foreground">Observações: {transferencia.observacoes}</p>}</div>; }) : <p className="p-5 text-sm text-muted-foreground">Ainda não existem transferências associadas a este lote.</p>}</div></section>{podeTransferirStock && rececaoDetalhe.lote && (quantidadeTransferidaPorRececao.get(rececaoDetalhe.id) ?? 0) < rececaoDetalhe.quantidade && <div className="flex justify-end"><Button className="gap-1.5" onClick={() => { setRececaoDetalheId(null); abrirTransferenciaStock(rececaoDetalhe); }}><ArrowRightLeft className="w-4 h-4" />Transferir deste lote</Button></div>}</div>}
         </DialogContent>
       </Dialog>
       <Dialog open={transferenciaDialogOpen} onOpenChange={setTransferenciaDialogOpen}>
