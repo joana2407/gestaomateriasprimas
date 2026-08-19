@@ -8,7 +8,17 @@ import App from "./App";
 import { startLogin } from "./const";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Evita que a mesma lista seja recarregada sucessivamente enquanto o
+      // utilizador está a preencher um formulário ou alterna entre controlos.
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 // Radix UI pode acionar este aviso transitório durante a reposição de popovers.
 // Não representa uma falha da aplicação nem deve ser recolhido como erro de negócio.

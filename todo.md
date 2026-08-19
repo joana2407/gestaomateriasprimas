@@ -550,3 +550,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Reproduzir e identificar o erro na criação de fornecedor e matéria-prima
 - [x] Corrigir a causa sem bloquear os fluxos de gravação autorizados
 - [x] Validar criação, testes e publicar checkpoint
+
+## Correção v4.37 — Acesso e execução de ações
+
+- [x] Reproduzir o bloqueio de acesso aos módulos e instruções reportado
+- [x] Corrigir a falha de sessão, navegação ou execução de ações
+- [x] Validar o acesso e os fluxos críticos e publicar checkpoint
