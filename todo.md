@@ -507,3 +507,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Verificar o rótulo indicado no formulário de Receções
 - [x] Alterar o rótulo para “Conformidade do Veículo”
 - [x] Validar e criar checkpoint
+
+## Melhoria v4.30 — Unidades Cx e Unid
+
+- [x] Rever a definição e utilização das unidades de receção
+- [x] Adicionar Cx e Unid ao formulário, validação e apresentação
+- [x] Validar unidades e criar checkpoint
