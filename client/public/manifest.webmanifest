@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "SIGA — Gestão de Alergénios",
+  "short_name": "SIGA",
+  "description": "Gestão operacional de alergénios, receções e lotes para a indústria de panificação.",
+  "lang": "pt-PT",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8faf7",
+  "theme_color": "#006b4f",
+  "icons": [
+    {
+      "src": "/manus-storage/siga-pwa-icon_af785ae0.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, BarChart3, Bell, BookOpen, ChevronRight,
@@ -50,6 +51,9 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
   const isLogistica = user?.role === "logistica";
   const navItemsVisiveis = (isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS)
     .filter(item => !item.requiresAccessManagement || user?.podeGerirAcessos);
+  const mobileNavItems = isLogistica
+    ? NAV_ITEMS.filter(item => item.href === "/rececoes")
+    : NAV_ITEMS.filter(item => ["/", "/rececoes", "/materias-primas"].includes(item.href));
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
@@ -185,18 +189,31 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
         </header>
 
         {/* Content */}
-        <main className="flex-1 overflow-y-auto">
-          <div className="p-4 sm:p-6">
-            {isLogistica && (
+          <main className="flex-1 overflow-y-auto">
+            <div className="p-4 pb-24 sm:p-6 lg:pb-6">
+              <PwaInstallPrompt />
+              {isLogistica && (
               <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-3 text-xs text-sky-800">
                 <span><strong>Perfil Logística:</strong> este acesso está autorizado apenas para o módulo de Receções.</span>
                 <button onClick={() => logout()} className="font-semibold text-sky-900 underline underline-offset-2 text-left sm:text-right">Trocar para utilizador de Qualidade</button>
               </div>
             )}
             {children}
-          </div>
-        </main>
+            </div>
+          </main>
+          {isAuthenticated && (
+            <nav className="lg:hidden shrink-0 border-t border-border/70 bg-card/95 px-2 pt-2 backdrop-blur supports-[padding:env(safe-area-inset-bottom)]:pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <div className="grid grid-cols-4 gap-1">
+                {mobileNavItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
+                  return <Link key={item.href} href={item.href}><div className={cn("flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[10px] font-medium transition-colors", isActive ? "bg-primary/10 text-primary" : "text-muted-foreground")}><Icon className="h-4 w-4" /><span className="max-w-full truncate">{item.label === "Matérias-Primas" ? "MP" : item.label}</span></div></Link>;
+                })}
+                <button type="button" onClick={() => setSidebarOpen(true)} className="flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-lg px-1 text-[10px] font-medium text-muted-foreground"><Menu className="h-4 w-4" /><span>Menu</span></button>
+              </div>
+            </nav>
+          )}
+        </div>
       </div>
-    </div>
   );
 }

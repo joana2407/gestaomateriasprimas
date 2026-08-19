@@ -587,3 +587,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Limpar transferências, receções e dependências de teste
 - [x] Corrigir a eliminação segura de receções e dependências
 - [x] Validar o fluxo, testes e publicar checkpoint
+
+## Aplicação móvel SIGA
+
+- [x] Definir o formato como aplicação web instalável em telemóvel
+- [x] Configurar instalação e identidade da aplicação móvel
+- [x] Otimizar acesso PIN, receções, lotes e transferências em telemóvel
+- [x] Validar os fluxos móveis e publicar a primeira versão
