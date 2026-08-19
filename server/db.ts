@@ -667,7 +667,19 @@ export async function upsertRececaoMateriaPrima(data: typeof rececoesMateriasPri
 export async function deleteRececaoMateriaPrima(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.delete(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id));
+
+  const transferenciasAssociadas = await db
+    .select({ id: transferenciasMateriasPrimas.id })
+    .from(transferenciasMateriasPrimas)
+    .where(eq(transferenciasMateriasPrimas.rececaoOrigemId, id));
+
+  await db.transaction(async (tx) => {
+    await tx.delete(notificacoesQualidade).where(eq(notificacoesQualidade.rececaoId, id));
+    await tx.delete(transferenciasMateriasPrimas).where(eq(transferenciasMateriasPrimas.rececaoOrigemId, id));
+    await tx.delete(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id));
+  });
+
+  return { transferenciasEliminadas: transferenciasAssociadas.length };
 }
 
 // ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────

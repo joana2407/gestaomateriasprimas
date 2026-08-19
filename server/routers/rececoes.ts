@@ -191,15 +191,16 @@ export const rececoesRouter = router({
     .mutation(async ({ input, ctx }) => {
       const rececao = await getRececaoMateriaPrimaById(input.id);
       if (!rececao) throw new Error("Receção não encontrada");
-      await deleteRececaoMateriaPrima(input.id);
+      const { transferenciasEliminadas } = await deleteRececaoMateriaPrima(input.id);
       await addAuditLog({
         entidade: "rececao_mp",
         entidadeId: input.id,
         acao: "eliminado",
         dadosAnteriores: rececao,
+        dadosNovos: { transferenciasEliminadas },
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
-      return { success: true } as const;
+      return { success: true, transferenciasEliminadas } as const;
     }),
 });

@@ -580,3 +580,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever os dados disponíveis e o cartão resumido de receção
 - [x] Mostrar o responsável que registou a receção no cartão
 - [x] Validar a apresentação, testes e publicar checkpoint
+
+## Correção v4.42 — Eliminação de receções dependentes
+
+- [x] Identificar os registos que bloqueiam a eliminação de receções
+- [x] Limpar transferências, receções e dependências de teste
+- [x] Corrigir a eliminação segura de receções e dependências
+- [x] Validar o fluxo, testes e publicar checkpoint

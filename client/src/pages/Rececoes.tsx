@@ -19,6 +19,7 @@ import {
 } from "../../../shared/rececao-controlos";
 import { mpAprovadaParaRececao } from "../../../shared/rececao-fornecedor";
 import { filtrarRececoes } from "../../../shared/rececao-filtros";
+import { mensagemEliminacaoRececao } from "../../../shared/rececao-eliminacao";
 import { marcarControlosGranelNaoAplicaveis, prepararControlosGranel } from "../../../shared/rececao-granel";
 import { podeEditarRececao as podeEditarRececaoPorUtilizador } from "../../../shared/rececao-permissoes";
 import { listarValidacoesRececao, type EstadoValidacaoDetalhe } from "../../../shared/rececao-validacoes";
@@ -212,10 +213,11 @@ export default function Rececoes() {
     onError: error => toast.error(error.message),
   });
   const eliminar = trpc.rececoes.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Receção eliminada com sucesso.");
+    onSuccess: resultado => {
+      toast.success(mensagemEliminacaoRececao(resultado.transferenciasEliminadas));
       setRececaoParaEliminar(null);
       refetch();
+      refetchTransferencias();
     },
     onError: error => toast.error(error.message),
   });
