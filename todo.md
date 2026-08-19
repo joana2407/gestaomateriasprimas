@@ -568,3 +568,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Isolar o clique dos botões Criar novo de fornecedor e MP
 - [x] Corrigir a abertura dos respetivos painéis de criação
 - [x] Validar os botões, testes e publicar checkpoint
+
+## Melhoria v4.40 — Forma de fornecimento Unidades
+
+- [x] Rever o modelo atual de formas de fornecimento e a referência visual
+- [x] Adicionar Unidades ao formulário e aos dados logísticos de MP
+- [x] Validar a nova opção, testes e publicar checkpoint

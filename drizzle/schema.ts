@@ -94,8 +94,8 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   // Para MP compostas: lista de sub-ingredientes com origem
   subIngredientes: json("sub_ingredientes"),
   // ── Logística ──────────────────────────────────────────────────────────────
-  // Forma de fornecimento: saco, granel, bigbag, caixa, outro
-  formaFornecimento: mysqlEnum("forma_fornecimento", ["saco", "granel", "bigbag", "caixa", "outro"]),
+  // Forma de fornecimento: saco, granel, bigbag, caixa, unidades, outro
+  formaFornecimento: mysqlEnum("forma_fornecimento", ["saco", "granel", "bigbag", "caixa", "unidades", "outro"]),
   // Quando forma = saco: peso por saco (kg)
   kgPorSaco: float("kg_por_saco"),
   // Quando forma = saco: número de sacos por palete
@@ -104,7 +104,7 @@ export const materiasPrimas = mysqlTable("materias_primas", {
   kgPorBigbag: float("kg_por_bigbag"),
   // Observações logísticas (condições de armazenamento, prazo validade, etc.)
   observacoesLogistica: text("observacoes_logistica"),
-  // Múltiplas formas de fornecimento (array JSON: ["saco","granel","bigbag","caixa","outro"])
+  // Múltiplas formas de fornecimento (array JSON: ["saco","granel","bigbag","caixa","unidades","outro"])
   formasFornecimento: json("formas_fornecimento"),
   // Quando caixa está selecionada: quantidade/peso por caixa
   unidadesPorCaixa: float("unidades_por_caixa"),

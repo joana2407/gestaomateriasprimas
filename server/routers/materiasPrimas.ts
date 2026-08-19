@@ -61,13 +61,13 @@ export const materiasPrimasRouter = router({
       subIngredientes: z.array(SubIngredienteSchema).optional(),
       fornecedoresMp: z.array(FornecedorMpSchema).optional(),
       // Logística
-      formaFornecimento: z.enum(["saco", "granel", "bigbag", "caixa", "outro"]).optional().nullable(),
+      formaFornecimento: z.enum(["saco", "granel", "bigbag", "caixa", "unidades", "outro"]).optional().nullable(),
       kgPorSaco: z.number().optional().nullable(),
       sacosPorPalete: z.number().int().optional().nullable(),
       kgPorBigbag: z.number().optional().nullable(),
       observacoesLogistica: z.string().optional().nullable(),
       // Logística múltipla
-      formasFornecimento: z.array(z.enum(["saco", "granel", "bigbag", "caixa", "outro"])).optional().nullable(),
+      formasFornecimento: z.array(z.enum(["saco", "granel", "bigbag", "caixa", "unidades", "outro"])).optional().nullable(),
       unidadesPorCaixa: z.number().optional().nullable(),
       caixasPorPalete: z.number().int().optional().nullable(),
       // Estado de completude

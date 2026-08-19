@@ -61,7 +61,7 @@ interface MPFormData {
   kgPorBigbag?: number | null;
   observacoesLogistica?: string | null;
   // Logística múltipla
-  formasFornecimento?: Array<"saco" | "granel" | "bigbag" | "caixa" | "outro"> | null;
+  formasFornecimento?: Array<"saco" | "granel" | "bigbag" | "caixa" | "unidades" | "outro"> | null;
   unidadesPorCaixa?: number | null;
   caixasPorPalete?: number | null;
   // Estado de completude
@@ -1164,6 +1164,7 @@ export default function MateriasPrimas() {
                         { id: "granel", label: "Granel", icon: "🏗️" },
                         { id: "bigbag", label: "Big Bag", icon: "🛍️" },
                         { id: "caixa", label: "Caixa", icon: "📦" },
+                        { id: "unidades", label: "Unidades", icon: "🔢" },
                         { id: "outro", label: "Outro", icon: "📋" },
                       ] as const).map(opt => {
                         const isSelected = (form.formasFornecimento ?? []).includes(opt.id);
@@ -1494,6 +1495,7 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
     granel: { label: "Granel", icon: "🏗️" },
     bigbag: { label: "Big Bag", icon: "🛍️" },
     caixa: { label: "Caixa", icon: "📦" },
+    unidades: { label: "Unidades", icon: "🔢" },
     outro: { label: "Outro", icon: "📋" },
   };
 
