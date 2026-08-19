@@ -513,3 +513,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever a definição e utilização das unidades de receção
 - [x] Adicionar Cx e Unid ao formulário, validação e apresentação
 - [x] Validar unidades e criar checkpoint
+
+## Correção v4.31 — Acesso ao Dashboard
+
+- [x] Inspecionar sessão, consola, rede e pedidos do Dashboard
+- [x] Corrigir o bloqueio que impede trabalhar no Dashboard
+- [x] Validar o acesso e criar checkpoint

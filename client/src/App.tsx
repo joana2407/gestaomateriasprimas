@@ -1,5 +1,7 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { toast } from "sonner";
+import { useEffect } from "react";
 import NotFound from "@/pages/NotFound";
 import { Redirect, Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -23,6 +25,11 @@ import AcessoPin from "./pages/AcessoPin";
 
 function QualidadeRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
+  useEffect(() => {
+    if (user?.role === "logistica") {
+      toast.info("O Dashboard está reservado à Qualidade. O perfil Logística trabalha no módulo de Receções.");
+    }
+  }, [user?.role]);
   if (loading) return null;
   if (user?.role === "logistica") return <Redirect to="/rececoes" />;
   return <Component />;
