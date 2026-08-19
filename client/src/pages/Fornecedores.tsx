@@ -32,6 +32,7 @@ interface FornecedorForm {
   contactoQualidadeNome: string; contactoQualidadeEmail: string; contactoQualidadeTelemovel: string;
   statusFornecedor?: "completo" | "pendente" | "incompleto";
   observacoesPendencia?: string | null;
+  errosValidacao?: Record<string, string>;
 }
 const EMPTY_FORN: FornecedorForm = {
   nome: "", codigo: "",
@@ -702,6 +703,7 @@ export default function Fornecedores() {
   const [statusFornFilter, setStatusFornFilter] = useState("all");
   const [form, setForm] = useState<FornecedorForm>(EMPTY_FORN);
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const novoProcessado = useRef(false);
 
   const { data: fornecedores, refetch } = trpc.fornecedores.list.useQuery();
   const { data: alertasDoc } = trpc.fornecedores.documentos.alertas.useQuery();
@@ -745,7 +747,8 @@ export default function Fornecedores() {
     setDialogOpen(true);
   };
   useEffect(() => {
-    if (!new URLSearchParams(window.location.search).has("novo")) return;
+    if (!new URLSearchParams(window.location.search).has("novo") || novoProcessado.current) return;
+    novoProcessado.current = true;
     openCreate();
   }, [location]);
   const openEdit = (f: any) => {
@@ -761,6 +764,37 @@ export default function Fornecedores() {
       observacoesPendencia: (f as any).observacoesPendencia ?? null,
     });
     setDialogOpen(true);
+  };
+
+  const setFornecedorField = <K extends keyof FornecedorForm>(field: K, value: FornecedorForm[K]) => {
+    setForm(current => {
+      const errosValidacao = { ...(current.errosValidacao ?? {}) };
+      delete errosValidacao[field];
+      return { ...current, [field]: value, errosValidacao };
+    });
+  };
+
+  const submitFornecedor = () => {
+    const errors: Record<string, string> = {};
+    const nome = form.nome.trim();
+    const emailComercial = form.contactoComercialEmail.trim();
+    const emailQualidade = form.contactoQualidadeEmail.trim();
+    const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!nome) errors.nome = "Indique o nome do fornecedor.";
+    if (emailComercial && !emailValido.test(emailComercial)) errors.contactoComercialEmail = "Indique um email comercial válido.";
+    if (emailQualidade && !emailValido.test(emailQualidade)) errors.contactoQualidadeEmail = "Indique um email de Qualidade válido.";
+    if (form.statusFornecedor !== "completo" && !(form.observacoesPendencia ?? "").trim()) {
+      errors.observacoesPendencia = "Descreva a informação ou documentação ainda em falta.";
+    }
+
+    setForm(current => ({ ...current, errosValidacao: errors }));
+    if (Object.keys(errors).length > 0) {
+      toast.error("Corrija os campos assinalados antes de guardar.");
+      return;
+    }
+    const { errosValidacao: _errosValidacao, ...fornecedor } = form;
+    upsert.mutate({ ...fornecedor, nome });
   };
 
   const alertasCount = (alertasDoc ?? []).length;
@@ -907,10 +941,13 @@ export default function Fornecedores() {
                 <label className="text-xs font-medium text-muted-foreground">Nome *</label>
                 <Input
                   value={form.nome}
-                  onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                  onChange={e => setFornecedorField("nome", e.target.value)}
                   placeholder="Nome do fornecedor"
                   className="h-9"
+                  aria-invalid={Boolean(form.errosValidacao?.nome)}
+                  aria-describedby={form.errosValidacao?.nome ? "fornecedor-nome-erro" : undefined}
                 />
+                {form.errosValidacao?.nome && <p id="fornecedor-nome-erro" className="text-[11px] font-medium text-destructive">{form.errosValidacao.nome}</p>}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Código</label>
@@ -934,11 +971,12 @@ export default function Fornecedores() {
               <div className="grid grid-cols-2 gap-3 pl-7">
                 <div className="col-span-2 space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Nome</label>
-                  <Input value={form.contactoComercialNome} onChange={e => setForm(f => ({ ...f, contactoComercialNome: e.target.value }))} placeholder="Nome do contacto comercial" className="h-8 text-sm" />
+                  <Input value={form.contactoComercialNome} onChange={e => setFornecedorField("contactoComercialNome", e.target.value)} placeholder="Nome do contacto comercial" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Email</label>
-                  <Input type="email" value={form.contactoComercialEmail} onChange={e => setForm(f => ({ ...f, contactoComercialEmail: e.target.value }))} placeholder="email@empresa.pt" className="h-8 text-sm" />
+                  <Input type="email" value={form.contactoComercialEmail} onChange={e => setFornecedorField("contactoComercialEmail", e.target.value)} placeholder="email@empresa.pt" className="h-8 text-sm" aria-invalid={Boolean(form.errosValidacao?.contactoComercialEmail)} aria-describedby={form.errosValidacao?.contactoComercialEmail ? "fornecedor-email-comercial-erro" : undefined} />
+                  {form.errosValidacao?.contactoComercialEmail && <p id="fornecedor-email-comercial-erro" className="text-[11px] font-medium text-destructive">{form.errosValidacao.contactoComercialEmail}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Telemóvel</label>
@@ -962,7 +1000,8 @@ export default function Fornecedores() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Email</label>
-                  <Input type="email" value={form.contactoQualidadeEmail} onChange={e => setForm(f => ({ ...f, contactoQualidadeEmail: e.target.value }))} placeholder="qualidade@empresa.pt" className="h-8 text-sm" />
+                  <Input type="email" value={form.contactoQualidadeEmail} onChange={e => setFornecedorField("contactoQualidadeEmail", e.target.value)} placeholder="qualidade@empresa.pt" className="h-8 text-sm" aria-invalid={Boolean(form.errosValidacao?.contactoQualidadeEmail)} aria-describedby={form.errosValidacao?.contactoQualidadeEmail ? "fornecedor-email-qualidade-erro" : undefined} />
+                  {form.errosValidacao?.contactoQualidadeEmail && <p id="fornecedor-email-qualidade-erro" className="text-[11px] font-medium text-destructive">{form.errosValidacao.contactoQualidadeEmail}</p>}
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Telemóvel</label>
@@ -1004,10 +1043,13 @@ export default function Fornecedores() {
                 <label className="text-xs font-medium text-muted-foreground">Observações de Pendência</label>
                 <textarea
                   value={form.observacoesPendencia ?? ""}
-                  onChange={e => setForm(f => ({ ...f, observacoesPendencia: e.target.value || null }))}
+                  onChange={e => setFornecedorField("observacoesPendencia", e.target.value || null)}
                   rows={3}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                  aria-invalid={Boolean(form.errosValidacao?.observacoesPendencia)}
+                  aria-describedby={form.errosValidacao?.observacoesPendencia ? "fornecedor-pendencia-erro" : undefined}
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring aria-invalid:border-destructive"
                 />
+                {form.errosValidacao?.observacoesPendencia && <p id="fornecedor-pendencia-erro" className="text-[11px] font-medium text-destructive">{form.errosValidacao.observacoesPendencia}</p>}
               </div>
             </div>
 
@@ -1038,7 +1080,7 @@ export default function Fornecedores() {
               )}
               <div className="flex gap-3 ml-auto">
                 <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
-                <Button onClick={() => upsert.mutate(form)} disabled={!form.nome || upsert.isPending}>
+                <Button onClick={submitFornecedor} disabled={upsert.isPending}>
                   {upsert.isPending ? "A guardar..." : form.id ? "Guardar" : "Criar"}
                 </Button>
               </div>

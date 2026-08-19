@@ -538,3 +538,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Diagnosticar o bloqueio na criação de matérias-primas e fornecedores
 - [x] Corrigir permissões, validações ou interface que impedem a criação
 - [x] Validar os dois fluxos e publicar checkpoint
+
+## Melhoria v4.35 — Validação contextualizada de dados mestre
+
+- [x] Rever requisitos obrigatórios nos formulários de Nova MP e Novo Fornecedor
+- [x] Mostrar mensagens de validação junto aos campos inválidos
+- [x] Validar os dois fluxos, testes e publicar checkpoint

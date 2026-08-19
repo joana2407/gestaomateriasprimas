@@ -68,6 +68,7 @@ interface MPFormData {
   statusMp?: "completo" | "pendente" | "incompleto";
   observacoesPendencia?: string | null;
   dataValidacao?: Date;
+  errosValidacao?: Record<string, string>;
 }
 
 const normalizarFornecedor = (value?: string | null) =>
@@ -99,6 +100,7 @@ export default function MateriasPrimas() {
   const [estadoFabricaFilter, setEstadoFabricaFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<MPFormData>(EMPTY_FORM);
+  const novoProcessado = useRef(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"alergenios" | "origem" | "fornecedores" | "logistica" | "estado">("alergenios");
   const [novoFornecedorOpen, setNovoFornecedorOpen] = useState(false);
@@ -127,7 +129,8 @@ export default function MateriasPrimas() {
         window.history.replaceState({}, "", url.toString());
       }
     }
-    if (params.get("novo") === "1") {
+    if (params.get("novo") === "1" && !novoProcessado.current) {
+      novoProcessado.current = true;
       setForm({ ...EMPTY_FORM, fabricasIds: [], fabricasEstado: [], alergeniosFormulacao: [], alergeniosContaminacao: [], subIngredientes: [], fornecedoresMp: [], formasFornecimento: [] });
       setActiveTab("alergenios");
       setDialogOpen(true);
@@ -262,6 +265,29 @@ export default function MateriasPrimas() {
         ? { ...f, fabricasIds: f.fabricasIds.filter(id => id !== fabId), fabricasEstado: f.fabricasEstado.filter(rel => rel.fabricaId !== fabId) }
         : { ...f, fabricasIds: [...f.fabricasIds, fabId], fabricasEstado: [...f.fabricasEstado, { fabricaId: fabId, estado: "ativa" }] };
     });
+
+  const submitMateriaPrima = () => {
+    const errors: Record<string, string> = {};
+    if (!form.nome.trim()) errors.nome = "Indique o nome da matéria-prima.";
+    if (form.fabricasIds.length === 0) errors.fabricas = "Selecione pelo menos uma fábrica onde a matéria-prima será utilizada.";
+    if (form.tipo === "composta" && !form.subIngredientes.some(ingrediente => ingrediente.nome.trim())) {
+      errors.subIngredientes = "Adicione pelo menos um ingrediente à matéria-prima composta.";
+    }
+    if (form.statusMp !== "completo" && !(form.observacoesPendencia ?? "").trim()) {
+      errors.observacoesPendencia = "Descreva a informação ou documentação ainda em falta.";
+    }
+
+    setForm(current => ({ ...current, errosValidacao: errors }));
+    if (Object.keys(errors).length > 0) {
+      if (errors.subIngredientes) setActiveTab("origem");
+      else if (errors.observacoesPendencia) setActiveTab("estado");
+      else setActiveTab("alergenios");
+      toast.error("Corrija os campos assinalados antes de guardar.");
+      return;
+    }
+    const { errosValidacao: _errosValidacao, ...materiaPrima } = form;
+    upsert.mutate({ ...materiaPrima, nome: form.nome.trim() });
+  };
 
   const setEstadoFabrica = (fabricaId: number, estado: EstadoMpFabrica) =>
     setForm(f => ({ ...f, fabricasEstado: f.fabricasEstado.map(rel => rel.fabricaId === fabricaId ? { ...rel, estado } : rel) }));
@@ -638,9 +664,12 @@ export default function MateriasPrimas() {
                 <label className="text-xs font-medium text-muted-foreground">Nome *</label>
                 <Input
                   value={form.nome}
-                  onChange={e => setForm(f => ({ ...f, nome: e.target.value }))}
+                  onChange={e => setForm(f => ({ ...f, nome: e.target.value, errosValidacao: { ...(f.errosValidacao ?? {}), nome: "" } }))}
                   placeholder="Ex: Farinha de Trigo T65"
+                  aria-invalid={Boolean(form.errosValidacao?.nome)}
+                  aria-describedby={form.errosValidacao?.nome ? "mp-nome-erro" : undefined}
                 />
+                {form.errosValidacao?.nome && <p id="mp-nome-erro" className="text-[11px] font-medium text-destructive">{form.errosValidacao.nome}</p>}
               </div>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-muted-foreground">Código</label>
@@ -686,7 +715,7 @@ export default function MateriasPrimas() {
                   <button
                     key={fab.id}
                     type="button"
-                    onClick={() => toggleFabrica(fab.id)}
+                    onClick={() => { toggleFabrica(fab.id); setForm(current => ({ ...current, errosValidacao: { ...(current.errosValidacao ?? {}), fabricas: "" } })); }}
                     className={cn(
                       "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
                       form.fabricasIds.includes(fab.id)
@@ -700,6 +729,7 @@ export default function MateriasPrimas() {
                   </button>
                 ))}
               </div>
+              {form.errosValidacao?.fabricas && <p className="text-[11px] font-medium text-destructive">{form.errosValidacao.fabricas}</p>}
               {form.fabricasIds.includes(3) && (
                 <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-2.5">
                   <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
@@ -987,12 +1017,13 @@ export default function MateriasPrimas() {
                         </div>
                         <button
                           type="button"
-                          onClick={addSubIngrediente}
+                          onClick={() => { addSubIngrediente(); setForm(current => ({ ...current, errosValidacao: { ...(current.errosValidacao ?? {}), subIngredientes: "" } })); }}
                           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors"
                         >
                           <Plus className="w-3.5 h-3.5" /> Adicionar ingrediente
                         </button>
                       </div>
+                      {form.errosValidacao?.subIngredientes && <p className="text-[11px] font-medium text-destructive">{form.errosValidacao.subIngredientes}</p>}
 
                       {/* Lista vazia */}
                       {form.subIngredientes.length === 0 ? (
@@ -1039,8 +1070,9 @@ export default function MateriasPrimas() {
                                   </label>
                                   <Input
                                     value={sub.nome}
-                                    onChange={e => updateSubIngrediente(idx, "nome", e.target.value)}
+                                    onChange={e => { updateSubIngrediente(idx, "nome", e.target.value); setForm(current => ({ ...current, errosValidacao: { ...(current.errosValidacao ?? {}), subIngredientes: "" } })); }}
                                     placeholder="Ex: Farinha de Trigo, Açúcar, Sal marinho..."
+                                    aria-invalid={Boolean(form.errosValidacao?.subIngredientes && !sub.nome.trim())}
                                   />
                                 </div>
                                 <div className="space-y-1.5">
@@ -1334,11 +1366,14 @@ export default function MateriasPrimas() {
                     </label>
                     <textarea
                       value={form.observacoesPendencia ?? ""}
-                      onChange={e => setForm(f => ({ ...f, observacoesPendencia: e.target.value || null }))}
+                      onChange={e => setForm(f => ({ ...f, observacoesPendencia: e.target.value || null, errosValidacao: { ...(f.errosValidacao ?? {}), observacoesPendencia: "" } }))}
                       placeholder="Descreva o que está pendente ou incompleto (ex: Falta FT do fornecedor X, Alergénios a confirmar com fornecedor, etc.)"
                       rows={4}
-                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+                      aria-invalid={Boolean(form.errosValidacao?.observacoesPendencia)}
+                      aria-describedby={form.errosValidacao?.observacoesPendencia ? "mp-pendencia-erro" : undefined}
+                      className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring aria-invalid:border-destructive"
                     />
+                    {form.errosValidacao?.observacoesPendencia && <p id="mp-pendencia-erro" className="text-[11px] font-medium text-destructive">{form.errosValidacao.observacoesPendencia}</p>}
                   </div>
 
                   {/* Info */}
@@ -1356,8 +1391,8 @@ export default function MateriasPrimas() {
             <div className="flex justify-end gap-3 pt-2">
               <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
               <Button
-                onClick={() => upsert.mutate(form)}
-                disabled={!form.nome || upsert.isPending}
+                onClick={submitMateriaPrima}
+                disabled={upsert.isPending}
               >
                 {upsert.isPending ? "A guardar..." : form.id ? "Guardar Alterações" : "Criar MP"}
               </Button>
