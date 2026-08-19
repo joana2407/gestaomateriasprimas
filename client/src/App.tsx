@@ -20,6 +20,7 @@ import Fabricas from "./pages/Fabricas";
 import Rececoes from "./pages/Rececoes";
 import Utilizadores from "./pages/Utilizadores";
 import Notificacoes from "./pages/Notificacoes";
+import Permissoes from "./pages/Permissoes";
 import { useAuth } from "./_core/hooks/useAuth";
 import AcessoPin from "./pages/AcessoPin";
 
@@ -75,6 +76,7 @@ function Router() {
       <Route path="/importacao" component={() => <QualidadeRoute component={Importacao} />} />
       <Route path="/utilizadores" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
       <Route path="/configuracoes" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
+      <Route path="/permissoes" component={() => <GestaoAcessosRoute component={Permissoes} />} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

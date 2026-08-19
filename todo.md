@@ -522,10 +522,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 
 ## Melhoria v4.32 — Gestão granular de permissões
 
-- [ ] Rever operadores e permissões atuais
-- [ ] Remover o utilizador genérico Logística
-- [ ] Criar a página de permissões individuais por utilizador
-- [ ] Validar permissões, testes e criar checkpoint
+- [x] Rever operadores e permissões atuais
+- [x] Remover o utilizador genérico Logística
+- [x] Criar a página de permissões individuais por utilizador
+- [x] Validar permissões, testes e criar checkpoint
 
 ## Correção v4.33 — Acesso a fornecedores
 

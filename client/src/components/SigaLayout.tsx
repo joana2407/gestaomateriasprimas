@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import {
   AlertTriangle, BarChart3, Bell, BookOpen, ChevronRight,
   ClipboardCheck, ClipboardList, Factory, FileText, FlaskConical,
-  Home, LogOut, Menu, Package, Settings, ShieldCheck, Upload, Users, X
+  Home, KeyRound, LogOut, Menu, Package, Settings, ShieldCheck, Upload, Users, X
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -24,7 +24,8 @@ const NAV_ITEMS = [
   { href: "/historico", icon: BarChart3, label: "Histórico", group: "documentos" },
   { href: "/notificacoes", icon: Bell, label: "Notificações", group: "documentos" },
   { href: "/importacao", icon: Settings, label: "Importação", group: "config" },
-  { href: "/configuracoes", icon: ShieldCheck, label: "Configurações", group: "config" },
+  { href: "/configuracoes", icon: ShieldCheck, label: "Configurações", group: "config", requiresAccessManagement: true },
+  { href: "/permissoes", icon: KeyRound, label: "Permissões", group: "config", requiresAccessManagement: true },
 ];
 
 const GROUPS = [
@@ -48,7 +49,7 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isLogistica = user?.role === "logistica";
   const navItemsVisiveis = (isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS)
-    .filter(item => item.href !== "/utilizadores" || user?.podeGerirAcessos);
+    .filter(item => !item.requiresAccessManagement || user?.podeGerirAcessos);
 
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
