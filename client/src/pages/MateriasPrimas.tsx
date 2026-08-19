@@ -131,9 +131,7 @@ export default function MateriasPrimas() {
     }
     if (params.get("novo") === "1" && !novoProcessado.current) {
       novoProcessado.current = true;
-      setForm({ ...EMPTY_FORM, fabricasIds: [], fabricasEstado: [], alergeniosFormulacao: [], alergeniosContaminacao: [], subIngredientes: [], fornecedoresMp: [], formasFornecimento: [] });
-      setActiveTab("alergenios");
-      setDialogOpen(true);
+      openCreate();
     }
   }, [location]);
 
@@ -404,7 +402,7 @@ export default function MateriasPrimas() {
       subtitle={`${filtered.length} MP registadas`}
       actions={
         podeGerirDadosMestre ? (
-          <Button asChild size="sm" className="gap-1.5"><Link href="/materias-primas?novo=1"><Plus className="w-3.5 h-3.5" /> Nova MP</Link></Button>
+          <Button type="button" onClick={openCreate} size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova MP</Button>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )

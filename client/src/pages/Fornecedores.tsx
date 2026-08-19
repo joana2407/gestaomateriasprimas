@@ -805,7 +805,7 @@ export default function Fornecedores() {
       subtitle={`${(fornecedores ?? []).length} fornecedores ativos`}
       actions={
         podeGerirDadosMestre ? (
-          <Button asChild size="sm" className="gap-1.5"><Link href="/fornecedores?novo=1"><Plus className="w-3.5 h-3.5" /> Novo Fornecedor</Link></Button>
+          <Button type="button" onClick={openCreate} size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Novo Fornecedor</Button>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )

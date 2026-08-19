@@ -556,3 +556,15 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Reproduzir o bloqueio de acesso aos módulos e instruções reportado
 - [x] Corrigir a falha de sessão, navegação ou execução de ações
 - [x] Validar o acesso e os fluxos críticos e publicar checkpoint
+
+## Correção v4.38 — Criação crítica de fornecedor e MP
+
+- [x] Reproduzir uma criação real reversível de fornecedor e matéria-prima no domínio publicado
+- [x] Corrigir a falha identificada no fluxo de criação
+- [x] Validar operações reais, testes e publicar checkpoint
+
+## Correção v4.39 — Botões Criar novo
+
+- [x] Isolar o clique dos botões Criar novo de fornecedor e MP
+- [x] Corrigir a abertura dos respetivos painéis de criação
+- [x] Validar os botões, testes e publicar checkpoint
