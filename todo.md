@@ -574,3 +574,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever o modelo atual de formas de fornecimento e a referência visual
 - [x] Adicionar Unidades ao formulário e aos dados logísticos de MP
 - [x] Validar a nova opção, testes e publicar checkpoint
+
+## Melhoria v4.41 — Responsável no cartão de receção
+
+- [x] Rever os dados disponíveis e o cartão resumido de receção
+- [x] Mostrar o responsável que registou a receção no cartão
+- [x] Validar a apresentação, testes e publicar checkpoint
