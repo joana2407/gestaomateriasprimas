@@ -24,6 +24,8 @@ function isSecureRequest(req: Request) {
 export function getSessionCookieOptions(
   req: Request
 ): Pick<CookieOptions, "domain" | "httpOnly" | "path" | "sameSite" | "secure"> {
+  const hostname = req.hostname?.split(":")[0] ?? "";
+  const isLocalHost = LOCAL_HOSTS.has(hostname) || isIpAddress(hostname);
   // const hostname = req.hostname;
   // const shouldSetDomain =
   //   hostname &&
@@ -42,7 +44,11 @@ export function getSessionCookieOptions(
   return {
     httpOnly: true,
     path: "/",
-    sameSite: "none",
-    secure: isSecureRequest(req),
+    // O SIGA serve a interface e a API no mesmo domínio. Lax evita que
+    // navegadores rejeitem o cookie quando o proxy não expõe o protocolo HTTPS.
+    sameSite: "lax",
+    // Em domínios publicados o acesso é sempre HTTPS; nos ambientes locais
+    // preservamos a compatibilidade com http://localhost.
+    secure: isLocalHost ? isSecureRequest(req) : true,
   };
 }

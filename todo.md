@@ -544,3 +544,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever requisitos obrigatórios nos formulários de Nova MP e Novo Fornecedor
 - [x] Mostrar mensagens de validação junto aos campos inválidos
 - [x] Validar os dois fluxos, testes e publicar checkpoint
+
+## Correção v4.36 — Erro de criação de dados mestre
+
+- [x] Reproduzir e identificar o erro na criação de fornecedor e matéria-prima
+- [x] Corrigir a causa sem bloquear os fluxos de gravação autorizados
+- [x] Validar criação, testes e publicar checkpoint
