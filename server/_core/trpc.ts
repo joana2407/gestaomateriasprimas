@@ -55,7 +55,8 @@ export const gestaoAcessosProcedure = t.procedure.use(
 );
 
 // Por defeito, os routers de gestão permanecem reservados à Qualidade.
-// Receções usa explicitamente rececoesProcedure para admitir ambos os perfis.
+// As leituras identificadas como públicas continuam a exigir uma sessão PIN,
+// mas podem ser consumidas pelos fluxos operacionais de Receções.
 export const protectedProcedure = qualidadeProcedure;
-export const publicProcedure = qualidadeProcedure;
+export const publicProcedure = rececoesProcedure;
 export const adminProcedure = qualidadeProcedure;

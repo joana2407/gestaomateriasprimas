@@ -3,8 +3,8 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
-import { useState, useRef, useMemo, useCallback } from "react";
-import { useLocation } from "wouter";
+import { useState, useRef, useMemo, useCallback, useEffect } from "react";
+import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { format, differenceInDays } from "date-fns";
 import { pt } from "date-fns/locale";
@@ -693,7 +693,9 @@ function FornecedorDetalhe({
 
 // ── Página principal ──────────────────────────────────────────────────────────
 export default function Fornecedores() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
+  const [location] = useLocation();
   const [search, setSearch] = useState("");
   const [estadoDocFilter, setEstadoDocFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -738,7 +740,14 @@ export default function Fornecedores() {
     });
   }, [fornecedores, search, estadoDocFilter, fornDocEstado, statusFornFilter]);
 
-  const openCreate = () => { setForm(EMPTY_FORN); setDialogOpen(true); };
+  const openCreate = () => {
+    setForm({ ...EMPTY_FORN });
+    setDialogOpen(true);
+  };
+  useEffect(() => {
+    if (!new URLSearchParams(window.location.search).has("novo")) return;
+    openCreate();
+  }, [location]);
   const openEdit = (f: any) => {
     setForm({
       id: f.id, nome: f.nome, codigo: f.codigo ?? "",
@@ -761,10 +770,8 @@ export default function Fornecedores() {
       title="Fornecedores"
       subtitle={`${(fornecedores ?? []).length} fornecedores ativos`}
       actions={
-        isAuthenticated ? (
-          <Button onClick={openCreate} size="sm" className="gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> Novo Fornecedor
-          </Button>
+        podeGerirDadosMestre ? (
+          <Button asChild size="sm" className="gap-1.5"><Link href="/fornecedores?novo=1"><Plus className="w-3.5 h-3.5" /> Novo Fornecedor</Link></Button>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )
@@ -881,20 +888,19 @@ export default function Fornecedores() {
             <FornecedorDetalhe
               fornecedorId={selectedId}
               onClose={() => setSelectedId(null)}
-              isAuthenticated={isAuthenticated}
+              isAuthenticated={podeGerirDadosMestre}
               onEdit={(f) => { openEdit(f); }}
             />
           </div>
         )}
       </div>
 
-      {/* Dialog de criação/edição de fornecedor */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{form.id ? "Editar Fornecedor" : "Novo Fornecedor"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5 pt-2">
+      {/* Painel de criação/edição de fornecedor */}
+      {dialogOpen && (
+        <section className="fixed inset-0 z-50 overflow-y-auto bg-background/98 p-4 sm:p-6" aria-label={form.id ? "Editar fornecedor" : "Novo fornecedor"}>
+          <div className="mx-auto max-w-lg rounded-2xl border border-border/60 bg-card p-5 shadow-xl sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold">{form.id ? "Editar Fornecedor" : "Novo Fornecedor"}</h2><p className="mt-1 text-xs text-muted-foreground">Preencha os dados disponíveis. O fornecedor pode ficar pendente enquanto a documentação é reunida.</p></div><Button type="button" variant="ghost" size="sm" onClick={() => setDialogOpen(false)}>Fechar</Button></div>
+          <div className="space-y-5">
             {/* Info básica */}
             <div className="grid grid-cols-2 gap-3">
               <div className="col-span-2 space-y-1.5">
@@ -1007,7 +1013,7 @@ export default function Fornecedores() {
 
             {/* Ações */}
             <div className="flex items-center justify-between pt-2 border-t border-border/60">
-              {form.id && isAuthenticated && (
+              {form.id && podeGerirDadosMestre && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button variant="outline" size="sm" className="text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200">
@@ -1038,8 +1044,9 @@ export default function Fornecedores() {
               </div>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </section>
+      )}
     </SigaLayout>
   );
 }

@@ -532,3 +532,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Inspecionar sessão, permissões, rotas e erros de fornecedores
 - [x] Corrigir a consulta e criação de fornecedores
 - [x] Validar os fluxos e criar checkpoint
+
+## Correção v4.34 — Bloqueio na criação de dados mestre
+
+- [x] Diagnosticar o bloqueio na criação de matérias-primas e fornecedores
+- [x] Corrigir permissões, validações ou interface que impedem a criação
+- [x] Validar os dois fluxos e publicar checkpoint

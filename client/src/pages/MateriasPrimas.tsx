@@ -8,6 +8,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { toast } from "sonner";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { Link, useLocation } from "wouter";
 import type { AlergenioId } from "../../../shared/allergens";
 import { ALERGENIOS_14 } from "../../../shared/allergens";
 import { ESTADOS_MP_FABRICA, getEstadoMpFabrica, type EstadoMpFabrica } from "../../../shared/mp-factory-status";
@@ -89,6 +90,8 @@ const EMPTY_FORM: MPFormData = {
 
 export default function MateriasPrimas() {
   const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
+  const [location] = useLocation();
   const [search, setSearch] = useState("");
   const [fabricaFilter, setFabricaFilter] = useState<string>("all");
   const [fornecedorFilter, setFornecedorFilter] = useState<string>("all");
@@ -124,7 +127,12 @@ export default function MateriasPrimas() {
         window.history.replaceState({}, "", url.toString());
       }
     }
-  }, []);
+    if (params.get("novo") === "1") {
+      setForm({ ...EMPTY_FORM, fabricasIds: [], fabricasEstado: [], alergeniosFormulacao: [], alergeniosContaminacao: [], subIngredientes: [], fornecedoresMp: [], formasFornecimento: [] });
+      setActiveTab("alergenios");
+      setDialogOpen(true);
+    }
+  }, [location]);
 
   const utils = trpc.useUtils();
   const [loadingEdit, setLoadingEdit] = useState(false);
@@ -189,7 +197,11 @@ export default function MateriasPrimas() {
     });
   }, [mps, search, fornecedorFilter, statusFilter, estadoFabricaFilter, fabricaFilter]);
 
-  const openCreate = () => { setForm(EMPTY_FORM); setActiveTab("alergenios"); setDialogOpen(true); };
+  const openCreate = () => {
+    setForm({ ...EMPTY_FORM, fabricasIds: [], fabricasEstado: [], alergeniosFormulacao: [], alergeniosContaminacao: [], subIngredientes: [], fornecedoresMp: [], formasFornecimento: [] });
+    setActiveTab("alergenios");
+    setDialogOpen(true);
+  };
   const openEdit = useCallback(async (mpId: number) => {
     setLoadingEdit(true);
     try {
@@ -365,10 +377,8 @@ export default function MateriasPrimas() {
       title="Matérias-Primas"
       subtitle={`${filtered.length} MP registadas`}
       actions={
-        isAuthenticated ? (
-          <Button onClick={openCreate} size="sm" className="gap-1.5">
-            <Plus className="w-3.5 h-3.5" /> Nova MP
-          </Button>
+        podeGerirDadosMestre ? (
+          <Button asChild size="sm" className="gap-1.5"><Link href="/materias-primas?novo=1"><Plus className="w-3.5 h-3.5" /> Nova MP</Link></Button>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )
@@ -562,7 +572,7 @@ export default function MateriasPrimas() {
                         </span>
                       )}
                     </div>
-                    {isAuthenticated && (
+                    {podeGerirDadosMestre && (
                       <>
                         <button
                           onClick={e => { e.stopPropagation(); openEdit(mp.id); }}
@@ -616,13 +626,12 @@ export default function MateriasPrimas() {
         </div>
       </div>
 
-      {/* Dialog de criação/edição */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{form.id ? "Editar Matéria-Prima" : "Nova Matéria-Prima"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-5 pt-2">
+      {/* Painel de criação/edição */}
+      {dialogOpen && (
+        <section className="fixed inset-0 z-50 overflow-y-auto bg-background/98 p-4 sm:p-6" aria-label={form.id ? "Editar matéria-prima" : "Nova matéria-prima"}>
+          <div className="mx-auto max-w-3xl rounded-2xl border border-border/60 bg-card p-5 shadow-xl sm:p-6">
+            <div className="mb-5 flex items-start justify-between gap-4"><div><h2 className="text-lg font-semibold">{form.id ? "Editar Matéria-Prima" : "Nova Matéria-Prima"}</h2><p className="mt-1 text-xs text-muted-foreground">Registe a composição, o perfil alergénico e as fábricas onde a matéria-prima será utilizada.</p></div><Button type="button" variant="ghost" size="sm" onClick={() => setDialogOpen(false)}>Fechar</Button></div>
+          <div className="space-y-5">
             {/* Campos base */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -1354,8 +1363,9 @@ export default function MateriasPrimas() {
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
+          </div>
+        </section>
+      )}
 
     </SigaLayout>
   );
