@@ -3,7 +3,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import { useEffect } from "react";
 import NotFound from "@/pages/NotFound";
-import { Redirect, Route, Switch } from "wouter";
+import { Redirect, Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Dashboard from "./pages/Dashboard";
@@ -25,11 +25,26 @@ import AcessoPin from "./pages/AcessoPin";
 
 function QualidadeRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
+  const [location] = useLocation();
+  const modulo = {
+    "/": "Dashboard",
+    "/fabricas": "Fábricas",
+    "/materias-primas": "Matérias-Primas",
+    "/fornecedores": "Fornecedores",
+    "/fichas-tecnicas": "Fichas Técnicas",
+    "/receitas": "Receitas",
+    "/produtos": "Produtos",
+    "/sequenciamento": "Sequenciamento",
+    "/fichas-produto": "Fichas de Produto",
+    "/historico": "Histórico",
+    "/notificacoes": "Notificações",
+    "/importacao": "Importação",
+  }[location] ?? "módulo selecionado";
   useEffect(() => {
     if (user?.role === "logistica") {
-      toast.info("O Dashboard está reservado à Qualidade. O perfil Logística trabalha no módulo de Receções.");
+      toast.info(`O módulo ${modulo} está reservado à Qualidade. O perfil Logística trabalha no módulo de Receções.`);
     }
-  }, [user?.role]);
+  }, [modulo, user?.role]);
   if (loading) return null;
   if (user?.role === "logistica") return <Redirect to="/rececoes" />;
   return <Component />;

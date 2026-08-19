@@ -519,3 +519,16 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Inspecionar sessão, consola, rede e pedidos do Dashboard
 - [x] Corrigir o bloqueio que impede trabalhar no Dashboard
 - [x] Validar o acesso e criar checkpoint
+
+## Melhoria v4.32 — Gestão granular de permissões
+
+- [ ] Rever operadores e permissões atuais
+- [ ] Remover o utilizador genérico Logística
+- [ ] Criar a página de permissões individuais por utilizador
+- [ ] Validar permissões, testes e criar checkpoint
+
+## Correção v4.33 — Acesso a fornecedores
+
+- [x] Inspecionar sessão, permissões, rotas e erros de fornecedores
+- [x] Corrigir a consulta e criação de fornecedores
+- [x] Validar os fluxos e criar checkpoint
