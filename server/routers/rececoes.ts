@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { qualidadeProcedure, rececoesProcedure, router } from "../_core/trpc";
 import {
   addAuditLog,
@@ -21,6 +22,7 @@ import { notifyOwner } from "../_core/notification";
 import { validarTransferenciaStock } from "../../shared/transferencia-stock";
 import { podeEditarRececao } from "../../shared/rececao-permissoes";
 import { avaliarValidadeMinimaRececao } from "../../shared/rececao-validade-minima";
+import { podeRegistarRececaoAbaixoValidadeMinima } from "../../shared/rececao-autorizacao-validade";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -141,6 +143,12 @@ export const rececoesRouter = router({
         validade: input.validade,
         validadeEstipuladaMeses: fornecedorDaMp.validadeEstipuladaMeses,
       });
+      if (!podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: alertaValidade.alerta, podeGerirAcessos: ctx.user.podeGerirAcessos })) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Esta receção tem validade inferior ao mínimo de 2/3 e só pode ser registada pela Responsável da Qualidade.",
+        });
+      }
 
       const controlos = input.controlos as ControlosRececao;
       const conformidade = calcularConformidadeRececao(controlos);

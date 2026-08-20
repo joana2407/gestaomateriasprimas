@@ -613,3 +613,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever o atalho de matéria-prima no painel de fornecedor
 - [x] Abrir diretamente o painel informativo da matéria-prima selecionada
 - [x] Validar a navegação, testes e publicar checkpoint
+
+## Regra v4.46 — Aprovação de validade abaixo do mínimo
+
+- [x] Identificar de forma segura a Responsável da Qualidade
+- [x] Bloquear a gravação abaixo de 2/3 para os restantes utilizadores
+- [x] Indicar a autorização necessária no formulário de receção
+- [x] Validar perfis, testes e publicar checkpoint

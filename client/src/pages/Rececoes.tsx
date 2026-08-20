@@ -23,6 +23,7 @@ import { mensagemEliminacaoRececao } from "../../../shared/rececao-eliminacao";
 import { marcarControlosGranelNaoAplicaveis, prepararControlosGranel } from "../../../shared/rececao-granel";
 import { formatarValidadeRececao } from "../../../shared/rececao-validade";
 import { avaliarValidadeMinimaRececao } from "../../../shared/rececao-validade-minima";
+import { podeRegistarRececaoAbaixoValidadeMinima } from "../../../shared/rececao-autorizacao-validade";
 import { podeEditarRececao as podeEditarRececaoPorUtilizador } from "../../../shared/rececao-permissoes";
 import { listarValidacoesRececao, type EstadoValidacaoDetalhe } from "../../../shared/rececao-validacoes";
 import { formatarUnidadeRececao, UNIDADES_RECECAO, type UnidadeRececao } from "../../../shared/rececao-unidades";
@@ -270,6 +271,7 @@ export default function Rececoes() {
       validadeEstipuladaMeses: fornecedorDaMp?.validadeEstipuladaMeses,
     });
   }, [materiasPrimas, form.materiaPrimaId, form.fornecedorId, form.dataRececao, form.validade]);
+  const podeRegistarExcecaoValidade = podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: regraValidadeFornecedor.alerta, podeGerirAcessos: user?.podeGerirAcessos });
 
   const conformidadeCalculada = calcularConformidadeRececao(form.controlos);
   const selectedArmazem = ARMAZENS_RECECAO.find(armazem => armazem.id === form.armazem);
@@ -369,6 +371,10 @@ export default function Rececoes() {
       toast.error("Descreva o motivo da não conformidade antes de guardar.");
       return;
     }
+    if (!podeRegistarExcecaoValidade) {
+      toast.error("Esta receção tem validade abaixo do mínimo e só pode ser registada pela Responsável da Qualidade.");
+      return;
+    }
     upsert.mutate({
       id: form.id,
       fabricaId: form.fabricaId,
@@ -457,7 +463,7 @@ export default function Rececoes() {
               <Field label="Validade"><Input type="date" value={form.validade} onChange={event => setForm(current => ({ ...current, validade: event.target.value }))} /></Field>
               {form.materiaPrimaId > 0 && form.fornecedorId > 0 && (
                 <div className={cn("col-span-full rounded-lg border px-3 py-2.5 text-xs", regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? "border-amber-300 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-600")}>
-                  {regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Alerta de validade:</strong> esta receção fica abaixo do mínimo de <strong>{regraValidadeFornecedor.mesesMinimos} meses</strong> restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados para este fornecedor). A validade mínima seria {formatarValidadeRececao(regraValidadeFornecedor.dataMinimaValidade)}.</p></div> : <p><strong>Validade conforme:</strong> mínimo exigido para este fornecedor: {regraValidadeFornecedor.mesesMinimos} meses restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados).</p> : <p>Defina a validade estipulada deste fornecedor no detalhe da matéria-prima para ativar o controlo automático de 2/3.</p>}
+                  {regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>{podeRegistarExcecaoValidade ? "Exceção de validade:" : "Registo bloqueado:"}</strong> esta receção fica abaixo do mínimo de <strong>{regraValidadeFornecedor.mesesMinimos} meses</strong> restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados). A validade mínima seria {formatarValidadeRececao(regraValidadeFornecedor.dataMinimaValidade)}. {!podeRegistarExcecaoValidade && " Só a Responsável da Qualidade pode registar esta exceção."}</p></div> : <p><strong>Validade conforme:</strong> mínimo exigido para este fornecedor: {regraValidadeFornecedor.mesesMinimos} meses restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados).</p> : <p>Defina a validade estipulada deste fornecedor no detalhe da matéria-prima para ativar o controlo automático de 2/3.</p>}
                 </div>
               )}
               <Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={form.quantidade || ""} onChange={event => setForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} placeholder="0" /></Field>
@@ -474,7 +480,7 @@ export default function Rececoes() {
 
             {conformidadeCalculada === "nao_conforme" && <div className="rounded-xl border border-red-200 bg-red-50 p-4"><div className="flex items-center gap-2 text-red-800"><AlertTriangle className="w-4 h-4" /><p className="text-sm font-semibold">Tratamento de não conformidade obrigatório</p></div><Textarea value={form.motivoNaoConformidade} onChange={event => setForm(current => ({ ...current, motivoNaoConformidade: event.target.value }))} placeholder="Descreva a não conformidade identificada e a ação imediata tomada..." className="mt-3 bg-background" /></div>}
             <Field label="Observações"><Textarea value={form.observacoes} onChange={event => setForm(current => ({ ...current, observacoes: event.target.value }))} placeholder="Observações complementares da receção..." /></Field>
-            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-border/60"><Button variant="outline" className="w-full sm:w-auto" onClick={() => setDialogOpen(false)}>Cancelar</Button><Button className="w-full sm:w-auto" onClick={guardar} disabled={upsert.isPending}>{upsert.isPending ? "A guardar..." : form.id ? "Guardar alterações" : "Registar receção"}</Button></div>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-border/60"><Button variant="outline" className="w-full sm:w-auto" onClick={() => setDialogOpen(false)}>Cancelar</Button><Button className="w-full sm:w-auto" onClick={guardar} disabled={upsert.isPending || !podeRegistarExcecaoValidade} title={!podeRegistarExcecaoValidade ? "Reservado à Responsável da Qualidade" : undefined}>{upsert.isPending ? "A guardar..." : !podeRegistarExcecaoValidade ? "Reservado à Responsável" : form.id ? "Guardar alterações" : "Registar receção"}</Button></div>
           </div>
         </DialogContent>
       </Dialog>
