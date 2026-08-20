@@ -333,6 +333,8 @@ export const rececoesMateriasPrimas = mysqlTable("rececoes_materias_primas", {
   numeroGuia: varchar("numero_guia", { length: 100 }),
   observacoes: text("observacoes"),
   motivoNaoConformidade: text("motivo_nao_conformidade"),
+  // Registo estruturado do tratamento definido pela equipa de Qualidade.
+  tratamentoNaoConformidade: json("tratamento_nao_conformidade"),
   registadoPor: int("registado_por").references(() => users.id),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

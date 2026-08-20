@@ -24,6 +24,7 @@ import { validarTransferenciaStock } from "../../shared/transferencia-stock";
 import { podeEditarRececao } from "../../shared/rececao-permissoes";
 import { avaliarValidadeMinimaRececao } from "../../shared/rececao-validade-minima";
 import { motivoValidacaoCondicional, rececaoAcessivelOperacionalmente, requerValidacaoCondicional } from "../../shared/rececao-condicional";
+import { temTratamentoNaoConformidade } from "../../shared/rececao-nao-conformidade";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -40,6 +41,18 @@ const controlosSchema = z.object({
   materiasEstranhas: estadoControlo.optional(),
   infestacaoProduto: estadoControlo.optional(),
   datasValidade: estadoControlo.optional(),
+});
+
+const tratamentoNaoConformidadeSchema = z.object({
+  correcaoImediata: z.string().max(5000).optional(),
+  responsavelCorrecao: z.string().max(150).optional(),
+  dataImplementacaoCorrecao: z.string().max(20).optional(),
+  evidenciaCorrecao: z.string().max(5000).optional(),
+  acaoCorretiva: z.string().max(5000).optional(),
+  responsavelAcaoCorretiva: z.string().max(150).optional(),
+  prazoAcaoCorretiva: z.string().max(20).optional(),
+  dataFechoAcaoCorretiva: z.string().max(20).optional(),
+  evidenciaAcaoCorretiva: z.string().max(5000).optional(),
 });
 
 const rececaoInput = z.object({
@@ -59,6 +72,7 @@ const rececaoInput = z.object({
   numeroGuia: z.string().max(100).nullable().optional(),
   observacoes: z.string().max(5000).nullable().optional(),
   motivoNaoConformidade: z.string().max(5000).nullable().optional(),
+  tratamentoNaoConformidade: tratamentoNaoConformidadeSchema.nullable().optional(),
 });
 
 const transferenciaStockInput = z.object({
@@ -162,6 +176,9 @@ export const rececoesRouter = router({
       if (conformidade === "nao_conforme" && !input.motivoNaoConformidade?.trim()) {
         throw new Error("Descreva o motivo da não conformidade antes de guardar a receção");
       }
+      if (temTratamentoNaoConformidade(input.tratamentoNaoConformidade) && ctx.user.role !== "qualidade") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "O tratamento de não conformidade é reservado à equipa de Qualidade." });
+      }
 
       const requerValidacao = requerValidacaoCondicional({ alertaValidade: alertaValidade.alerta, conformidade });
       const estadoValidacao = requerValidacao ? "pendente" : "nao_aplicavel" as const;
@@ -175,6 +192,7 @@ export const rececoesRouter = router({
         numeroGuia: input.numeroGuia || null,
         observacoes: input.observacoes || null,
         motivoNaoConformidade: input.motivoNaoConformidade || null,
+        tratamentoNaoConformidade: temTratamentoNaoConformidade(input.tratamentoNaoConformidade) ? input.tratamentoNaoConformidade : null,
         controlos,
         conformidade,
         estadoValidacao,

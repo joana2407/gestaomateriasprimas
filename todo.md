@@ -642,3 +642,15 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Criar alerta de Qualidade para validade insuficiente ou qualquer não conformidade
 - [x] Restringir o acesso operacional até à validação da receção
 - [x] Validar o fluxo completo, testes e publicar checkpoint
+
+## Melhoria v4.50 — Tratamento de decisão de Qualidade
+
+- [x] Exigir fundamento de aceitação ou recusa no tratamento condicional
+- [x] Mostrar a decisão, o validador e a data no detalhe da receção
+- [x] Mostrar o fundamento registado pela Qualidade no detalhe da receção
+- [x] Criar tratamento estruturado de não conformidade com responsáveis, prazos e evidências
+- [x] Mostrar o número de notificações pendentes no acesso ao centro de notificações
+- [ ] (Adiado) Enviar e-mail à Joana Pina e Sabrina Esteves para alertas de tratamento de Qualidade
+- [ ] (Adiado) Avaliar e configurar SMS para alertas críticos da Qualidade
+- [ ] Avaliar e configurar WhatsApp para alertas críticos da Qualidade
+- [x] Validar o fluxo web, testes e publicar checkpoint

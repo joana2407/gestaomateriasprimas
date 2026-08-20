@@ -644,6 +644,7 @@ export async function getRececoesMateriasPrimas(filtros?: { fabricaId?: number; 
     numeroGuia: rececoesMateriasPrimas.numeroGuia,
     observacoes: rececoesMateriasPrimas.observacoes,
     motivoNaoConformidade: rececoesMateriasPrimas.motivoNaoConformidade,
+    tratamentoNaoConformidade: rececoesMateriasPrimas.tratamentoNaoConformidade,
     registadoPor: rececoesMateriasPrimas.registadoPor,
     createdAt: rececoesMateriasPrimas.createdAt,
   }).from(rececoesMateriasPrimas)

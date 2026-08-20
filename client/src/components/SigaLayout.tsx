@@ -1,6 +1,8 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { Badge } from "@/components/ui/badge";
+import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, BarChart3, Bell, BookOpen, ChevronRight,
@@ -10,6 +12,7 @@ import {
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { PERFIL_ACESSO_LABEL, type PerfilAcesso } from "../../../shared/perfis-acesso";
+import { contarNotificacoesPendentes } from "../../../shared/notificacoes-pendentes";
 
 const NAV_ITEMS = [
   { href: "/", icon: Home, label: "Dashboard", group: "principal" },
@@ -49,6 +52,8 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
   const { user, isAuthenticated, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isLogistica = user?.role === "logistica";
+  const { data: notificacoes } = trpc.notificacoes.list.useQuery(undefined, { enabled: isAuthenticated && user?.role === "qualidade" });
+  const notificacoesPendentes = contarNotificacoesPendentes(notificacoes);
   const navItemsVisiveis = (isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS)
     .filter(item => !item.requiresAccessManagement || user?.podeGerirAcessos);
   const mobileNavItems = isLogistica
@@ -97,6 +102,7 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
                       >
                         <Icon className="w-4 h-4 shrink-0" />
                         <span className="truncate">{item.label}</span>
+                        {item.href === "/notificacoes" && notificacoesPendentes > 0 && <Badge className="ml-auto h-5 min-w-5 justify-center rounded-full bg-red-600 px-1.5 text-[10px] text-white hover:bg-red-600">{notificacoesPendentes > 99 ? "99+" : notificacoesPendentes}</Badge>}
                         {isActive && <ChevronRight className="w-3 h-3 ml-auto shrink-0 opacity-70" />}
                       </div>
                     </Link>
