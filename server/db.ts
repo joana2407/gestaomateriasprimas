@@ -634,6 +634,11 @@ export async function getRececoesMateriasPrimas(filtros?: { fabricaId?: number; 
     unidade: rececoesMateriasPrimas.unidade,
     controlos: rececoesMateriasPrimas.controlos,
     conformidade: rececoesMateriasPrimas.conformidade,
+    estadoValidacao: rececoesMateriasPrimas.estadoValidacao,
+    motivoValidacaoCondicional: rececoesMateriasPrimas.motivoValidacaoCondicional,
+    validadoPor: rececoesMateriasPrimas.validadoPor,
+    validadoPorNome: rececoesMateriasPrimas.validadoPorNome,
+    validadoEm: rececoesMateriasPrimas.validadoEm,
     numeroPaletesLpr: rececoesMateriasPrimas.numeroPaletesLpr,
     responsavel: rececoesMateriasPrimas.responsavel,
     numeroGuia: rececoesMateriasPrimas.numeroGuia,
@@ -664,6 +669,31 @@ export async function upsertRececaoMateriaPrima(data: typeof rececoesMateriasPri
   }
   const result = await db.insert(rececoesMateriasPrimas).values(data);
   return (result[0] as any).insertId as number;
+}
+
+export async function decidirValidacaoRececaoMateriaPrima({
+  id,
+  estadoValidacao,
+  motivoValidacaoCondicional,
+  validadoPor,
+  validadoPorNome,
+}: {
+  id: number;
+  estadoValidacao: "validada" | "recusada";
+  motivoValidacaoCondicional: string;
+  validadoPor: number;
+  validadoPorNome: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(rececoesMateriasPrimas).set({
+    estadoValidacao,
+    motivoValidacaoCondicional,
+    validadoPor,
+    validadoPorNome,
+    validadoEm: new Date(),
+    updatedAt: new Date(),
+  }).where(eq(rececoesMateriasPrimas.id, id));
 }
 
 export async function deleteRececaoMateriaPrima(id: number) {

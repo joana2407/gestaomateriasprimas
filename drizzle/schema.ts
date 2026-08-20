@@ -323,6 +323,11 @@ export const rececoesMateriasPrimas = mysqlTable("rececoes_materias_primas", {
   unidade: mysqlEnum("unidade", ["kg", "lt", "ton", "cx", "unid"]).default("kg").notNull(),
   controlos: json("controlos"),
   conformidade: mysqlEnum("conformidade", ["conforme", "nao_conforme", "pendente"]).default("pendente").notNull(),
+  estadoValidacao: mysqlEnum("estado_validacao", ["nao_aplicavel", "pendente", "validada", "recusada"]).default("nao_aplicavel").notNull(),
+  motivoValidacaoCondicional: text("motivo_validacao_condicional"),
+  validadoPor: int("validado_por").references(() => users.id),
+  validadoPorNome: varchar("validado_por_nome", { length: 200 }),
+  validadoEm: timestamp("validado_em"),
   numeroPaletesLpr: int("numero_paletes_lpr"),
   responsavel: varchar("responsavel", { length: 150 }).notNull(),
   numeroGuia: varchar("numero_guia", { length: 100 }),
@@ -337,7 +342,7 @@ export type RececaoMateriaPrima = typeof rececoesMateriasPrimas.$inferSelect;
 // ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────
 export const notificacoesQualidade = mysqlTable("notificacoes_qualidade", {
   id: int("id").autoincrement().primaryKey(),
-  tipo: mysqlEnum("tipo", ["rececao_observacoes"]).default("rececao_observacoes").notNull(),
+  tipo: mysqlEnum("tipo", ["rececao_observacoes", "rececao_validacao_condicional"]).default("rececao_observacoes").notNull(),
   titulo: varchar("titulo", { length: 255 }).notNull(),
   mensagem: text("mensagem").notNull(),
   link: varchar("link", { length: 1000 }).notNull(),

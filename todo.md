@@ -634,3 +634,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Dispensar a Conformidade do Veículo quando a receção é a granel
 - [x] Substituir a orientação do alerta por contacto com a Equipa da Qualidade
 - [x] Validar os controlos, testes e publicar checkpoint
+
+## Melhoria v4.49 — Validação condicional de receções
+
+- [x] Definir estados de pendente, validada e recusada para receções condicionais
+- [x] Guardar a decisão, o responsável e a justificação de validação ou recusa
+- [x] Criar alerta de Qualidade para validade insuficiente ou qualquer não conformidade
+- [x] Restringir o acesso operacional até à validação da receção
+- [x] Validar o fluxo completo, testes e publicar checkpoint

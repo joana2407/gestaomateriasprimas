@@ -4,6 +4,7 @@ import { qualidadeProcedure, rececoesProcedure, router } from "../_core/trpc";
 import {
   addAuditLog,
   criarNotificacaoQualidade,
+  decidirValidacaoRececaoMateriaPrima,
   deleteRececaoMateriaPrima,
   getFabricas,
   getFornecedores,
@@ -22,10 +23,11 @@ import { notifyOwner } from "../_core/notification";
 import { validarTransferenciaStock } from "../../shared/transferencia-stock";
 import { podeEditarRececao } from "../../shared/rececao-permissoes";
 import { avaliarValidadeMinimaRececao } from "../../shared/rececao-validade-minima";
-import { podeRegistarRececaoAbaixoValidadeMinima } from "../../shared/rececao-autorizacao-validade";
+import { motivoValidacaoCondicional, rececaoAcessivelOperacionalmente, requerValidacaoCondicional } from "../../shared/rececao-condicional";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
+  tipoRececao: z.enum(["saco", "granel"]).optional(),
   temperaturaMpSaco: z.object({ estado: estadoControlo.optional(), valor: z.number().nullable().optional() }).optional(),
   limpeza: estadoControlo.optional(),
   residuosInfestacao: estadoControlo.optional(),
@@ -85,11 +87,20 @@ export const rececoesRouter = router({
       armazem: z.enum(["ambiente_secos", "frio", "embalagens"]).optional(),
       conformidade: z.enum(["conforme", "nao_conforme", "pendente"]).optional(),
     }).optional())
-    .query(({ input }) => getRececoesMateriasPrimas(input)),
+    .query(async ({ input, ctx }) => {
+      const rececoes = await getRececoesMateriasPrimas(input);
+      return ctx.user.role === "qualidade" ? rececoes : rececoes.filter(rececao => rececaoAcessivelOperacionalmente(rececao.estadoValidacao));
+    }),
 
   byId: rececoesProcedure
     .input(z.object({ id: z.number() }))
-    .query(({ input }) => getRececaoMateriaPrimaById(input.id)),
+    .query(async ({ input, ctx }) => {
+      const rececao = await getRececaoMateriaPrimaById(input.id);
+      if (rececao && ctx.user.role !== "qualidade" && !rececaoAcessivelOperacionalmente(rececao.estadoValidacao)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Esta receção aguarda validação da Qualidade." });
+      }
+      return rececao;
+    }),
 
   transferenciasStock: rececoesProcedure.query(() => getTransferenciasStock()),
 
@@ -99,6 +110,9 @@ export const rececoesRouter = router({
       validarTransferenciaStock(input);
       const rececao = await getRececaoMateriaPrimaById(input.rececaoOrigemId);
       if (!rececao) throw new Error("A receção de origem não foi encontrada.");
+      if (!rececaoAcessivelOperacionalmente(rececao.estadoValidacao)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "A transferência só fica disponível após a validação da receção pela Qualidade." });
+      }
       const id = await transferirMateriaPrimaEntreFabricas({
         ...input,
         observacoes: input.observacoes?.trim() || null,
@@ -143,18 +157,15 @@ export const rececoesRouter = router({
         validade: input.validade,
         validadeEstipuladaMeses: fornecedorDaMp.validadeEstipuladaMeses,
       });
-      if (!podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: alertaValidade.alerta, role: ctx.user.role })) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "Esta receção tem validade inferior ao mínimo de 2/3 e só pode ser registada pela equipa de Qualidade.",
-        });
-      }
-
       const controlos = input.controlos as ControlosRececao;
       const conformidade = calcularConformidadeRececao(controlos);
       if (conformidade === "nao_conforme" && !input.motivoNaoConformidade?.trim()) {
         throw new Error("Descreva o motivo da não conformidade antes de guardar a receção");
       }
+
+      const requerValidacao = requerValidacaoCondicional({ alertaValidade: alertaValidade.alerta, conformidade });
+      const estadoValidacao = requerValidacao ? "pendente" : "nao_aplicavel" as const;
+      const motivoCondicional = requerValidacao ? motivoValidacaoCondicional({ alertaValidade: alertaValidade.alerta, conformidade }) : null;
 
       const id = await upsertRececaoMateriaPrima({
         ...input,
@@ -166,6 +177,11 @@ export const rececoesRouter = router({
         motivoNaoConformidade: input.motivoNaoConformidade || null,
         controlos,
         conformidade,
+        estadoValidacao,
+        motivoValidacaoCondicional: motivoCondicional,
+        validadoPor: null,
+        validadoPorNome: null,
+        validadoEm: null,
         registadoPor: ctx.user.id,
       } as any);
 
@@ -173,18 +189,21 @@ export const rececoesRouter = router({
         entidade: "rececao_mp",
         entidadeId: id,
         acao: input.id ? "atualizado" : "criado",
-        dadosNovos: { ...input, conformidade, alertaValidade },
+        dadosNovos: { ...input, conformidade, alertaValidade, estadoValidacao, motivoCondicional },
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
       let notificacaoQualidadeEnviada = false;
-      if (temObservacoesRececao(input.observacoes)) {
+      if (temObservacoesRececao(input.observacoes) || requerValidacao) {
         const protocolo = (ctx.req.get("x-forwarded-proto") ?? ctx.req.protocol ?? "https").split(",")[0].trim();
         const host = ctx.req.get("x-forwarded-host") ?? ctx.req.get("host");
         const linkRececao = host ? `${protocolo}://${host}/rececoes?rececaoId=${id}` : `/rececoes?rececaoId=${id}`;
-        const titulo = `Receção #${id} com observações`;
-        const mensagem = `A matéria-prima “${materiaPrima.nome}” foi ${input.id ? "atualizada" : "registada"} com observações por ${ctx.user.name ?? ctx.user.email ?? "um utilizador"}.\n\nObservações: ${resumirObservacoesRececao(input.observacoes!)}`;
+        const titulo = requerValidacao ? `Receção #${id} aguarda validação da Qualidade` : `Receção #${id} com observações`;
+        const mensagem = requerValidacao
+          ? `A matéria-prima “${materiaPrima.nome}” foi registada condicionalmente por ${ctx.user.name ?? ctx.user.email ?? "um utilizador"} devido a ${motivoCondicional}. A receção permanece inacessível até validação ou recusa justificada pela Qualidade.${temObservacoesRececao(input.observacoes) ? `\n\nObservações: ${resumirObservacoesRececao(input.observacoes!)}` : ""}`
+          : `A matéria-prima “${materiaPrima.nome}” foi ${input.id ? "atualizada" : "registada"} com observações por ${ctx.user.name ?? ctx.user.email ?? "um utilizador"}.\n\nObservações: ${resumirObservacoesRececao(input.observacoes!)}`;
         await criarNotificacaoQualidade({
+          tipo: requerValidacao ? "rececao_validacao_condicional" : "rececao_observacoes",
           titulo,
           mensagem,
           link: linkRececao,
@@ -199,7 +218,33 @@ export const rececoesRouter = router({
           console.warn("[Receções] Não foi possível enviar a notificação de Qualidade", error);
         }
       }
-      return { id, conformidade, notificacaoQualidadeEnviada, alertaValidade };
+      return { id, conformidade, estadoValidacao, notificacaoQualidadeEnviada, alertaValidade };
+    }),
+
+  validarCondicional: qualidadeProcedure
+    .input(z.object({ id: z.number().int().positive(), decisao: z.enum(["validada", "recusada"]), justificacao: z.string().trim().min(5).max(5000) }))
+    .mutation(async ({ input, ctx }) => {
+      const rececao = await getRececaoMateriaPrimaById(input.id);
+      if (!rececao) throw new Error("Receção não encontrada.");
+      if (rececao.estadoValidacao !== "pendente") throw new Error("Esta receção não aguarda validação condicional.");
+      const responsavel = ctx.user.name ?? ctx.user.email ?? "Equipa de Qualidade";
+      await decidirValidacaoRececaoMateriaPrima({
+        id: input.id,
+        estadoValidacao: input.decisao,
+        motivoValidacaoCondicional: input.justificacao,
+        validadoPor: ctx.user.id,
+        validadoPorNome: responsavel,
+      });
+      await addAuditLog({
+        entidade: "rececao_mp",
+        entidadeId: input.id,
+        acao: input.decisao === "validada" ? "aprovado" : "rejeitado",
+        dadosAnteriores: { estadoValidacao: "pendente" },
+        dadosNovos: { estadoValidacao: input.decisao, justificacao: input.justificacao },
+        userId: ctx.user.id,
+        userName: responsavel,
+      });
+      return { estadoValidacao: input.decisao };
     }),
 
   delete: qualidadeProcedure
