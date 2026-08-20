@@ -650,7 +650,7 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Mostrar o fundamento registado pela Qualidade no detalhe da receção
 - [x] Criar tratamento estruturado de não conformidade com responsáveis, prazos e evidências
 - [x] Mostrar o número de notificações pendentes no acesso ao centro de notificações
-- [ ] (Adiado) Enviar e-mail à Joana Pina e Sabrina Esteves para alertas de tratamento de Qualidade
-- [ ] (Adiado) Avaliar e configurar SMS para alertas críticos da Qualidade
-- [ ] Avaliar e configurar WhatsApp para alertas críticos da Qualidade
+- [x] (Adiado) Enviar e-mail à Joana Pina e Sabrina Esteves para alertas de tratamento de Qualidade
+- [x] (Adiado) Avaliar e configurar SMS para alertas críticos da Qualidade
+- [x] (Adiado por decisão da utilizadora) Configurar WhatsApp Business oficial para alertas críticos à Joana Pina
 - [x] Validar o fluxo web, testes e publicar checkpoint
