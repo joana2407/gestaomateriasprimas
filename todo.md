@@ -594,3 +594,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Configurar instalação e identidade da aplicação móvel
 - [x] Otimizar acesso PIN, receções, lotes e transferências em telemóvel
 - [x] Validar os fluxos móveis e publicar a primeira versão
+
+## Melhoria v4.43 — Validade no detalhe de receção
+
+- [x] Rever os dados de validade disponíveis na receção
+- [x] Substituir a guia pela validade do produto no cartão e detalhe do lote
+- [x] Validar a apresentação, testes e publicar checkpoint
