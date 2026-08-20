@@ -654,3 +654,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] (Adiado) Avaliar e configurar SMS para alertas críticos da Qualidade
 - [x] (Adiado por decisão da utilizadora) Configurar WhatsApp Business oficial para alertas críticos à Joana Pina
 - [x] Validar o fluxo web, testes e publicar checkpoint
+
+## Correção v4.51 — Decisão de receção condicional
+
+- [x] Reproduzir o bloqueio do botão de validação ou recusa
+- [x] Corrigir a validação do fundamento e a ação de decisão
+- [x] Validar o ciclo completo, testes e publicar checkpoint

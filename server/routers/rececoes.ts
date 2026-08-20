@@ -25,6 +25,7 @@ import { podeEditarRececao } from "../../shared/rececao-permissoes";
 import { avaliarValidadeMinimaRececao } from "../../shared/rececao-validade-minima";
 import { motivoValidacaoCondicional, rececaoAcessivelOperacionalmente, requerValidacaoCondicional } from "../../shared/rececao-condicional";
 import { temTratamentoNaoConformidade } from "../../shared/rececao-nao-conformidade";
+import { MINIMO_CARACTERES_FUNDAMENTO_DECISAO } from "../../shared/fundamento-decisao-rececao";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -240,7 +241,7 @@ export const rececoesRouter = router({
     }),
 
   validarCondicional: qualidadeProcedure
-    .input(z.object({ id: z.number().int().positive(), decisao: z.enum(["validada", "recusada"]), justificacao: z.string().trim().min(5).max(5000) }))
+    .input(z.object({ id: z.number().int().positive(), decisao: z.enum(["validada", "recusada"]), justificacao: z.string().trim().min(MINIMO_CARACTERES_FUNDAMENTO_DECISAO).max(5000) }))
     .mutation(async ({ input, ctx }) => {
       const rececao = await getRececaoMateriaPrimaById(input.id);
       if (!rececao) throw new Error("Receção não encontrada.");
