@@ -626,3 +626,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever a autorização atual para validade abaixo do mínimo
 - [x] Permitir a exceção a qualquer membro da Qualidade
 - [x] Manter o bloqueio para Logística e validar perfis, testes e checkpoint
+
+## Melhoria v4.48 — Controlos específicos para receção a granel
+
+- [x] Identificar Farinha de Trigo 65, Farinha de Centeio 130 e Pellets como MP elegíveis
+- [x] Mostrar a escolha saco/granel antes dos pontos de controlo apenas para MP elegíveis
+- [x] Dispensar a Conformidade do Veículo quando a receção é a granel
+- [x] Substituir a orientação do alerta por contacto com a Equipa da Qualidade
+- [x] Validar os controlos, testes e publicar checkpoint

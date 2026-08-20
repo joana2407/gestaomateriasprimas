@@ -14,6 +14,7 @@ export type ArmazemRececao = (typeof ARMAZENS_RECECAO)[number]["id"];
 export type EstadoControloRececao = (typeof ESTADOS_CONTROLO_RECECAO)[number]["id"];
 
 export type ControlosRececao = {
+  tipoRececao?: "saco" | "granel";
   temperaturaMpSaco?: { estado?: EstadoControloRececao; valor?: number | null };
   limpeza?: EstadoControloRececao;
   residuosInfestacao?: EstadoControloRececao;
