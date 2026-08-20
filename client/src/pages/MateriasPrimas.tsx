@@ -38,6 +38,7 @@ interface FornecedorMp {
   fornecedorId: number;
   referenciaFornecedor?: string;
   paisOrigem?: string;
+  validadeEstipuladaMeses?: number | null;
   preferencial?: boolean;
 }
 
@@ -123,6 +124,9 @@ export default function MateriasPrimas() {
       const id = parseInt(expandId);
       if (!isNaN(id)) {
         setExpandedId(id);
+        window.setTimeout(() => {
+          document.querySelector(`[data-mp-painel="${id}"]`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 80);
         // Limpar o parâmetro da URL sem recarregar
         const url = new URL(window.location.href);
         url.searchParams.delete("expand");
@@ -225,6 +229,7 @@ export default function MateriasPrimas() {
           fornecedorId: f.fornecedorId,
           referenciaFornecedor: f.referenciaFornecedor ?? "",
           paisOrigem: f.paisOrigem ?? "",
+          validadeEstipuladaMeses: f.validadeEstipuladaMeses ?? null,
           preferencial: f.preferencial ?? false,
         })),
         formaFornecimento: (mpDetalhes as any).formaFornecimento ?? null,
@@ -516,7 +521,7 @@ export default function MateriasPrimas() {
             const isComposta = mp.tipo === "composta";
 
             return (
-              <div key={mp.id} className="card-elegant overflow-hidden">
+              <div key={mp.id} data-mp-painel={mp.id} className="card-elegant overflow-hidden">
                 <div
                   className="flex items-center gap-4 p-4 cursor-pointer hover:bg-accent/30 transition-colors"
                   onClick={() => setExpandedId(isExpanded ? null : mp.id)}
@@ -979,6 +984,22 @@ export default function MateriasPrimas() {
                                 placeholder="Ex: Portugal, Espanha"
                                 className="h-7 text-xs"
                               />
+                            </div>
+                            <div className="space-y-1 col-span-2">
+                              <label className="text-[10px] font-medium text-muted-foreground">Validade estipulada para este fornecedor (meses)</label>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="120"
+                                value={fp.validadeEstipuladaMeses ?? ""}
+                                onChange={e => setForm(f => ({
+                                  ...f,
+                                  fornecedoresMp: f.fornecedoresMp.map(x => x.fornecedorId === fp.fornecedorId ? { ...x, validadeEstipuladaMeses: e.target.value ? Number(e.target.value) : null } : x),
+                                }))}
+                                placeholder="Ex.: 12"
+                                className="h-7 text-xs"
+                              />
+                              <p className="text-[10px] text-muted-foreground">A receção alerta abaixo de 2/3 deste prazo. Ex.: 12 meses exige pelo menos 8 meses restantes.</p>
                             </div>
                           </div>
                         </div>
@@ -1602,6 +1623,12 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                         <span>{fp.paisOrigem || paisOrigem}</span>
                       </div>
                     )}
+
+                    <div className="rounded-lg bg-muted/45 px-2.5 py-2 text-xs">
+                      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">Validade estipulada</p>
+                      <p className="mt-0.5 font-semibold text-foreground">{fp.validadeEstipuladaMeses ? `${fp.validadeEstipuladaMeses} meses` : "Não definida"}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">Mínimo à receção: {fp.validadeEstipuladaMeses ? `${Math.ceil((fp.validadeEstipuladaMeses * 2) / 3)} meses` : "—"}</p>
+                    </div>
 
                     {/* Ficha Técnica */}
                     <div className="pt-2 border-t border-border/40">

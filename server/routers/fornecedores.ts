@@ -31,6 +31,7 @@ export const fornecedoresRouter = router({
       materiaPrimaId: z.number(),
       referenciaFornecedor: z.string().optional().nullable(),
       paisOrigem: z.string().optional().nullable(),
+      validadeEstipuladaMeses: z.number().int().min(1).max(120).optional().nullable(),
       preferencial: z.boolean().optional(),
     }))
     .mutation(async ({ input, ctx }) => {
@@ -43,7 +44,7 @@ export const fornecedoresRouter = router({
         )).limit(1);
       if (existing.length > 0) {
         await db.update(mpFornecedores)
-          .set({ ativo: true, referenciaFornecedor: input.referenciaFornecedor ?? null, paisOrigem: input.paisOrigem ?? null, preferencial: input.preferencial ?? false })
+          .set({ ativo: true, referenciaFornecedor: input.referenciaFornecedor ?? null, paisOrigem: input.paisOrigem ?? null, validadeEstipuladaMeses: input.validadeEstipuladaMeses === undefined ? existing[0].validadeEstipuladaMeses : input.validadeEstipuladaMeses, preferencial: input.preferencial ?? false })
           .where(and(eq(mpFornecedores.materiaPrimaId, input.materiaPrimaId), eq(mpFornecedores.fornecedorId, input.fornecedorId)));
       } else {
         await db.insert(mpFornecedores).values({
@@ -51,6 +52,7 @@ export const fornecedoresRouter = router({
           fornecedorId: input.fornecedorId,
           referenciaFornecedor: input.referenciaFornecedor ?? null,
           paisOrigem: input.paisOrigem ?? null,
+          validadeEstipuladaMeses: input.validadeEstipuladaMeses ?? null,
           preferencial: input.preferencial ?? false,
           ativo: true,
         });

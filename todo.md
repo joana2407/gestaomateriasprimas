@@ -600,3 +600,16 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Rever os dados de validade disponíveis na receção
 - [x] Substituir a guia pela validade do produto no cartão e detalhe do lote
 - [x] Validar a apresentação, testes e publicar checkpoint
+
+## Melhoria v4.44 — Validade mínima à receção
+
+- [x] Definir e persistir a validade estipulada por matéria-prima e fornecedor em meses
+- [x] Mostrar a validade por fornecedor no formulário e detalhe de matéria-prima
+- [x] Alertar receções com validade restante inferior a 2/3 da validade do fornecedor selecionado
+- [x] Validar o cálculo, testes e publicar checkpoint
+
+## Correção v4.45 — Atalho de detalhe de matéria-prima
+
+- [x] Rever o atalho de matéria-prima no painel de fornecedor
+- [x] Abrir diretamente o painel informativo da matéria-prima selecionada
+- [x] Validar a navegação, testes e publicar checkpoint

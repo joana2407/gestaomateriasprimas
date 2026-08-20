@@ -170,6 +170,8 @@ export const mpFornecedores = mysqlTable("mp_fornecedores", {
   referenciaFornecedor: varchar("referencia_fornecedor", { length: 100 }),
   // País de origem desta MP neste fornecedor específico
   paisOrigem: varchar("pais_origem", { length: 100 }),
+  // Prazo de validade contratual/especificado para esta MP neste fornecedor
+  validadeEstipuladaMeses: int("validade_estipulada_meses"),
   // Fornecedor preferencial para esta MP
   preferencial: boolean("preferencial").default(false).notNull(),
   ativo: boolean("ativo").default(true).notNull(),

@@ -277,16 +277,17 @@ export async function getMateriasPrimas(fabricaId?: number) {
   );
   // Enriquecer com fornecedores associados (tabela mp_fornecedores)
   const allMpFornecedores = await db.select().from(mpFornecedores).where(eq(mpFornecedores.ativo, true));
-  const fornMap = new Map<number, Array<{ fornecedorId: number; preferencial: boolean | null }>>();
+  const fornMap = new Map<number, Array<{ fornecedorId: number; preferencial: boolean | null; validadeEstipuladaMeses: number | null }>>();
   for (const rel of allMpFornecedores) {
     if (!fornMap.has(rel.materiaPrimaId)) fornMap.set(rel.materiaPrimaId, []);
-    fornMap.get(rel.materiaPrimaId)!.push({ fornecedorId: rel.fornecedorId, preferencial: rel.preferencial });
+    fornMap.get(rel.materiaPrimaId)!.push({ fornecedorId: rel.fornecedorId, preferencial: rel.preferencial, validadeEstipuladaMeses: rel.validadeEstipuladaMeses });
   }
   return filtered.map(mp => ({
     ...mp,
     fabricasIds: (fabricasMap.get(mp.id) ?? []).map(rel => rel.fabricaId),
     fabricasEstado: fabricasMap.get(mp.id) ?? [],
     fornecedoresIds: (fornMap.get(mp.id) ?? []).map(f => f.fornecedorId),
+    fornecedoresMp: fornMap.get(mp.id) ?? [],
   }));
 }
 
@@ -422,7 +423,7 @@ export async function getMpFornecedores(materiaPrimaId: number) {
 
 export async function setMpFornecedores(
   materiaPrimaId: number,
-  fornecedoresList: Array<{ fornecedorId: number; referenciaFornecedor?: string; paisOrigem?: string; preferencial?: boolean }>
+  fornecedoresList: Array<{ fornecedorId: number; referenciaFornecedor?: string; paisOrigem?: string; validadeEstipuladaMeses?: number | null; preferencial?: boolean }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
@@ -435,6 +436,7 @@ export async function setMpFornecedores(
       fornecedorId: f.fornecedorId,
       referenciaFornecedor: f.referenciaFornecedor,
       paisOrigem: f.paisOrigem,
+      validadeEstipuladaMeses: f.validadeEstipuladaMeses ?? null,
       preferencial: f.preferencial ?? false,
       ativo: true,
     });

@@ -18,6 +18,7 @@ const FornecedorMpSchema = z.object({
   fornecedorId: z.number(),
   referenciaFornecedor: z.string().optional(),
   paisOrigem: z.string().optional(),
+  validadeEstipuladaMeses: z.number().int().min(1).max(120).optional().nullable(),
   preferencial: z.boolean().optional(),
 });
 

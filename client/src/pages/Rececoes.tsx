@@ -22,6 +22,7 @@ import { filtrarRececoes } from "../../../shared/rececao-filtros";
 import { mensagemEliminacaoRececao } from "../../../shared/rececao-eliminacao";
 import { marcarControlosGranelNaoAplicaveis, prepararControlosGranel } from "../../../shared/rececao-granel";
 import { formatarValidadeRececao } from "../../../shared/rececao-validade";
+import { avaliarValidadeMinimaRececao } from "../../../shared/rececao-validade-minima";
 import { podeEditarRececao as podeEditarRececaoPorUtilizador } from "../../../shared/rececao-permissoes";
 import { listarValidacoesRececao, type EstadoValidacaoDetalhe } from "../../../shared/rececao-validacoes";
 import { formatarUnidadeRececao, UNIDADES_RECECAO, type UnidadeRececao } from "../../../shared/rececao-unidades";
@@ -207,6 +208,9 @@ export default function Rececoes() {
   const upsert = trpc.rececoes.upsert.useMutation({
     onSuccess: data => {
       toast.success(data.conformidade === "nao_conforme" ? "Receção registada como não conforme" : "Receção registada com sucesso");
+      if (data.alertaValidade?.alerta) {
+        toast.warning(`Validade abaixo do mínimo: este fornecedor exige pelo menos ${data.alertaValidade.mesesMinimos} meses restantes.`);
+      }
       if (data.notificacaoQualidadeEnviada) toast.info("A Qualidade foi notificada das observações.");
       setDialogOpen(false);
       refetch();
@@ -257,6 +261,15 @@ export default function Rececoes() {
   const materiasAprovadas = useMemo(() => (materiasPrimas ?? []).filter(mp =>
     mpAprovadaParaRececao(mp, form.fabricaId, form.fornecedorId)
   ), [materiasPrimas, form.fabricaId, form.fornecedorId]);
+  const regraValidadeFornecedor = useMemo(() => {
+    const mpSelecionada = (materiasPrimas ?? []).find(mp => mp.id === form.materiaPrimaId);
+    const fornecedorDaMp = (mpSelecionada as any)?.fornecedoresMp?.find((rel: any) => rel.fornecedorId === form.fornecedorId);
+    return avaliarValidadeMinimaRececao({
+      dataRececao: form.dataRececao ? new Date(`${form.dataRececao}T12:00:00`) : null,
+      validade: form.validade ? new Date(`${form.validade}T12:00:00`) : null,
+      validadeEstipuladaMeses: fornecedorDaMp?.validadeEstipuladaMeses,
+    });
+  }, [materiasPrimas, form.materiaPrimaId, form.fornecedorId, form.dataRececao, form.validade]);
 
   const conformidadeCalculada = calcularConformidadeRececao(form.controlos);
   const selectedArmazem = ARMAZENS_RECECAO.find(armazem => armazem.id === form.armazem);
@@ -442,6 +455,11 @@ export default function Rececoes() {
               <Field label="Matéria-prima *"><Select disabled={!form.fabricaId || !form.fornecedorId} value={form.materiaPrimaId ? String(form.materiaPrimaId) : "none"} onValueChange={value => setForm(current => ({ ...current, materiaPrimaId: Number(value) }))}><SelectTrigger><SelectValue placeholder={!form.fabricaId ? "Escolha primeiro a fábrica" : !form.fornecedorId ? "Escolha primeiro o fornecedor" : "Selecionar MP aprovada"} /></SelectTrigger><SelectContent>{materiasAprovadas.length > 0 ? materiasAprovadas.map(mp => <SelectItem key={mp.id} value={String(mp.id)}>{mp.nome}</SelectItem>) : <div className="px-2 py-3 text-xs text-muted-foreground">Não existem MP aprovadas para este fornecedor nesta fábrica.</div>}</SelectContent></Select></Field>
               <Field label="Lote"><Input value={form.lote} onChange={event => setForm(current => ({ ...current, lote: event.target.value }))} placeholder="Lote do fornecedor" /></Field>
               <Field label="Validade"><Input type="date" value={form.validade} onChange={event => setForm(current => ({ ...current, validade: event.target.value }))} /></Field>
+              {form.materiaPrimaId > 0 && form.fornecedorId > 0 && (
+                <div className={cn("col-span-full rounded-lg border px-3 py-2.5 text-xs", regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? "border-amber-300 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-600")}>
+                  {regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Alerta de validade:</strong> esta receção fica abaixo do mínimo de <strong>{regraValidadeFornecedor.mesesMinimos} meses</strong> restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados para este fornecedor). A validade mínima seria {formatarValidadeRececao(regraValidadeFornecedor.dataMinimaValidade)}.</p></div> : <p><strong>Validade conforme:</strong> mínimo exigido para este fornecedor: {regraValidadeFornecedor.mesesMinimos} meses restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados).</p> : <p>Defina a validade estipulada deste fornecedor no detalhe da matéria-prima para ativar o controlo automático de 2/3.</p>}
+                </div>
+              )}
               <Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={form.quantidade || ""} onChange={event => setForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} placeholder="0" /></Field>
               <Field label="Unidade"><Select value={form.unidade} onValueChange={value => setForm(current => ({ ...current, unidade: value as RececaoForm["unidade"] }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{UNIDADES_RECECAO.map(unidade => <SelectItem key={unidade.value} value={unidade.value}>{unidade.label}</SelectItem>)}</SelectContent></Select></Field>
               <Field label="Nº de paletes LPR"><Input type="number" min="0" value={form.numeroPaletesLpr} onChange={event => setForm(current => ({ ...current, numeroPaletesLpr: event.target.value }))} placeholder="0" /></Field>

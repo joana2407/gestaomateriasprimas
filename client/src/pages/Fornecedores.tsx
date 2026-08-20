@@ -527,7 +527,8 @@ function FornecedorDetalhe({
                       <button
                         onClick={() => { navigate(`/materias-primas?expand=${row.mpId}`); onClose(); }}
                         className="p-1.5 rounded-lg hover:bg-primary/10 text-primary transition-colors"
-                        title="Ver MP"
+                        title="Abrir painel informativo da MP"
+                        aria-label={`Abrir painel informativo de ${row.mp?.nome ?? `MP #${row.mpId}`}`}
                       >
                         <Link2 className="w-3.5 h-3.5" />
                       </button>

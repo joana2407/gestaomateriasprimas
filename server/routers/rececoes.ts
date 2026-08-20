@@ -20,6 +20,7 @@ import { resumirObservacoesRececao, temObservacoesRececao } from "../../shared/r
 import { notifyOwner } from "../_core/notification";
 import { validarTransferenciaStock } from "../../shared/transferencia-stock";
 import { podeEditarRececao } from "../../shared/rececao-permissoes";
+import { avaliarValidadeMinimaRececao } from "../../shared/rececao-validade-minima";
 
 const estadoControlo = z.enum(["c", "nc", "na"]);
 const controlosSchema = z.object({
@@ -130,9 +131,16 @@ export const rececoesRouter = router({
         throw new Error("A matéria-prima selecionada não está disponível na fábrica indicada");
       }
       const fornecedoresAprovados = await getMpFornecedores(input.materiaPrimaId);
-      if (!fornecedoresAprovados.some(rel => rel.fornecedorId === input.fornecedorId)) {
+      const fornecedorDaMp = fornecedoresAprovados.find(rel => rel.fornecedorId === input.fornecedorId);
+      if (!fornecedorDaMp) {
         throw new Error("A matéria-prima selecionada não está aprovada para o fornecedor indicado");
       }
+
+      const alertaValidade = avaliarValidadeMinimaRececao({
+        dataRececao: input.dataRececao,
+        validade: input.validade,
+        validadeEstipuladaMeses: fornecedorDaMp.validadeEstipuladaMeses,
+      });
 
       const controlos = input.controlos as ControlosRececao;
       const conformidade = calcularConformidadeRececao(controlos);
@@ -157,7 +165,7 @@ export const rececoesRouter = router({
         entidade: "rececao_mp",
         entidadeId: id,
         acao: input.id ? "atualizado" : "criado",
-        dadosNovos: { ...input, conformidade },
+        dadosNovos: { ...input, conformidade, alertaValidade },
         userId: ctx.user.id,
         userName: ctx.user.name ?? ctx.user.email ?? "Utilizador",
       });
@@ -183,7 +191,7 @@ export const rececoesRouter = router({
           console.warn("[Receções] Não foi possível enviar a notificação de Qualidade", error);
         }
       }
-      return { id, conformidade, notificacaoQualidadeEnviada };
+      return { id, conformidade, notificacaoQualidadeEnviada, alertaValidade };
     }),
 
   delete: qualidadeProcedure
