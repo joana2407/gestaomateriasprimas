@@ -1,9 +1,9 @@
 export function podeRegistarRececaoAbaixoValidadeMinima({
   alertaValidade,
-  podeGerirAcessos,
+  role,
 }: {
   alertaValidade: boolean;
-  podeGerirAcessos?: boolean | null;
+  role?: string | null;
 }) {
-  return !alertaValidade || Boolean(podeGerirAcessos);
+  return !alertaValidade || role === "qualidade";
 }

@@ -143,10 +143,10 @@ export const rececoesRouter = router({
         validade: input.validade,
         validadeEstipuladaMeses: fornecedorDaMp.validadeEstipuladaMeses,
       });
-      if (!podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: alertaValidade.alerta, podeGerirAcessos: ctx.user.podeGerirAcessos })) {
+      if (!podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: alertaValidade.alerta, role: ctx.user.role })) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Esta receção tem validade inferior ao mínimo de 2/3 e só pode ser registada pela Responsável da Qualidade.",
+          message: "Esta receção tem validade inferior ao mínimo de 2/3 e só pode ser registada pela equipa de Qualidade.",
         });
       }
 

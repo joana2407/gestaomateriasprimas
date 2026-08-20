@@ -3,14 +3,14 @@ import { podeRegistarRececaoAbaixoValidadeMinima } from "../shared/rececao-autor
 
 describe("autorização para exceções de validade mínima", () => {
   it("permite a receção quando a validade cumpre a regra", () => {
-    expect(podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: false, podeGerirAcessos: false })).toBe(true);
+    expect(podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: false, role: "logistica" })).toBe(true);
   });
 
-  it("bloqueia técnicos de Qualidade quando a validade fica abaixo do mínimo", () => {
-    expect(podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: true, podeGerirAcessos: false })).toBe(false);
+  it("bloqueia Logística quando a validade fica abaixo do mínimo", () => {
+    expect(podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: true, role: "logistica" })).toBe(false);
   });
 
-  it("permite a exceção à Responsável da Qualidade", () => {
-    expect(podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: true, podeGerirAcessos: true })).toBe(true);
+  it("permite a exceção a qualquer membro de Qualidade", () => {
+    expect(podeRegistarRececaoAbaixoValidadeMinima({ alertaValidade: true, role: "qualidade" })).toBe(true);
   });
 });

@@ -620,3 +620,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Bloquear a gravação abaixo de 2/3 para os restantes utilizadores
 - [x] Indicar a autorização necessária no formulário de receção
 - [x] Validar perfis, testes e publicar checkpoint
+
+## Regra v4.47 — Exceção de validade pela Qualidade
+
+- [x] Rever a autorização atual para validade abaixo do mínimo
+- [x] Permitir a exceção a qualquer membro da Qualidade
+- [x] Manter o bloqueio para Logística e validar perfis, testes e checkpoint
