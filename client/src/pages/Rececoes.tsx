@@ -46,7 +46,7 @@ import {
   Warehouse,
   XCircle,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 type RececaoForm = {
@@ -199,6 +199,7 @@ export default function Rececoes() {
     const value = Number(new URLSearchParams(window.location.search).get("rececaoId"));
     return Number.isInteger(value) && value > 0 ? value : null;
   });
+  const ultimoAlertaValidadeRef = useRef<string | null>(null);
 
   const { data: contextoOperacional } = trpc.rececoes.contextoOperacional.useQuery();
   const fabricas = contextoOperacional?.fabricas;
@@ -281,15 +282,31 @@ export default function Rececoes() {
   const materiaPrimaSelecionada = useMemo(() => (materiasPrimas ?? []).find(mp => mp.id === form.materiaPrimaId), [materiasPrimas, form.materiaPrimaId]);
   const permiteRececaoAGranel = mpElegivelParaRececaoAGranel(materiaPrimaSelecionada?.nome);
   const rececaoAGranel = permiteRececaoAGranel && form.controlos.tipoRececao === "granel";
-  const regraValidadeFornecedor = useMemo(() => {
+  const fornecedorSelecionadoDaMp = useMemo(() => {
     const mpSelecionada = (materiasPrimas ?? []).find(mp => mp.id === form.materiaPrimaId);
-    const fornecedorDaMp = (mpSelecionada as any)?.fornecedoresMp?.find((rel: any) => rel.fornecedorId === form.fornecedorId);
+    return (mpSelecionada as any)?.fornecedoresMp?.find((rel: any) => rel.fornecedorId === form.fornecedorId) ?? null;
+  }, [materiasPrimas, form.materiaPrimaId, form.fornecedorId]);
+  const validadeEstipuladaFornecedor = Number(fornecedorSelecionadoDaMp?.validadeEstipuladaMeses ?? 0);
+  const regraValidadeFornecedor = useMemo(() => {
     return avaliarValidadeMinimaRececao({
       dataRececao: form.dataRececao ? new Date(`${form.dataRececao}T12:00:00`) : null,
       validade: form.validade ? new Date(`${form.validade}T12:00:00`) : null,
-      validadeEstipuladaMeses: fornecedorDaMp?.validadeEstipuladaMeses,
+      validadeEstipuladaMeses: validadeEstipuladaFornecedor,
     });
-  }, [materiasPrimas, form.materiaPrimaId, form.fornecedorId, form.dataRececao, form.validade]);
+  }, [form.dataRececao, form.validade, validadeEstipuladaFornecedor]);
+  const controloValidadeConfigurado = validadeEstipuladaFornecedor >= 1;
+  const validadePorPreencher = Boolean(form.materiaPrimaId && form.fornecedorId && controloValidadeConfigurado && !form.validade);
+
+  useEffect(() => {
+    if (!regraValidadeFornecedor.alerta) {
+      ultimoAlertaValidadeRef.current = null;
+      return;
+    }
+    const chaveAlerta = `${form.materiaPrimaId}:${form.fornecedorId}:${form.dataRececao}:${form.validade}`;
+    if (ultimoAlertaValidadeRef.current === chaveAlerta) return;
+    ultimoAlertaValidadeRef.current = chaveAlerta;
+    toast.warning(`Atenção: validade abaixo do mínimo. São exigidos ${regraValidadeFornecedor.mesesMinimos} meses restantes para este fornecedor.`, { duration: 9000 });
+  }, [form.materiaPrimaId, form.fornecedorId, form.dataRececao, form.validade, regraValidadeFornecedor.alerta, regraValidadeFornecedor.mesesMinimos]);
   const rececoesCondicionais = useMemo(() => user?.role === "qualidade" ? (rececoes ?? []).filter(rececao => rececao.estadoValidacao === "pendente") : [], [rececoes, user?.role]);
 
   const conformidadeCalculada = calcularConformidadeRececao(form.controlos);
@@ -495,8 +512,8 @@ export default function Rececoes() {
               <Field label="Lote"><Input value={form.lote} onChange={event => setForm(current => ({ ...current, lote: event.target.value }))} placeholder="Lote do fornecedor" /></Field>
               <Field label="Validade"><Input type="date" value={form.validade} onChange={event => setForm(current => ({ ...current, validade: event.target.value }))} /></Field>
               {form.materiaPrimaId > 0 && form.fornecedorId > 0 && (
-                <div className={cn("col-span-full rounded-lg border px-3 py-2.5 text-xs", regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? "border-amber-300 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-600")}>
-                  {regraValidadeFornecedor.aplicavel ? regraValidadeFornecedor.alerta ? <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Receção condicional:</strong> esta receção fica abaixo do mínimo de <strong>{regraValidadeFornecedor.mesesMinimos} meses</strong> restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados). A validade mínima seria {formatarValidadeRececao(regraValidadeFornecedor.dataMinimaValidade)}. Contactar a Equipa da Qualidade antes de recepcionar esta mercadoria.</p></div> : <p><strong>Validade conforme:</strong> mínimo exigido para este fornecedor: {regraValidadeFornecedor.mesesMinimos} meses restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados).</p> : <p>Defina a validade estipulada deste fornecedor no detalhe da matéria-prima para ativar o controlo automático de 2/3.</p>}
+                <div role={regraValidadeFornecedor.alerta ? "alert" : "status"} aria-live={regraValidadeFornecedor.alerta ? "assertive" : "polite"} className={cn("col-span-full rounded-lg border px-3 py-2.5 text-xs", regraValidadeFornecedor.alerta ? "border-amber-400 bg-amber-50 text-amber-950 shadow-sm" : regraValidadeFornecedor.aplicavel ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-slate-200 bg-slate-50 text-slate-600")}>
+                  {regraValidadeFornecedor.alerta ? <div className="flex gap-2"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /><p><strong>Atenção — receção condicional:</strong> esta receção fica abaixo do mínimo de <strong>{regraValidadeFornecedor.mesesMinimos} meses</strong> restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados). A validade mínima seria {formatarValidadeRececao(regraValidadeFornecedor.dataMinimaValidade)}. Contactar a Equipa da Qualidade antes de recepcionar esta mercadoria.</p></div> : regraValidadeFornecedor.aplicavel ? <p><strong>Validade conforme:</strong> mínimo exigido para este fornecedor: {regraValidadeFornecedor.mesesMinimos} meses restantes (2/3 dos {regraValidadeFornecedor.mesesEstipulados} meses estipulados).</p> : validadePorPreencher ? <p><strong>Verificação de validade pendente:</strong> este fornecedor tem {validadeEstipuladaFornecedor} meses de validade estipulada. Introduza a validade do lote para o sistema confirmar o mínimo de 2/3.</p> : <p>Defina a validade estipulada deste fornecedor no detalhe da matéria-prima para ativar o controlo automático de 2/3.</p>}
                 </div>
               )}
               <Field label="Quantidade *"><Input type="number" min="0" step="0.001" value={form.quantidade || ""} onChange={event => setForm(current => ({ ...current, quantidade: Number(event.target.value) || 0 }))} placeholder="0" /></Field>

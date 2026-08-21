@@ -660,3 +660,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Reproduzir o bloqueio do botão de validação ou recusa
 - [x] Corrigir a validação do fundamento e a ação de decisão
 - [x] Validar o ciclo completo, testes e publicar checkpoint
+
+## Correção v4.52 — Alerta imediato de validade mínima
+
+- [x] Reproduzir a ausência de alerta no formulário de nova receção
+- [x] Corrigir o cálculo reativo de validade mínima por fornecedor
+- [x] Mostrar o alerta antes da gravação para qualquer operador
+- [x] Validar o alerta, testes e publicar checkpoint
