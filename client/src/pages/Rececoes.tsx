@@ -210,7 +210,8 @@ export default function Rececoes() {
     armazem: armazemFilter === "all" ? undefined : armazemFilter as "ambiente_secos" | "frio" | "embalagens",
     conformidade: conformidadeFilter === "all" ? undefined : conformidadeFilter as "conforme" | "nao_conforme" | "pendente",
   });
-  const podeTransferirStock = isAuthenticated;
+  const podeOperarRececoes = isAuthenticated && user?.role !== "gestao";
+  const podeTransferirStock = podeOperarRececoes;
   const { data: transferenciasStock, refetch: refetchTransferencias } = trpc.rececoes.transferenciasStock.useQuery(undefined, { enabled: podeTransferirStock });
 
   const upsert = trpc.rececoes.upsert.useMutation({
@@ -382,10 +383,11 @@ export default function Rececoes() {
     if (!rececaoDiretaId || !rececoes) return;
     const rececao = rececoes.find(item => item.id === rececaoDiretaId);
     if (!rececao) return;
-    editarRececao(rececao);
+    if (user?.role === "gestao") setRececaoDetalheId(rececao.id);
+    else editarRececao(rececao);
     setRececaoDiretaId(null);
     window.history.replaceState({}, "", "/rececoes");
-  }, [rececaoDiretaId, rececoes]);
+  }, [rececaoDiretaId, rececoes, user?.role]);
 
   function setControl<K extends keyof ControlosRececao>(key: K, value: ControlosRececao[K]) {
     setForm(current => ({ ...current, controlos: { ...current.controlos, [key]: value } }));
@@ -448,7 +450,7 @@ export default function Rececoes() {
     <SigaLayout
       title="Receções de Matérias-Primas"
       subtitle={`${filteredRececoes.length} de ${rececoes?.length ?? 0} receções no registo`}
-      actions={isAuthenticated ? <div className="flex flex-wrap items-center gap-2">{podeTransferirStock && <Button size="icon" variant="outline" onClick={() => { setTransferenciaForm(emptyTransferenciaStock(user?.name ?? "")); setTransferenciaDialogOpen(true); }} title="Transferir lote" aria-label="Transferir lote"><ArrowRightLeft className="w-4 h-4" /></Button>}<Button size="sm" onClick={abrirNovaRececao} className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova receção</Button></div> : undefined}
+      actions={isAuthenticated ? <div className="flex flex-wrap items-center gap-2">{podeOperarRececoes && podeTransferirStock && <Button size="icon" variant="outline" onClick={() => { setTransferenciaForm(emptyTransferenciaStock(user?.name ?? "")); setTransferenciaDialogOpen(true); }} title="Transferir lote" aria-label="Transferir lote"><ArrowRightLeft className="w-4 h-4" /></Button>}{podeOperarRececoes ? <Button size="sm" onClick={abrirNovaRececao} className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Nova receção</Button> : <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800">Modo de consulta</span>}</div> : undefined}
     >
       <div className="space-y-5">
         <div className="flex items-center gap-2"><ClipboardCheck className="w-4 h-4 text-primary" /><div><p className="text-sm font-semibold">Painel informativo de receções</p><p className="text-xs text-muted-foreground">Consulta disponível para todos os operadores com acesso a Receções.</p></div></div>

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getFichasTecnicasFornecedor, upsertFichaTecnicaFornecedor,
   getFichasTecnicasComAlerta, addAuditLog, atualizarEstadosFichasTecnicas,
@@ -24,7 +24,7 @@ export const fichasTecnicasRouter = router({
     return getFichasTecnicasComAlerta();
   }),
 
-  upsert: protectedProcedure
+  upsert: escritaSemGestaoProcedure
     .input(z.object({
       id: z.number().optional(),
       materiaPrimaId: z.number(),
@@ -53,7 +53,7 @@ export const fichasTecnicasRouter = router({
       return { id };
     }),
 
-  delete: protectedProcedure
+  delete: escritaSemGestaoProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -70,7 +70,7 @@ export const fichasTecnicasRouter = router({
     }),
 
   // Upload de ficheiro FT para S3 — recebe base64 do frontend
-  uploadFicheiro: protectedProcedure
+  uploadFicheiro: escritaSemGestaoProcedure
     .input(z.object({
       ficheiroBase64: z.string(),
       nomeOriginal: z.string(),

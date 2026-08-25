@@ -1432,7 +1432,8 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
   const { data: fichasMp } = trpc.fichasTecnicas.list.useQuery({ materiaPrimaId: mp.id });
   const { data: validacoesMp } = trpc.materiasPrimas.validacoes.useQuery({ mpId: mp.id });
   const utils = trpc.useUtils();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
 
   // Estado para o formulário de upload de FT inline
   const [uploadingFornId, setUploadingFornId] = useState<number | null>(null);
@@ -1689,7 +1690,7 @@ function MPDetalhe({ mp, fornecedorMap }: { mp: any; fornecedorMap: Map<number, 
                       )}
                     </div>
                     {/* Botão e formulário de upload de FT */}
-                    {isAuthenticated && (
+                    {podeGerirDadosMestre && (
                       <div className="pt-1">
                         {uploadingFornId === fp.fornecedorId ? (
                           <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/60">

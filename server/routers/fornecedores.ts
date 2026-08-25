@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getFornecedores, upsertFornecedor, addAuditLog, getDb,
   getDocumentosFornecedor, getDocumentosComAlerta,
@@ -25,7 +25,7 @@ export const fornecedoresRouter = router({
     .query(async ({ input }) => getMpPorFornecedor(input.fornecedorId)),
 
   // Associar MP a um fornecedor (insere ou reactiva a relação N:N)
-  associarMp: protectedProcedure
+  associarMp: escritaSemGestaoProcedure
     .input(z.object({
       fornecedorId: z.number(),
       materiaPrimaId: z.number(),
@@ -62,7 +62,7 @@ export const fornecedoresRouter = router({
     }),
 
   // Remover associação MP-Fornecedor
-  desassociarMp: protectedProcedure
+  desassociarMp: escritaSemGestaoProcedure
     .input(z.object({ fornecedorId: z.number(), materiaPrimaId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -84,7 +84,7 @@ export const fornecedoresRouter = router({
       return { ...result[0], documentos };
     }),
 
-  upsert: protectedProcedure
+  upsert: escritaSemGestaoProcedure
     .input(z.object({
       id: z.number().optional(),
       nome: z.string().min(1),
@@ -140,7 +140,7 @@ export const fornecedoresRouter = router({
       return { id };
     }),
 
-  delete: protectedProcedure
+  delete: escritaSemGestaoProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -164,7 +164,7 @@ export const fornecedoresRouter = router({
 
     alertas: publicProcedure.query(async () => getDocumentosComAlerta()),
 
-    upsert: protectedProcedure
+    upsert: escritaSemGestaoProcedure
       .input(z.object({
         id: z.number().optional(),
         fornecedorId: z.number(),
@@ -193,7 +193,7 @@ export const fornecedoresRouter = router({
         return { id };
       }),
 
-    uploadFicheiro: protectedProcedure
+    uploadFicheiro: escritaSemGestaoProcedure
       .input(z.object({
         ficheiroBase64: z.string(),
         nomeOriginal: z.string(),
@@ -208,7 +208,7 @@ export const fornecedoresRouter = router({
         return { url, key, nomeOriginal: input.nomeOriginal };
       }),
 
-    delete: protectedProcedure
+    delete: escritaSemGestaoProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
         await deleteDocumentoFornecedor(input.id);

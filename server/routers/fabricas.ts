@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, publicProcedure, router } from "../_core/trpc";
 import { getFabricas, getFabricaById, getDb } from "../db";
 import { fabricas } from "../../drizzle/schema";
 import { eq } from "drizzle-orm";
@@ -14,7 +14,7 @@ export const fabricasRouter = router({
     return getFabricaById(input.id);
   }),
 
-  seed: protectedProcedure.mutation(async () => {
+  seed: escritaSemGestaoProcedure.mutation(async () => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     const existing = await getFabricas();

@@ -1,14 +1,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import { z } from "zod";
-import { gestaoAcessosProcedure, router } from "../_core/trpc";
+import { consultaGlobalProcedure, gestaoAcessosProcedure, router } from "../_core/trpc";
 import { addAuditLog, atualizarOperadorPin, criarOperadorPin, getOperadorPinGerivelPorId, getOperadoresPinGeriveis } from "../db";
 
-const perfilSchema = z.enum(["logistica", "qualidade"]);
+const perfilSchema = z.enum(["logistica", "qualidade", "gestao"]);
 const pinSchema = z.string().regex(/^\d{4}$/, "O PIN deve ter quatro dígitos.");
 const hashPin = (pin: string) => createHash("sha256").update(pin).digest("hex");
 
 export const operadoresRouter = router({
-  list: gestaoAcessosProcedure.query(async () => getOperadoresPinGeriveis()),
+  list: consultaGlobalProcedure.query(async () => getOperadoresPinGeriveis()),
 
   criar: gestaoAcessosProcedure
     .input(z.object({ nome: z.string().trim().min(2).max(120), role: perfilSchema, pin: pinSchema }))

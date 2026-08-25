@@ -2,7 +2,7 @@ import { z } from "zod";
 import { qualidadeProcedure, router } from "../_core/trpc";
 import { addAuditLog, atualizarPerfilUtilizador, getUtilizadores } from "../db";
 
-const perfilSchema = z.enum(["logistica", "qualidade"]);
+const perfilSchema = z.enum(["logistica", "qualidade", "gestao"]);
 
 export const utilizadoresRouter = router({
   list: qualidadeProcedure.query(async () => getUtilizadores()),

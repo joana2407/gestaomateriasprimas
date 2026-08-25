@@ -32,7 +32,8 @@ interface IngredienteForm {
 }
 
 export default function Receitas() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
   const [search, setSearch] = useState("");
   const [fabricaFilter, setFabricaFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -138,10 +139,12 @@ export default function Receitas() {
       title="Receitas e Formulações"
       subtitle={`${filtered.length} receitas registadas`}
       actions={
-        isAuthenticated ? (
+        podeGerirDadosMestre ? (
           <Button onClick={openCreate} size="sm" className="gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Nova Receita
           </Button>
+        ) : isAuthenticated ? (
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800">Modo de consulta</span>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )
@@ -198,7 +201,7 @@ export default function Receitas() {
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0" onClick={e => e.stopPropagation()}>
-                    {isAuthenticated && receita.estado === "rascunho" && (
+                    {podeGerirDadosMestre && receita.estado === "rascunho" && (
                       <button
                         onClick={() => aprovarReceita.mutate({ id: receita.id })}
                         className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-200"
@@ -206,7 +209,7 @@ export default function Receitas() {
                         <CheckCircle2 className="w-3 h-3" /> Aprovar
                       </button>
                     )}
-                    {isAuthenticated && (
+                    {podeGerirDadosMestre && (
                       <>
                         <button
                           onClick={() => openEdit(receita.id)}

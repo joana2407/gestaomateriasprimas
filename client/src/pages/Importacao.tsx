@@ -9,7 +9,8 @@ import { CheckCircle2, Database, Download, Factory, Package, Settings, Users } f
 import { Button } from "@/components/ui/button";
 
 export default function Importacao() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
   const [importResult, setImportResult] = useState<any>(null);
   const [seedResult, setSeedResult] = useState<any>(null);
 
@@ -59,14 +60,14 @@ export default function Importacao() {
                   {seedResult.message}
                 </div>
               )}
-              <Button
+              {podeGerirDadosMestre ? <Button
                 onClick={() => seedFabricas.mutate()}
                 disabled={seedFabricas.isPending}
                 className="mt-3"
                 size="sm"
               >
                 {seedFabricas.isPending ? "A criar..." : "Criar Fábricas"}
-              </Button>
+              </Button> : <p className="mt-3 text-xs font-medium text-violet-800">Modo de consulta — criação reservada à Qualidade.</p>}
             </div>
           </div>
         </div>
@@ -105,7 +106,7 @@ export default function Importacao() {
                   <p>{importResult.fornecedores} fornecedores · {importResult.mpFab1 + importResult.mpFab2 + importResult.mpFab3} MP · {importResult.produtosFab1 + importResult.produtosFab2 + importResult.produtosFab3} produtos</p>
                 </div>
               )}
-              <Button
+              {podeGerirDadosMestre ? <Button
                 onClick={() => importar.mutate()}
                 disabled={importar.isPending}
                 className="mt-3"
@@ -113,7 +114,7 @@ export default function Importacao() {
                 variant="outline"
               >
                 {importar.isPending ? "A importar..." : "Importar Dados Excel"}
-              </Button>
+              </Button> : <p className="mt-3 text-xs font-medium text-violet-800">Modo de consulta — importação reservada à Qualidade.</p>}
             </div>
           </div>
         </div>

@@ -54,7 +54,7 @@ function QualidadeRoute({ component: Component }: { component: React.ComponentTy
 function GestaoAcessosRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, loading } = useAuth();
   if (loading) return null;
-  if (!user?.podeGerirAcessos) return <Redirect to="/" />;
+  if (user?.role !== "gestao" && !user?.podeGerirAcessos) return <Redirect to="/" />;
   return <Component />;
 }
 

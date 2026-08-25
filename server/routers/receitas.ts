@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getReceitas, getReceitaById, upsertReceita,
   getIngredientesByReceita, upsertIngrediente,
@@ -23,7 +23,7 @@ export const receitasRouter = router({
       return { ...receita, ingredientes };
     }),
 
-  upsert: protectedProcedure
+  upsert: escritaSemGestaoProcedure
     .input(z.object({
       id: z.number().optional(),
       nome: z.string().min(1),
@@ -47,7 +47,7 @@ export const receitasRouter = router({
       return { id };
     }),
 
-  delete: protectedProcedure
+  delete: escritaSemGestaoProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteReceita(input.id);
@@ -61,7 +61,7 @@ export const receitasRouter = router({
       return { success: true };
     }),
 
-  aprovar: protectedProcedure
+  aprovar: escritaSemGestaoProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();
@@ -81,7 +81,7 @@ export const receitasRouter = router({
       return { success: true };
     }),
 
-  setIngredientes: protectedProcedure
+  setIngredientes: escritaSemGestaoProcedure
     .input(z.object({
       receitaId: z.number(),
       ingredientes: z.array(z.object({

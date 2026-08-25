@@ -667,3 +667,17 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Corrigir o cálculo reativo de validade mínima por fornecedor
 - [x] Mostrar o alerta antes da gravação para qualquer operador
 - [x] Validar o alerta, testes e publicar checkpoint
+
+## Nova funcionalidade — Perfil Gestão com consulta global
+
+- [x] Criar o utilizador PIN Gestão (2403) com perfil de consulta global
+- [x] Permitir navegação e consulta a todos os módulos sem operações de escrita
+- [x] Validar autenticação, bloqueios de escrita, testes e publicação
+
+
+## Nova funcionalidade — Perfil Gestão com consulta global
+
+- [x] Criar o utilizador PIN Gestão (2403) com perfil de consulta global
+- [x] Permitir navegação e consulta a todos os módulos sem operações de escrita
+- [x] Validar autenticação, bloqueios de escrita, testes e publicação
+

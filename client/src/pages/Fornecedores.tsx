@@ -807,6 +807,8 @@ export default function Fornecedores() {
       actions={
         podeGerirDadosMestre ? (
           <Button type="button" onClick={openCreate} size="sm" className="gap-1.5"><Plus className="w-3.5 h-3.5" /> Novo Fornecedor</Button>
+        ) : isAuthenticated ? (
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800">Modo de consulta</span>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )

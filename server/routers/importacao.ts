@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, router } from "../_core/trpc";
 import { getDb, upsertFornecedor, upsertMateriaPrima, upsertProduto, getFabricas, setMpFornecedores } from "../db";
 import { fornecedores, materiasPrimas, produtos } from "../../drizzle/schema";
 
@@ -102,7 +102,7 @@ const DADOS_FAB3 = {
 };
 
 export const importacaoRouter = router({
-  importarDadosExcel: protectedProcedure.mutation(async ({ ctx }) => {
+  importarDadosExcel: escritaSemGestaoProcedure.mutation(async ({ ctx }) => {
     const db = await getDb();
     if (!db) throw new Error("DB not available");
     const fabricasList = await getFabricas();

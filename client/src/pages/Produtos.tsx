@@ -16,7 +16,8 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Produtos() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
   const [search, setSearch] = useState("");
   const [fabricaFilter, setFabricaFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -97,7 +98,7 @@ export default function Produtos() {
       title="Produtos"
       subtitle={`${filtered.length} produtos ativos`}
       actions={
-        isAuthenticated ? (
+        podeGerirDadosMestre ? (
           <div className="flex items-center gap-2">
             <Button onClick={openAssociador} size="sm" variant="outline" className="gap-1.5 bg-background">
               <Link2 className="w-3.5 h-3.5" /> Associar receitas
@@ -106,6 +107,8 @@ export default function Produtos() {
               <Plus className="w-3.5 h-3.5" /> Novo Produto
             </Button>
           </div>
+        ) : isAuthenticated ? (
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800">Modo de consulta</span>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )
@@ -166,7 +169,7 @@ export default function Produtos() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {isAuthenticated && produto.receitaId && (
+                    {podeGerirDadosMestre && produto.receitaId && (
                       <>
                         <button
                           onClick={e => { e.stopPropagation(); calcularPerfil.mutate({ produtoId: produto.id }); }}
@@ -184,7 +187,7 @@ export default function Produtos() {
                         </button>
                       </>
                     )}
-                    {isAuthenticated && (
+                    {podeGerirDadosMestre && (
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         <button
                           onClick={() => {

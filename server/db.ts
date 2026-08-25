@@ -22,6 +22,7 @@ import {
 } from "../drizzle/schema";
 import { documentosFornecedor } from "../drizzle/schema";
 import { calcularQuantidadeDisponivel } from "../shared/transferencia-stock";
+import type { PerfilAcesso } from "../shared/perfis-acesso";
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -67,7 +68,7 @@ export async function getUtilizadores() {
   return db.select().from(users).orderBy(desc(users.lastSignedIn));
 }
 
-export async function atualizarPerfilUtilizador(id: number, role: "logistica" | "qualidade") {
+export async function atualizarPerfilUtilizador(id: number, role: PerfilAcesso) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
@@ -131,7 +132,7 @@ export async function getUtilizadorComPinAtivo(userId: number) {
   return result[0];
 }
 
-export async function criarOperadorPin(data: { openId: string; nome: string; role: "logistica" | "qualidade"; pinHash: string }) {
+export async function criarOperadorPin(data: { openId: string; nome: string; role: PerfilAcesso; pinHash: string }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const userResult = await db.insert(users).values({ openId: data.openId, name: data.nome, loginMethod: "pin", role: data.role });
@@ -140,7 +141,7 @@ export async function criarOperadorPin(data: { openId: string; nome: string; rol
   return { operadorId: (operadorResult[0] as any).insertId as number, userId };
 }
 
-export async function atualizarOperadorPin(operadorId: number, data: { ativo?: boolean; role?: "logistica" | "qualidade"; pinHash?: string; podeGerirAcessos?: boolean }) {
+export async function atualizarOperadorPin(operadorId: number, data: { ativo?: boolean; role?: PerfilAcesso; pinHash?: string; podeGerirAcessos?: boolean }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const operador = await db.select().from(operadoresPin).where(eq(operadoresPin.id, operadorId)).limit(1);

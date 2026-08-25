@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { PERFIL_ACESSO_LABEL, type PerfilAcesso } from "../../../shared/perfis-acesso";
+import { ePerfilGestao, PERFIL_ACESSO_LABEL, type PerfilAcesso } from "../../../shared/perfis-acesso";
 import { contarNotificacoesPendentes } from "../../../shared/notificacoes-pendentes";
 
 const NAV_ITEMS = [
@@ -52,10 +52,11 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
   const { user, isAuthenticated, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isLogistica = user?.role === "logistica";
-  const { data: notificacoes } = trpc.notificacoes.list.useQuery(undefined, { enabled: isAuthenticated && user?.role === "qualidade" });
+  const isGestao = ePerfilGestao(user?.role as PerfilAcesso | undefined);
+  const { data: notificacoes } = trpc.notificacoes.list.useQuery(undefined, { enabled: isAuthenticated && (user?.role === "qualidade" || isGestao) });
   const notificacoesPendentes = contarNotificacoesPendentes(notificacoes);
   const navItemsVisiveis = (isLogistica ? NAV_ITEMS.filter(item => item.href === "/rececoes") : NAV_ITEMS)
-    .filter(item => !item.requiresAccessManagement || user?.podeGerirAcessos);
+    .filter(item => !item.requiresAccessManagement || user?.podeGerirAcessos || isGestao);
   const mobileNavItems = isLogistica
     ? NAV_ITEMS.filter(item => item.href === "/rececoes")
     : NAV_ITEMS.filter(item => ["/", "/rececoes", "/materias-primas"].includes(item.href));
@@ -202,6 +203,12 @@ export function SigaLayout({ children, title, subtitle, actions }: SigaLayoutPro
               <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-sky-200 bg-sky-50 px-3.5 py-3 text-xs text-sky-800">
                 <span><strong>Perfil Logística:</strong> este acesso está autorizado apenas para o módulo de Receções.</span>
                 <button onClick={() => logout()} className="font-semibold text-sky-900 underline underline-offset-2 text-left sm:text-right">Trocar para utilizador de Qualidade</button>
+              </div>
+            )}
+            {isGestao && (
+              <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-violet-200 bg-violet-50 px-3.5 py-3 text-xs text-violet-900">
+                <span><strong>Perfil Gestão:</strong> acesso global de consulta. As alterações ficam reservadas à equipa de Qualidade.</span>
+                <button onClick={() => logout()} className="font-semibold text-violet-950 underline underline-offset-2 text-left sm:text-right">Trocar de utilizador</button>
               </div>
             )}
             {children}

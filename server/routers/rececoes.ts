@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { qualidadeProcedure, rececoesProcedure, router } from "../_core/trpc";
+import { qualidadeProcedure, rececoesOperacaoProcedure, rececoesProcedure, router } from "../_core/trpc";
 import {
   addAuditLog,
   criarNotificacaoQualidade,
@@ -119,7 +119,7 @@ export const rececoesRouter = router({
 
   transferenciasStock: rececoesProcedure.query(() => getTransferenciasStock()),
 
-  transferirStock: rececoesProcedure
+  transferirStock: rececoesOperacaoProcedure
     .input(transferenciaStockInput)
     .mutation(async ({ input, ctx }) => {
       validarTransferenciaStock(input);
@@ -144,7 +144,7 @@ export const rececoesRouter = router({
       return { id };
     }),
 
-  upsert: rececoesProcedure
+  upsert: rececoesOperacaoProcedure
     .input(rececaoInput)
     .mutation(async ({ input, ctx }) => {
       if (input.id) {

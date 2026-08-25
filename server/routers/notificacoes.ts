@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { qualidadeProcedure, router } from "../_core/trpc";
+import { consultaGlobalProcedure, qualidadeProcedure, router } from "../_core/trpc";
 import { getNotificacoesQualidade, marcarNotificacaoQualidade } from "../db";
 
 export const notificacoesRouter = router({
-  list: qualidadeProcedure.query(async () => getNotificacoesQualidade()),
+  list: consultaGlobalProcedure.query(async () => getNotificacoesQualidade()),
 
   marcarLida: qualidadeProcedure
     .input(z.object({ id: z.number(), lida: z.boolean() }))

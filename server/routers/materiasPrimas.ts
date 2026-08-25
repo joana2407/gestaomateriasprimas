@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, qualidadeProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb,
   getMateriasPrimas, getMateriaPrimaById, upsertMateriaPrima,
   deleteMateriaPrima, addAuditLog, getFornecedores,
@@ -44,7 +44,7 @@ export const materiasPrimasRouter = router({
       return { ...mp, fabricasIds: fabricasEstado.map(rel => rel.fabricaId), fabricasEstado, fornecedoresMp };
     }),
 
-  upsert: protectedProcedure
+  upsert: escritaSemGestaoProcedure
     .input(z.object({
       id: z.number().optional(),
       nome: z.string().min(1),
@@ -111,7 +111,7 @@ export const materiasPrimasRouter = router({
       return { id };
     }),
 
-  delete: protectedProcedure
+  delete: escritaSemGestaoProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteMateriaPrima(input.id);
@@ -135,7 +135,7 @@ export const materiasPrimasRouter = router({
       return db.select().from(validacoesMp).where(eq(validacoesMp.mpId, input.mpId)).orderBy(desc(validacoesMp.criadoEm));
     }),
 
-  criarValidacao: protectedProcedure
+  criarValidacao: escritaSemGestaoProcedure
     .input(z.object({ mpId: z.number(), dataValidacao: z.date(), notas: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const db = await getDb();

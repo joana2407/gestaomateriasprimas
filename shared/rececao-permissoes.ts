@@ -1,5 +1,7 @@
+import type { PerfilAcesso } from "./perfis-acesso";
+
 export function podeEditarRececao(params: {
-  role?: "logistica" | "qualidade";
+  role?: PerfilAcesso;
   userId?: number;
   registadoPor?: number | null;
 }) {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { escritaSemGestaoProcedure, publicProcedure, router } from "../_core/trpc";
 import {
   getProdutos, getProdutoById, upsertProduto, deleteProduto,
   getIngredientesByReceita, getMateriasPrimas, getFabricaById,
@@ -25,7 +25,7 @@ export const produtosRouter = router({
       return { ...produto, perfil, fichas };
     }),
 
-  upsert: protectedProcedure
+  upsert: escritaSemGestaoProcedure
     .input(z.object({
       id: z.number().optional(),
       nome: z.string().min(1),
@@ -53,7 +53,7 @@ export const produtosRouter = router({
       return { id };
     }),
 
-  associarReceita: protectedProcedure
+  associarReceita: escritaSemGestaoProcedure
     .input(z.object({ produtoId: z.number(), receitaId: z.number().nullable() }))
     .mutation(async ({ input, ctx }) => {
       const produto = await getProdutoById(input.produtoId);
@@ -77,7 +77,7 @@ export const produtosRouter = router({
       return { produtoId: input.produtoId, receitaId: input.receitaId };
     }),
 
-  delete: protectedProcedure
+  delete: escritaSemGestaoProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       await deleteProduto(input.id);
@@ -91,7 +91,7 @@ export const produtosRouter = router({
       return { success: true };
     }),
 
-  calcularEGuardarPerfil: protectedProcedure
+  calcularEGuardarPerfil: escritaSemGestaoProcedure
     .input(z.object({ produtoId: z.number(), equipamento: z.string().optional() }))
     .mutation(async ({ input, ctx }) => {
       const produto = await getProdutoById(input.produtoId);
@@ -121,7 +121,7 @@ export const produtosRouter = router({
       return { perfilId, perfil, formulacao, contaminacao };
     }),
 
-  gerarFTP: protectedProcedure
+  gerarFTP: escritaSemGestaoProcedure
     .input(z.object({ produtoId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const produto = await getProdutoById(input.produtoId);

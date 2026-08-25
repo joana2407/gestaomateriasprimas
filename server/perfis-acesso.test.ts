@@ -3,10 +3,10 @@ import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 import { temAcessoQualidade } from "../shared/perfis-acesso";
 
-function criarContexto(role: "logistica" | "qualidade", podeGerirAcessos = false): TrpcContext {
+function criarContexto(role: "logistica" | "qualidade" | "gestao", podeGerirAcessos = false): TrpcContext {
   const now = new Date();
   return {
-    user: { id: role === "qualidade" ? 1 : 2, openId: `teste-${role}`, name: "Teste", email: null, loginMethod: "teste", role, podeGerirAcessos, createdAt: now, updatedAt: now, lastSignedIn: now },
+    user: { id: role === "qualidade" ? 1 : role === "gestao" ? 3 : 2, openId: `teste-${role}`, name: "Teste", email: null, loginMethod: "teste", role, podeGerirAcessos, createdAt: now, updatedAt: now, lastSignedIn: now },
     req: {} as TrpcContext["req"],
     res: {} as TrpcContext["res"],
   };
@@ -43,9 +43,14 @@ describe("perfis Logística e Qualidade", () => {
     await expect(caller.operadores.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("bloqueia a gestão de operadores a Qualidade sem delegação de acesso", async () => {
+  it("permite à Qualidade consultar a lista de operadores sem delegação de administração", async () => {
     const caller = appRouter.createCaller(criarContexto("qualidade"));
-    await expect(caller.operadores.list()).rejects.toMatchObject({ code: "FORBIDDEN" });
+    await expect(caller.operadores.list()).resolves.toBeInstanceOf(Array);
+  });
+
+  it("permite à Gestão consultar a lista de operadores sem poderes de alteração", async () => {
+    const caller = appRouter.createCaller(criarContexto("gestao"));
+    await expect(caller.operadores.list()).resolves.toBeInstanceOf(Array);
   });
 
   it("permite à Responsável de Qualidade consultar a gestão de operadores", async () => {

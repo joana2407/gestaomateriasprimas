@@ -2,6 +2,7 @@ import { SigaLayout } from "@/components/SigaLayout";
 import { ValidityBadge } from "@/components/ValidityBadge";
 import { FactoryBadge } from "@/components/FactoryBadge";
 import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import {
   AlertTriangle, ArrowRight, BarChart3, CheckCircle2,
@@ -59,6 +60,8 @@ function AlertRow({ ft, fabricas }: { ft: any; fabricas: any[] }) {
 }
 
 export default function Dashboard() {
+  const { user } = useAuth();
+  const podeGerirDadosMestre = user?.role === "qualidade";
   const { data: stats, isLoading, refetch } = trpc.dashboard.stats.useQuery();
   const { data: fabricas } = trpc.fabricas.list.useQuery();
   const { data: alertas } = trpc.fichasTecnicas.alertas.useQuery();
@@ -329,8 +332,8 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Ações rápidas */}
-        <div className="card-elegant p-6">
+        {/* Ações rápidas — apenas para perfis com escrita */}
+        {podeGerirDadosMestre ? <div className="card-elegant p-6">
           <h2 className="text-sm font-semibold text-foreground mb-4">Ações Rápidas</h2>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {[
@@ -350,7 +353,7 @@ export default function Dashboard() {
               </Link>
             ))}
           </div>
-        </div>
+        </div> : <div className="card-elegant border-violet-200 bg-violet-50/50 p-5"><p className="text-sm font-semibold text-violet-950">Modo de consulta ativo</p><p className="mt-1 text-xs text-violet-800">Pode consultar todos os módulos do SIGA. A criação, edição, eliminação e validação permanecem reservadas à equipa de Qualidade.</p></div>}
       </div>
     </SigaLayout>
   );

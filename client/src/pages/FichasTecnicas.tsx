@@ -37,7 +37,8 @@ const EMPTY_FT: FTForm = {
 };
 
 export default function FichasTecnicas() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const podeGerirDadosMestre = isAuthenticated && user?.role === "qualidade";
   const [search, setSearch] = useState("");
   const [estadoFilter, setEstadoFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -135,10 +136,12 @@ export default function FichasTecnicas() {
       title="Fichas Técnicas de Fornecedor"
       subtitle="Controlo de validade e gestão de FT de matérias-primas"
       actions={
-        isAuthenticated ? (
+        podeGerirDadosMestre ? (
           <Button onClick={() => { setForm(EMPTY_FT); setUploadedFile(null); setDialogOpen(true); }} size="sm" className="gap-1.5">
             <Plus className="w-3.5 h-3.5" /> Nova FT
           </Button>
+        ) : isAuthenticated ? (
+          <span className="rounded-full border border-violet-200 bg-violet-50 px-3 py-1.5 text-xs font-medium text-violet-800">Modo de consulta</span>
         ) : (
           <Button onClick={() => startLogin()} size="sm" variant="outline">Iniciar Sessão</Button>
         )
@@ -248,7 +251,7 @@ export default function FichasTecnicas() {
                     </a>
                   )}
                   <ValidityBadge dataValidade={ft.dataValidade} />
-                  {isAuthenticated && (
+                  {podeGerirDadosMestre && (
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <button className="p-1.5 rounded-md hover:bg-red-100 hover:text-red-600 transition-colors opacity-60 hover:opacity-100">
