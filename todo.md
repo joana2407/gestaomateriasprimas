@@ -687,6 +687,6 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Analisar o anexo e confirmar fontes públicas/oficiais do RASFF
 - [x] Definir critérios de correspondência com MP, fornecedores, fábricas e origens
 - [x] Criar painel, histórico e relatório semanal descarregável
-- [ ] Configurar execução recorrente às segundas-feiras às 07:00
-- [ ] Validar testes, cobertura, limitações e publicação
+- [x] Configurar execução recorrente às segundas-feiras às 07:00
+- [x] Validar testes, cobertura, limitações e publicação
 
