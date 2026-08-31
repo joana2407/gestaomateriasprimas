@@ -845,3 +845,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Testar o armazenamento com mais de 100 fontes
 - [x] Validar ocorrências, testes e publicação
 
+
+## Correção — Prioridade informativa e edição isolada RASFF
+
+- [x] Impedir ação direta quando a prioridade é Informativa
+- [x] Garantir que a edição de prioridade altera apenas o alerta selecionado
+- [x] Isolar aprendizagem/sugestão por alerta e validar testes/publicação
+
