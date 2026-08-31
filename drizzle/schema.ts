@@ -344,11 +344,13 @@ export type RececaoMateriaPrima = typeof rececoesMateriasPrimas.$inferSelect;
 // ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────
 export const notificacoesQualidade = mysqlTable("notificacoes_qualidade", {
   id: int("id").autoincrement().primaryKey(),
-  tipo: mysqlEnum("tipo", ["rececao_observacoes", "rececao_validacao_condicional"]).default("rececao_observacoes").notNull(),
+  tipo: mysqlEnum("tipo", ["rececao_observacoes", "rececao_validacao_condicional", "rasff_relevante"]).default("rececao_observacoes").notNull(),
   titulo: varchar("titulo", { length: 255 }).notNull(),
   mensagem: text("mensagem").notNull(),
   link: varchar("link", { length: 1000 }).notNull(),
   rececaoId: int("rececao_id").references(() => rececoesMateriasPrimas.id),
+  rasffRelatorioId: int("rasff_relatorio_id").references(() => rasffRelatorios.id),
+  rasffChave: varchar("rasff_chave", { length: 180 }),
   lida: boolean("lida").default(false).notNull(),
   lidaEm: timestamp("lida_em"),
   criadaEm: timestamp("criada_em").defaultNow().notNull(),

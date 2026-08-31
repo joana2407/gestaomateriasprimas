@@ -697,3 +697,27 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Guardar e apresentar cada relatório com o número da semana
 - [x] Atualizar o agente, testar e publicar a alteração
 
+
+## Melhoria — Alertas internos para RASFF relevante
+
+- [x] Criar alerta interno para cada ocorrência RASFF potencialmente relevante para MP, fornecedor ou origem
+- [x] Evitar duplicados e ligar o alerta ao relatório semanal e à ocorrência correspondente
+- [x] Mostrar a relevância no centro de notificações e no relatório semanal
+
+
+## Melhoria — Análise de ficheiro RASFF
+
+- [x] Definir formatos suportados, limites e campos reconhecidos
+- [x] Implementar carregamento seguro e análise estruturada de vários alertas
+- [x] Gerar resumo, correspondências e alertas internos para a Qualidade
+- [x] Adicionar upload, resultados e download do resumo no painel RASFF
+- [x] Validar testes, segurança e publicação
+
+
+## Melhoria — Metodologia e fontes da vigilância RASFF
+
+- [x] Explicar a metodologia de leitura, filtragem, cruzamento e classificação
+- [x] Apresentar a matriz de relevância por categoria, perigo e relação com MP/origem
+- [x] Mostrar as fontes oficiais e limitações de cobertura no painel e no relatório
+- [x] Validar a interface e publicar a melhoria
+

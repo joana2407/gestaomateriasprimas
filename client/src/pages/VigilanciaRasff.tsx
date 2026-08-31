@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { AlertTriangle, CalendarClock, CheckCircle2, Download, FileSearch, Play, ShieldCheck } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertTriangle, CalendarClock, CheckCircle2, Download, ExternalLink, FileSearch, FileText, Info, Play, ShieldCheck, Table2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,30 @@ const statusClass: Record<string, string> = {
   sem_dados: "bg-slate-50 text-slate-700 border-slate-200",
   erro: "bg-red-50 text-red-700 border-red-200",
 };
+
+type ManualResultado = { linha: string; relevancia: "Direta" | "Indireta" | "Informativa"; correspondencias: string[] };
+
+function extrairLinhasFicheiro(texto: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(texto);
+    const items = Array.isArray(parsed) ? parsed : [parsed];
+    return items.map(item => typeof item === "string" ? item : JSON.stringify(item)).filter(Boolean);
+  } catch {
+    return texto.split(/\r?\n/).map(linha => linha.trim()).filter(linha => linha.length > 2);
+  }
+}
+
+function analisarFicheiro(texto: string, materiasPrimas: Array<Record<string, unknown>>): ManualResultado[] {
+  return extrairLinhasFicheiro(texto).slice(0, 500).map(linha => {
+    const normalizada = linha.toLocaleLowerCase("pt-PT");
+    const correspondencias = materiasPrimas.flatMap(mp => {
+      const termos = [mp.nome, mp.codigo, mp.origem, mp.fornecedorNome, mp.paisOrigemFornecedor].filter(value => typeof value === "string" && value.trim().length > 2) as string[];
+      return termos.some(termo => normalizada.includes(termo.toLocaleLowerCase("pt-PT"))) ? [String(mp.nome ?? mp.codigo ?? "MP") ] : [];
+    }).filter((value, index, values) => values.indexOf(value) === index);
+    const relevancia = correspondencias.some(Boolean) ? "Direta" : /farinha|trigo|centeio|pellet|chocolate|cacau|noz|amêndoa|amendoa|avelã|fruta|ovo|leite|alerg|salmonella|aflatox|micotox|pesticida|sulfito/i.test(normalizada) ? "Indireta" : "Informativa";
+    return { linha, relevancia, correspondencias };
+  });
+}
 
 function downloadMarkdown(content: string, fileName: string) {
   const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
@@ -42,7 +66,32 @@ export default function VigilanciaRasff() {
   const categorias = (Array.isArray(config?.categorias) ? config.categorias : []) as string[];
   const perigos = (Array.isArray(config?.perigos) ? config.perigos : []) as string[];
   const reports = reportsQuery.data ?? [];
+  const contextoQuery = trpc.rasff.contexto.useQuery(undefined, { staleTime: 60_000 });
+  const [manualFile, setManualFile] = useState<{ name: string; results: ManualResultado[] } | null>(null);
+  const [manualBusy, setManualBusy] = useState(false);
   const relevantCount = useMemo(() => reports.reduce((sum, report) => sum + (report.totalRelevantes ?? 0), 0), [reports]);
+  const manualSummary = useMemo(() => {
+    if (!manualFile) return "";
+    const diretas = manualFile.results.filter(item => item.relevancia === "Direta").length;
+    const indiretas = manualFile.results.filter(item => item.relevancia === "Indireta").length;
+    return `# Resumo de análise RASFF — ${manualFile.name}\n\n- Alertas/linhas analisados: ${manualFile.results.length}\n- Correspondências diretas com MP do SIGA: ${diretas}\n- Correspondências indiretas/setoriais: ${indiretas}\n- Período de análise: ficheiro fornecido pela Qualidade\n\n## Resultados\n\n${manualFile.results.map((item, index) => `${index + 1}. **${item.relevancia}** — ${item.linha}${item.correspondencias.length ? `\\n   - MP correspondentes: ${item.correspondencias.join(", ")}` : ""}`).join("\\n")}`;
+  }, [manualFile]);
+
+  const handleManualFile = (file: File | undefined) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("O ficheiro não pode exceder 5 MB."); return; }
+    setManualBusy(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const texto = typeof reader.result === "string" ? reader.result : "";
+      const materias = (contextoQuery.data?.materiasPrimas ?? []) as Array<Record<string, unknown>>;
+      setManualFile({ name: file.name, results: analisarFicheiro(texto, materias) });
+      setManualBusy(false);
+      toast.success("Ficheiro analisado. Reveja as correspondências antes de tomar decisões.");
+    };
+    reader.onerror = () => { setManualBusy(false); toast.error("Não foi possível ler o ficheiro."); };
+    reader.readAsText(file);
+  };
 
   return (
     <SigaLayout title="Vigilância RASFF" subtitle="Monitorização de alertas relevantes para MP, fornecedores e origens">
@@ -73,6 +122,26 @@ export default function VigilanciaRasff() {
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categorias monitorizadas</p><div className="flex flex-wrap gap-2">{categorias.map(category => <Badge key={String(category)} variant="secondary" className="font-normal">{String(category)}</Badge>)}</div></div>
             <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Perigos prioritários</p><div className="flex flex-wrap gap-2">{perigos.slice(0, 7).map(hazard => <Badge key={String(hazard)} variant="outline" className="font-normal">{String(hazard)}</Badge>)}</div><p className="mt-3 text-xs text-muted-foreground">A consulta pública não expõe marcas ou operadores económicos; uma correspondência deve ser confirmada pela Qualidade.</p></div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Analisar ficheiro RASFF</CardTitle><p className="mt-1 text-sm text-muted-foreground">Carregue um CSV, JSON, TXT ou HTML exportado para obter um resumo local e cruzar o conteúdo com as MP, fornecedores e origens do SIGA.</p></div><label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"><Upload className="mr-2 h-4 w-4" /> {manualBusy ? "A analisar…" : "Carregar ficheiro"}<input className="sr-only" type="file" accept=".csv,.json,.txt,.html,.htm,text/csv,application/json,text/plain,text/html" disabled={manualBusy} onChange={event => { handleManualFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label></CardHeader>
+          <CardContent>{manualFile ? <div className="space-y-4"><div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-emerald-900">{manualFile.name}</p><p className="mt-1 text-xs text-emerald-800">{manualFile.results.length} linhas/alertas analisados · {manualFile.results.filter(item => item.relevancia === "Direta").length} diretos · {manualFile.results.filter(item => item.relevancia === "Indireta").length} indiretos</p></div><Button variant="outline" size="sm" onClick={() => downloadMarkdown(manualSummary, `resumo-rasff-${manualFile.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`)}><Download className="mr-2 h-4 w-4" /> Descarregar resumo</Button></div><div className="max-h-80 space-y-2 overflow-y-auto">{manualFile.results.map((item, index) => <div key={`${index}-${item.linha}`} className="rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className={item.relevancia === "Direta" ? "border-red-200 bg-red-50 text-red-700" : item.relevancia === "Indireta" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-600"}>{item.relevancia}</Badge>{item.correspondencias.map(match => <Badge key={match} variant="secondary">MP: {match}</Badge>)}</div><p className="mt-2 break-words text-xs leading-5 text-slate-600">{item.linha}</p></div>)}</div><p className="text-xs leading-5 text-muted-foreground">Esta análise manual é uma triagem local e não cria uma decisão de conformidade. Confirme os resultados pela Qualidade e conserve o ficheiro original segundo o procedimento documental aplicável.</p></div> : <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Ainda não foi carregado um ficheiro. O processamento ocorre no navegador e limita-se a 5 MB.</div>}</CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5 text-primary" /> Metodologia e critérios de relevância</CardTitle><p className="mt-1 text-sm text-muted-foreground">A análise é uma triagem documentada para apoiar a decisão da Qualidade; não substitui a confirmação oficial junto das autoridades ou do fornecedor.</p></CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-3 md:grid-cols-5">
+              {[['1','Delimitar','Semana civil: domingo 00:00 a sábado 23:59.'],['2','Ler fontes','Pesquisar RASFF Window e fontes oficiais.'],['3','Filtrar','Aplicar categorias e perigos da matriz.'],['4','Cruzar','Comparar MP, fornecedor e origem do SIGA.'],['5','Decidir','Classificar e encaminhar para a Qualidade.']].map(([number, title, description]) => <div key={number} className="rounded-xl border bg-slate-50/70 p-3"><div className="mb-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{number}</div><p className="text-sm font-semibold text-slate-800">{title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{description}</p></div>)}
+            </div>
+            <div className="overflow-x-auto rounded-xl border">
+              <table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Âmbito da matriz</th><th className="px-4 py-3">Perigos acompanhados</th><th className="px-4 py-3">Regra de relevância</th></tr></thead><tbody className="divide-y"><tr><td className="px-4 py-3 font-medium">Cereais e produtos de padaria</td><td className="px-4 py-3 text-slate-600">Micotoxinas, alergénios não declarados, Salmonella, pesticidas, óxido de etileno e metais pesados</td><td className="px-4 py-3 text-slate-600">Alta quando coincide com MP, fornecedor ou origem; indireta quando é da mesma família de ingrediente</td></tr><tr><td className="px-4 py-3 font-medium">Frutos de casca rija, sementes, frutas desidratadas e cacau/chocolate</td><td className="px-4 py-3 text-slate-600">Aflatoxinas, Salmonella, pesticidas, sulfitos, alergénios e contaminantes químicos</td><td className="px-4 py-3 text-slate-600">Alta para correspondência de ingrediente/origem; revisão reforçada em MP compostas</td></tr><tr><td className="px-4 py-3 font-medium">Leite, ovos, aditivos, aromas e materiais em contacto</td><td className="px-4 py-3 text-slate-600">Alergénios, uso não autorizado, resíduos e migração</td><td className="px-4 py-3 text-slate-600">Informativa por defeito; sobe para direta quando há correspondência interna verificável</td></tr></tbody></table>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3"><div className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="text-sm font-semibold text-red-800">Direta · ação prioritária</p><p className="mt-1 text-xs leading-5 text-red-700">O alerta contém nome, código, fornecedor ou país/região que coincide com o contexto interno. Abrir a notificação, bloquear/segregar preventivamente quando aplicável e confirmar com a Qualidade.</p></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-sm font-semibold text-amber-800">Indireta · revisão dirigida</p><p className="mt-1 text-xs leading-5 text-amber-700">Não há correspondência exata, mas existe relação por família de ingrediente ou perigo. Verificar fornecedores e origens antes de concluir.</p></div><div className="rounded-xl border border-slate-200 bg-slate-50 p-4"><p className="text-sm font-semibold text-slate-800">Informativa · monitorização</p><p className="mt-1 text-xs leading-5 text-slate-600">Alerta setorial sem ligação identificada ao contexto do SIGA. Fica registado para tendência e revisão periódica.</p></div></div>
+            <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-4"><div className="mb-3 flex items-center gap-2 text-sm font-semibold text-blue-900"><Table2 className="h-4 w-4" /> Fontes de leitura de dados</div><div className="grid gap-3 md:grid-cols-3"><a className="rounded-lg bg-white/80 p-3 text-sm text-blue-800 underline-offset-2 hover:underline" href="https://webgate.ec.europa.eu/rasff-window/screen/search" target="_blank" rel="noreferrer"><span className="flex items-center gap-2 font-medium">RASFF Window — pesquisa pública <ExternalLink className="h-3.5 w-3.5" /></span><span className="mt-1 block text-xs text-slate-600">Notificações públicas desde 2020; sem detalhes comerciais completos.</span></a><a className="rounded-lg bg-white/80 p-3 text-sm text-blue-800 underline-offset-2 hover:underline" href="https://webgate.ec.europa.eu/rasff-window/screen/consumers" target="_blank" rel="noreferrer"><span className="flex items-center gap-2 font-medium">Portal do consumidor RASFF <ExternalLink className="h-3.5 w-3.5" /></span><span className="mt-1 block text-xs text-slate-600">Recolhas e avisos simplificados de saúde pública.</span></a><a className="rounded-lg bg-white/80 p-3 text-sm text-blue-800 underline-offset-2 hover:underline" href="https://food.ec.europa.eu/food-safety/rasff_en" target="_blank" rel="noreferrer"><span className="flex items-center gap-2 font-medium">Comissão Europeia — RASFF <ExternalLink className="h-3.5 w-3.5" /></span><span className="mt-1 block text-xs text-slate-600">Enquadramento, finalidade e base legal do sistema.</span></a></div></div>
+            <p className="text-xs leading-5 text-muted-foreground">Limitação importante: a consulta pública é uma ferramenta de triagem. Quando não expõe operador, marca ou lote, o agente não pode confirmar sozinho que o alerta afeta uma MP específica; nesse caso, o resultado é marcado para validação da Qualidade.</p>
           </CardContent>
         </Card>
 

@@ -53,7 +53,10 @@ export async function handleRasffScheduled(req: Request, res: Response) {
         eq(rasffRelatorios.codigoSemana, semana.codigo),
       ))
       .limit(1);
-    if (existing[0]) return res.json({ ok: true, duplicate: true, reportId: existing[0].id });
+    if (existing[0]) {
+      const notificacoesCriadas = await db.criarNotificacoesRasffRelevantes(existing[0].id, input.ocorrencias, semana.codigo);
+      return res.json({ ok: true, duplicate: true, reportId: existing[0].id, notificacoesCriadas });
+    }
 
     const report = await db.criarRasffRelatorio({
       vigilanciaId: config.id,
@@ -73,7 +76,10 @@ export async function handleRasffScheduled(req: Request, res: Response) {
       erro: input.erro ?? null,
       geradoPor: null,
     });
-    return res.json({ ok: true, reportId: report?.id ?? null });
+    const notificacoesCriadas = report?.id
+      ? await db.criarNotificacoesRasffRelevantes(report.id, input.ocorrencias, semana.codigo)
+      : 0;
+    return res.json({ ok: true, reportId: report?.id ?? null, notificacoesCriadas });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return res.status(500).json({

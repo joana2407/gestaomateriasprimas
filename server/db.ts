@@ -948,6 +948,51 @@ export async function criarRasffRelatorio(input: typeof rasffRelatorios.$inferIn
   return rows[0] ?? null;
 }
 
+export async function criarNotificacoesRasffRelevantes(reportId: number, ocorrencias: unknown[], codigoSemana: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  let criadas = 0;
+  for (const [index, raw] of Array.from(ocorrencias.entries())) {
+    if (!raw || typeof raw !== "object") continue;
+    const ocorrencia = raw as Record<string, unknown>;
+    const classificacao = String(ocorrencia.classificacao ?? ocorrencia.relevancia ?? ocorrencia.nivel ?? "").trim().toLowerCase();
+    const correspondencias = Array.isArray(ocorrencia.correspondencias) ? ocorrencia.correspondencias : [];
+    const relevante = ocorrencia.relevante === true
+      || ocorrencia.potencialmenteRelevante === true
+      || ["direta", "indireta", "alta", "média", "media", "potencialmente relevante"].includes(classificacao)
+      || correspondencias.length > 0;
+    if (!relevante || classificacao === "informativa") continue;
+
+    const chaveBase = ocorrencia.chave ?? ocorrencia.id ?? ocorrencia.numeroNotificacao ?? ocorrencia.numero ?? `${index}-${ocorrencia.titulo ?? ocorrencia.produto ?? "rasff"}`;
+    const chave = String(chaveBase).slice(0, 180);
+    const existing = await db.select({ id: notificacoesQualidade.id })
+      .from(notificacoesQualidade)
+      .where(and(
+        eq(notificacoesQualidade.tipo, "rasff_relevante"),
+        eq(notificacoesQualidade.rasffRelatorioId, reportId),
+        eq(notificacoesQualidade.rasffChave, chave),
+      ))
+      .limit(1);
+    if (existing[0]) continue;
+
+    const titulo = String(ocorrencia.titulo ?? ocorrencia.produto ?? "Alerta RASFF potencialmente relevante").slice(0, 255);
+    const descricao = String(ocorrencia.resumo ?? ocorrencia.mensagem ?? ocorrencia.perigo ?? "Foi identificada uma possível correspondência com o contexto de matérias-primas do SIGA.").slice(0, 3000);
+    const matches = correspondencias.length > 0 ? `\n\nCorrespondências: ${correspondencias.map(item => String(item)).join(", ").slice(0, 1200)}` : "";
+    await db.insert(notificacoesQualidade).values({
+      tipo: "rasff_relevante",
+      titulo: `RASFF ${codigoSemana}: ${titulo}`.slice(0, 255),
+      mensagem: `${descricao}${matches}\n\nRever no relatório semanal e confirmar pela Qualidade.`.slice(0, 5000),
+      link: `/vigilancia-rasff?rasffRelatorioId=${reportId}`,
+      rasffRelatorioId: reportId,
+      rasffChave: chave,
+      lida: false,
+      lidaEm: null,
+    });
+    criadas += 1;
+  }
+  return criadas;
+}
+
 export async function getRasffContexto() {
   const db = await getDb();
   if (!db) return { materiasPrimas: [] };
