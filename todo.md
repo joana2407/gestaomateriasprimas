@@ -801,3 +801,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Aplicar a prioridade editada à lista, filtros, resumo e Excel
 - [x] Validar segurança, testes e publicação
 
+
+## Melhoria — Confiança das sugestões IA RASFF
+
+- [x] Acrescentar confiança estruturada na resposta do assistente IA
+- [x] Mostrar indicador visual e legenda de confiança por sugestão
+- [x] Validar testes, interface e publicação
+

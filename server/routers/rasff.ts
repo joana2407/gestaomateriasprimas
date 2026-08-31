@@ -83,11 +83,12 @@ export const rasffRouter = router({
         { role: "system", content: "És um assistente de triagem RASFF para uma indústria de panificação e pastelaria. Sugere uma prioridade, mas nunca substituis a decisão da Qualidade. Considera perigos, categoria de produto, origem e potencial impacto na cadeia. Responde exclusivamente no formato JSON solicitado." },
         { role: "user", content: `Prioridade automática atual: ${input.prioridadeAtual}\\nExemplos de categorizações aprovadas pela Qualidade:\\n${exemplos}\\n\\nAlerta a classificar:\\n${input.linha}` },
       ],
-      response_format: { type: "json_schema", json_schema: { name: "rasff_priority", strict: true, schema: { type: "object", properties: { prioridade: { type: "string", enum: ["Alta", "Média", "Baixa", "Informativa"] }, fundamento: { type: "string" } }, required: ["prioridade", "fundamento"], additionalProperties: false } } },
+      response_format: { type: "json_schema", json_schema: { name: "rasff_priority", strict: true, schema: { type: "object", properties: { prioridade: { type: "string", enum: ["Alta", "Média", "Baixa", "Informativa"] }, fundamento: { type: "string" }, confianca: { type: "number", minimum: 0, maximum: 100 } }, required: ["prioridade", "fundamento", "confianca"], additionalProperties: false } } },
     });
     const content = resposta.choices?.[0]?.message?.content;
     if (typeof content !== "string") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "O assistente não devolveu uma sugestão válida." });
-    try { return JSON.parse(content) as { prioridade: string; fundamento: string }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível interpretar a sugestão do assistente." }); }
+    try { const resultado = JSON.parse(content) as { prioridade: string; fundamento: string; confianca: number };
+      return { ...resultado, confianca: Math.max(0, Math.min(100, Math.round(resultado.confianca))) }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível interpretar a sugestão do assistente." }); }
   }),
 
   relatorio: consultaGlobalProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
