@@ -764,3 +764,17 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Abrir a fonte original ao selecionar um alerta, em novo separador
 - [x] Indicar claramente quando não existe URL e validar testes/publicação
 
+
+## Melhoria — Filtro por número de alerta RASFF
+
+- [x] Extrair e apresentar o número do alerta RASFF quando reconhecido
+- [x] Filtrar resultados pelo número do alerta
+- [x] Incluir o número no resumo e na exportação Excel e validar publicação
+
+
+## Correção — Alertas RASFF ausentes no filtro de agosto
+
+- [x] Reproduzir a análise mensal de agosto e identificar a causa
+- [x] Corrigir parsing de datas e filtragem sem perder alertas
+- [x] Mostrar aviso explícito para datas não reconhecidas e validar publicação
+
