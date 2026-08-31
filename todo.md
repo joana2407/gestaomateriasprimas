@@ -822,3 +822,19 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Pesquisar conteúdo, número, prioridade, MP e origem em simultâneo
 - [x] Atualizar limpeza, exportação Excel e validar testes/publicação
 
+
+## Correção — Arquivo integral e histórico de análises manuais RASFF
+
+- [x] Identificar porque algumas linhas/alertas do ficheiro não são apresentadas
+- [x] Mostrar contagem total, reconhecidos, não reconhecidos e filtrados sem ocultação silenciosa
+- [x] Guardar análises manuais no histórico com nome do ficheiro e período
+- [x] Permitir consultar e descarregar análises manuais arquivadas
+- [x] Validar persistência, testes, interface e publicação
+
+
+## Correção — Estado do fluxo semanal RASFF
+
+- [x] Confirmar o estado real da tarefa agendada e o identificador configurado
+- [x] Corrigir a indicação “Ainda não ativado” no painel
+- [x] Validar atualização do estado, testes e publicação
+

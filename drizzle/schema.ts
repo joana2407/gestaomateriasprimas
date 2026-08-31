@@ -411,6 +411,8 @@ export const rasffRelatorios = mysqlTable("rasff_relatorios", {
   numeroSemana: int("numero_semana").notNull(),
   codigoSemana: varchar("codigo_semana", { length: 20 }).notNull(),
   nomeFicheiro: varchar("nome_ficheiro", { length: 180 }).notNull(),
+  origem: mysqlEnum("origem", ["semanal", "manual"]).notNull().default("semanal"),
+  ficheiroOrigem: varchar("ficheiro_origem", { length: 255 }),
   estado: mysqlEnum("estado", ["sucesso", "sem_dados", "erro"]).notNull(),
   totalAvaliados: int("total_avaliados").default(0).notNull(),
   totalRelevantes: int("total_relevantes").default(0).notNull(),

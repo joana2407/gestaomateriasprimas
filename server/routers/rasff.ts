@@ -91,6 +91,44 @@ export const rasffRouter = router({
       return { ...resultado, confianca: Math.max(0, Math.min(100, Math.round(resultado.confianca))) }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível interpretar a sugestão do assistente." }); }
   }),
 
+  guardarAnaliseManual: qualidadeProcedure.input(z.object({
+    ficheiro: z.string().min(1).max(255),
+    periodoInicio: z.string().datetime().optional(),
+    periodoFim: z.string().datetime().optional(),
+    totalAvaliados: z.number().int().nonnegative().max(5000),
+    totalRelevantes: z.number().int().nonnegative().max(5000),
+    resumo: z.string().min(1).max(10000),
+    ocorrencias: z.array(z.unknown()).max(10000).default([]),
+    fontes: z.array(z.string().url()).max(100).default([]),
+  })).mutation(async ({ ctx, input }) => {
+    const agora = new Date();
+    const inicio = input.periodoInicio ? new Date(input.periodoInicio) : new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const fim = input.periodoFim ? new Date(input.periodoFim) : agora;
+    const codigo = `MANUAL-${agora.getUTCFullYear()}${String(agora.getUTCMonth() + 1).padStart(2, "0")}${String(agora.getUTCDate()).padStart(2, "0")}-${String(agora.getUTCHours()).padStart(2, "0")}${String(agora.getUTCMinutes()).padStart(2, "0")}`;
+    const nomeSeguro = input.ficheiro.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 120) || "ficheiro";
+    const report = await dbHelpers.criarRasffRelatorio({
+      vigilanciaId: 1,
+      periodoInicio: inicio,
+      periodoFim: fim,
+      anoSemana: agora.getUTCFullYear(),
+      numeroSemana: 0,
+      codigoSemana: codigo.slice(0, 20),
+      nomeFicheiro: `analise-manual-${nomeSeguro}.xlsx`.slice(0, 180),
+      origem: "manual",
+      ficheiroOrigem: input.ficheiro,
+      estado: "sucesso",
+      totalAvaliados: input.totalAvaliados,
+      totalRelevantes: input.totalRelevantes,
+      resumo: input.resumo,
+      conteudoMarkdown: input.resumo,
+      ocorrencias: input.ocorrencias,
+      fontes: input.fontes,
+      geradoPor: ctx.user.id,
+    });
+    if (!report) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível guardar a análise manual no histórico." });
+    return report;
+  }),
+
   relatorio: consultaGlobalProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
     const database = await dbHelpers.getDb();
     if (!database) return null;
