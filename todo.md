@@ -785,3 +785,19 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Aplicar o filtro à lista, resumo e exportação Excel
 - [x] Validar a pesquisa, limpar filtros, testes e publicação
 
+
+## Melhoria — Ordenação cronológica dos alertas RASFF
+
+- [x] Ordenar os resultados por data do alerta, do mais recente para o mais antigo
+- [x] Colocar alertas sem data reconhecida no final da lista
+- [x] Aplicar a ordem ao resumo e Excel e validar publicação
+
+
+## Melhoria — Prioridades RASFF editáveis e aprendizagem assistida
+
+- [x] Permitir à Qualidade editar a prioridade de cada alerta
+- [x] Guardar aprendizagem local das alterações de prioridade; auditoria central de utilizador fica para evolução futura
+- [x] Criar sugestões assistidas com base nas categorizações aprovadas
+- [x] Aplicar a prioridade editada à lista, filtros, resumo e Excel
+- [x] Validar segurança, testes e publicação
+

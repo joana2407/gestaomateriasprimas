@@ -7,6 +7,7 @@ import { consultaGlobalProcedure, qualidadeProcedure, router } from "../_core/tr
 import { createHeartbeatJob, updateHeartbeatJob } from "../_core/heartbeat";
 import * as dbHelpers from "../db";
 import { rasffRelatorios, rasffVigilancias } from "../../drizzle/schema";
+import { invokeLLM } from "../_core/llm";
 
 const cronInput = z.object({
   cron: z.string().regex(/^\d+ \d+ \d+ \* \* \d+$/, "Use o formato cron UTC: segundo minuto hora * * dia-da-semana"),
@@ -69,6 +70,24 @@ export const rasffRouter = router({
     if (!sessionToken) throw new TRPCError({ code: "UNAUTHORIZED", message: "Sessão não disponível para alterar o agendamento." });
     await updateHeartbeatJob(config.scheduleCronTaskUid, { enable: false }, sessionToken);
     return dbHelpers.getRasffVigilancia();
+  }),
+
+  sugerirPrioridade: consultaGlobalProcedure.input(z.object({
+    linha: z.string().min(1).max(4000),
+    prioridadeAtual: z.enum(["Alta", "Média", "Baixa", "Informativa"]),
+    exemplos: z.array(z.object({ texto: z.string().max(500), prioridade: z.enum(["Alta", "Média", "Baixa", "Informativa"]) })).max(20).default([]),
+  })).mutation(async ({ input }) => {
+    const exemplos = input.exemplos.map(exemplo => `- ${exemplo.prioridade}: ${exemplo.texto}`).join("\\n") || "(sem exemplos aprovados ainda)";
+    const resposta = await invokeLLM({
+      messages: [
+        { role: "system", content: "És um assistente de triagem RASFF para uma indústria de panificação e pastelaria. Sugere uma prioridade, mas nunca substituis a decisão da Qualidade. Considera perigos, categoria de produto, origem e potencial impacto na cadeia. Responde exclusivamente no formato JSON solicitado." },
+        { role: "user", content: `Prioridade automática atual: ${input.prioridadeAtual}\\nExemplos de categorizações aprovadas pela Qualidade:\\n${exemplos}\\n\\nAlerta a classificar:\\n${input.linha}` },
+      ],
+      response_format: { type: "json_schema", json_schema: { name: "rasff_priority", strict: true, schema: { type: "object", properties: { prioridade: { type: "string", enum: ["Alta", "Média", "Baixa", "Informativa"] }, fundamento: { type: "string" } }, required: ["prioridade", "fundamento"], additionalProperties: false } } },
+    });
+    const content = resposta.choices?.[0]?.message?.content;
+    if (typeof content !== "string") throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "O assistente não devolveu uma sugestão válida." });
+    try { return JSON.parse(content) as { prioridade: string; fundamento: string }; } catch { throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não foi possível interpretar a sugestão do assistente." }); }
   }),
 
   relatorio: consultaGlobalProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
