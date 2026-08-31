@@ -778,3 +778,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Corrigir parsing de datas e filtragem sem perder alertas
 - [x] Mostrar aviso explícito para datas não reconhecidas e validar publicação
 
+
+## Melhoria — Filtro por MP afetada na análise RASFF
+
+- [x] Adicionar seleção de MP afetada com base nas correspondências encontradas
+- [x] Aplicar o filtro à lista, resumo e exportação Excel
+- [x] Validar a pesquisa, limpar filtros, testes e publicação
+
