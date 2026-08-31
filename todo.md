@@ -721,3 +721,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Mostrar as fontes oficiais e limitações de cobertura no painel e no relatório
 - [x] Validar a interface e publicar a melhoria
 
+
+## Correção — Resumo completo de incidências BPHF
+
+- [ ] Adicionar o campo de colaborador inspecionado ao registo de incidência
+- [ ] Mostrar o colaborador no cartão e no detalhe, com contexto completo da incidência
+- [ ] Validar formulário, persistência, testes e publicação
+
