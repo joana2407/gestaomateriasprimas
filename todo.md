@@ -815,3 +815,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Atualizar textos para indicar Excel como formato de exportação
 - [x] Validar filtros, exportação Excel, testes e publicação
 
+
+## Melhoria — Pesquisa livre na análise RASFF
+
+- [x] Adicionar campo de pesquisa livre aos filtros
+- [x] Pesquisar conteúdo, número, prioridade, MP e origem em simultâneo
+- [x] Atualizar limpeza, exportação Excel e validar testes/publicação
+
