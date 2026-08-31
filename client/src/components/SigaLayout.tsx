@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { cn } from "@/lib/utils";
 import {
-  AlertTriangle, BarChart3, Bell, BookOpen, ChevronRight,
+  AlertTriangle, BarChart3, Bell, BookOpen, ChevronRight, Radar,
   ClipboardCheck, ClipboardList, Factory, FileText, FlaskConical,
   Home, KeyRound, LogOut, Menu, Package, Settings, ShieldCheck, Upload, Users, X
 } from "lucide-react";
@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/fichas-produto", icon: FileText, label: "FT de Produto", group: "documentos" },
   { href: "/historico", icon: BarChart3, label: "Histórico", group: "documentos" },
   { href: "/notificacoes", icon: Bell, label: "Notificações", group: "documentos" },
+  { href: "/vigilancia-rasff", icon: Radar, label: "Vigilância RASFF", group: "documentos" },
   { href: "/importacao", icon: Settings, label: "Importação", group: "config" },
   { href: "/configuracoes", icon: ShieldCheck, label: "Configurações", group: "config", requiresAccessManagement: true },
   { href: "/permissoes", icon: KeyRound, label: "Permissões", group: "config", requiresAccessManagement: true },

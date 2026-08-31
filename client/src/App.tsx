@@ -21,6 +21,7 @@ import Rececoes from "./pages/Rececoes";
 import Utilizadores from "./pages/Utilizadores";
 import Notificacoes from "./pages/Notificacoes";
 import Permissoes from "./pages/Permissoes";
+import VigilanciaRasff from "./pages/VigilanciaRasff";
 import { useAuth } from "./_core/hooks/useAuth";
 import AcessoPin from "./pages/AcessoPin";
 
@@ -40,6 +41,7 @@ function QualidadeRoute({ component: Component }: { component: React.ComponentTy
     "/historico": "Histórico",
     "/notificacoes": "Notificações",
     "/importacao": "Importação",
+    "/vigilancia-rasff": "Vigilância RASFF",
   }[location] ?? "módulo selecionado";
   useEffect(() => {
     if (user?.role === "logistica") {
@@ -74,6 +76,7 @@ function Router() {
       <Route path="/historico" component={() => <QualidadeRoute component={Historico} />} />
       <Route path="/notificacoes" component={() => <QualidadeRoute component={Notificacoes} />} />
       <Route path="/importacao" component={() => <QualidadeRoute component={Importacao} />} />
+      <Route path="/vigilancia-rasff" component={() => <QualidadeRoute component={VigilanciaRasff} />} />
       <Route path="/utilizadores" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
       <Route path="/configuracoes" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
       <Route path="/permissoes" component={() => <GestaoAcessosRoute component={Permissoes} />} />

@@ -19,6 +19,8 @@ import {
   receitas,
   transferenciasMateriasPrimas,
   users,
+  rasffRelatorios,
+  rasffVigilancias,
 } from "../drizzle/schema";
 import { documentosFornecedor } from "../drizzle/schema";
 import { calcularQuantidadeDisponivel } from "../shared/transferencia-stock";
@@ -864,4 +866,102 @@ export async function atualizarDataValidacaoMp(mpId: number, dataValidacao: Date
   if (!db) return null;
   const { eq } = await import("drizzle-orm");
   return db.update(materiasPrimas).set({ dataValidacao }).where(eq(materiasPrimas.id, mpId));
+}
+
+// ─── VIGILÂNCIA RASFF ──────────────────────────────────────────────────────────
+export const RASFF_CATEGORIAS_PADRAO = [
+  "cereais e produtos de padaria",
+  "frutos de casca rija e sementes",
+  "frutas desidratadas",
+  "cacau e chocolate",
+  "leite e produtos lácteos",
+  "ovos e ovoprodutos",
+  "aditivos alimentares e aromas",
+  "materiais em contacto com alimentos",
+] as const;
+
+export const RASFF_PERIGOS_PADRAO = [
+  "micotoxinas (DON, ocratoxina A)",
+  "aflatoxinas",
+  "Salmonella",
+  "alergénios não declarados",
+  "resíduos de pesticidas",
+  "sulfitos não declarados",
+  "óxido de etileno",
+  "metais pesados",
+  "resíduos de medicamentos veterinários",
+  "uso não autorizado ou excesso de dose",
+  "migração de materiais em contacto com alimentos",
+] as const;
+
+export async function getRasffVigilancia() {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(rasffVigilancias).orderBy(rasffVigilancias.id).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function criarRasffVigilancia(createdBy?: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const existente = await getRasffVigilancia();
+  if (existente) return existente;
+  await db.insert(rasffVigilancias).values({
+    nome: "Vigilância RASFF — Panificação e Pastelaria",
+    ativa: true,
+    cronExpression: "0 0 6 * * 1",
+    timezone: "Europe/Lisbon",
+    categorias: [...RASFF_CATEGORIAS_PADRAO],
+    perigos: [...RASFF_PERIGOS_PADRAO],
+    createdBy: createdBy ?? null,
+  });
+  return getRasffVigilancia();
+}
+
+export async function getRasffVigilanciaByTaskUid(taskUid: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(rasffVigilancias).where(eq(rasffVigilancias.scheduleCronTaskUid, taskUid)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function atualizarRasffTaskUid(id: number, taskUid: string) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.update(rasffVigilancias).set({ scheduleCronTaskUid: taskUid }).where(eq(rasffVigilancias.id, id));
+  return getRasffVigilancia();
+}
+
+export async function listarRasffRelatorios(limit = 20) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(rasffRelatorios).orderBy(desc(rasffRelatorios.geradoEm)).limit(limit);
+}
+
+export async function criarRasffRelatorio(input: typeof rasffRelatorios.$inferInsert) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(rasffRelatorios).values(input);
+  const id = Number(result[0]?.insertId ?? 0);
+  if (!id) return null;
+  const rows = await db.select().from(rasffRelatorios).where(eq(rasffRelatorios.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function getRasffContexto() {
+  const db = await getDb();
+  if (!db) return { materiasPrimas: [] };
+  const rows = await db.select({
+    id: materiasPrimas.id,
+    nome: materiasPrimas.nome,
+    codigo: materiasPrimas.codigo,
+    origem: materiasPrimas.paisOrigem,
+    fornecedorId: mpFornecedores.fornecedorId,
+    fornecedorNome: fornecedores.nome,
+    paisOrigemFornecedor: mpFornecedores.paisOrigem,
+  }).from(materiasPrimas)
+    .leftJoin(mpFornecedores, eq(mpFornecedores.materiaPrimaId, materiasPrimas.id))
+    .leftJoin(fornecedores, eq(fornecedores.id, mpFornecedores.fornecedorId))
+    .where(eq(materiasPrimas.ativa, true));
+  return { materiasPrimas: rows };
 }

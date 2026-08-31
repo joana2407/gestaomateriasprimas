@@ -379,3 +379,41 @@ export const auditLog = mysqlTable("audit_log", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type AuditLogEntry = typeof auditLog.$inferSelect;
+
+// ─── VIGILÂNCIA RASFF ──────────────────────────────────────────────────────────
+// A configuração guarda o vínculo durável ao job semanal; os relatórios mantêm
+// evidência auditável da consulta, fontes e decisão da Qualidade.
+export const rasffVigilancias = mysqlTable("rasff_vigilancias", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }).notNull(),
+  ativa: boolean("ativa").default(true).notNull(),
+  cronExpression: varchar("cron_expression", { length: 40 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("Europe/Lisbon"),
+  scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }),
+  categorias: json("categorias").notNull(),
+  perigos: json("perigos").notNull(),
+  createdBy: int("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, table => ({
+  scheduleTaskUidIdx: uniqueIndex("rasff_vigilancias_schedule_uid_idx").on(table.scheduleCronTaskUid),
+}));
+export type RasffVigilancia = typeof rasffVigilancias.$inferSelect;
+
+export const rasffRelatorios = mysqlTable("rasff_relatorios", {
+  id: int("id").autoincrement().primaryKey(),
+  vigilanciaId: int("vigilancia_id").notNull().references(() => rasffVigilancias.id),
+  periodoInicio: timestamp("periodo_inicio").notNull(),
+  periodoFim: timestamp("periodo_fim").notNull(),
+  estado: mysqlEnum("estado", ["sucesso", "sem_dados", "erro"]).notNull(),
+  totalAvaliados: int("total_avaliados").default(0).notNull(),
+  totalRelevantes: int("total_relevantes").default(0).notNull(),
+  resumo: text("resumo").notNull(),
+  conteudoMarkdown: text("conteudo_markdown").notNull(),
+  ocorrencias: json("ocorrencias"),
+  fontes: json("fontes").notNull(),
+  erro: text("erro"),
+  geradoPor: int("gerado_por").references(() => users.id),
+  geradoEm: timestamp("gerado_em").defaultNow().notNull(),
+});
+export type RasffRelatorio = typeof rasffRelatorios.$inferSelect;
