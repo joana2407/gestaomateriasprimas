@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SigaLayout } from "@/components/SigaLayout";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import * as XLSX from "xlsx";
 
 const statusLabel: Record<string, string> = { sucesso: "Concluído", sem_dados: "Sem ocorrências", erro: "Com erro" };
 const statusClass: Record<string, string> = {
@@ -52,6 +53,28 @@ function analisarFicheiro(texto: string, materiasPrimas: Array<Record<string, un
   });
 }
 
+async function lerConteudoFicheiro(file: File): Promise<string> {
+  const nome = file.name.toLocaleLowerCase("pt-PT");
+  const eExcel = /\.(xlsx|xls|xlsm|ods)$/.test(nome) || file.type.includes("spreadsheet") || file.type.includes("excel");
+  const buffer = await file.arrayBuffer();
+  const bytes = new Uint8Array(buffer.slice(0, 4));
+  const eContentorZip = bytes[0] === 0x50 && bytes[1] === 0x4b;
+  if (eExcel) {
+    const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+    const csv = workbook.SheetNames.map(sheetName => {
+      const sheet = workbook.Sheets[sheetName];
+      return `# ${sheetName}\n${XLSX.utils.sheet_to_csv(sheet, { blankrows: false })}`;
+    }).join("\n\n");
+    if (!csv.trim() || workbook.SheetNames.length === 0) throw new Error("A folha Excel não contém dados legíveis.");
+    return csv;
+  }
+  if (eContentorZip) throw new Error("Este ficheiro é um contentor Office/ZIP. Carregue um Excel (.xlsx/.xls), CSV, JSON, TXT ou HTML exportado com os alertas.");
+  const texto = await file.text();
+  const caracteresIlegiveis = (texto.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F�]/g) ?? []).length;
+  if (caracteresIlegiveis > Math.max(3, texto.length * 0.01)) throw new Error("O formato do ficheiro não é reconhecido como texto de alertas.");
+  return texto;
+}
+
 function downloadMarkdown(content: string, fileName: string) {
   const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -90,20 +113,23 @@ export default function VigilanciaRasff() {
     return `# Resumo de análise RASFF — ${manualFile.name}\n\n- Alertas/linhas analisados: ${manualFile.results.length}\n- Correspondências diretas com MP do SIGA: ${diretas}\n- Correspondências indiretas/setoriais: ${indiretas}\n- Período de análise: ficheiro fornecido pela Qualidade\n\n## Resultados\n\n${manualFile.results.map((item, index) => `${index + 1}. **${item.relevancia}** — ${item.linha}${item.correspondencias.length ? `\\n   - MP correspondentes: ${item.correspondencias.join(", ")}` : ""}`).join("\\n")}`;
   }, [manualFile]);
 
-  const handleManualFile = (file: File | undefined) => {
+  const handleManualFile = async (file: File | undefined) => {
     if (!file) return;
     if (file.size > 5 * 1024 * 1024) { toast.error("O ficheiro não pode exceder 5 MB."); return; }
     setManualBusy(true);
-    const reader = new FileReader();
-    reader.onload = () => {
-      const texto = typeof reader.result === "string" ? reader.result : "";
+    try {
+      const texto = await lerConteudoFicheiro(file);
       const materias = (contextoQuery.data?.materiasPrimas ?? []) as Array<Record<string, unknown>>;
-      setManualFile({ name: file.name, results: analisarFicheiro(texto, materias) });
-      setManualBusy(false);
+      const results = analisarFicheiro(texto, materias);
+      if (results.length === 0) throw new Error("Não foram encontrados alertas ou linhas analisáveis no ficheiro.");
+      setManualFile({ name: file.name, results });
       toast.success("Ficheiro analisado. Reveja as correspondências antes de tomar decisões.");
-    };
-    reader.onerror = () => { setManualBusy(false); toast.error("Não foi possível ler o ficheiro."); };
-    reader.readAsText(file);
+    } catch (error) {
+      setManualFile(null);
+      toast.error(error instanceof Error ? error.message : "Não foi possível interpretar o ficheiro.");
+    } finally {
+      setManualBusy(false);
+    }
   };
 
   return (
@@ -139,8 +165,8 @@ export default function VigilanciaRasff() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Analisar ficheiro RASFF</CardTitle><p className="mt-1 text-sm text-muted-foreground">Carregue um CSV, JSON, TXT ou HTML exportado para obter um resumo local e cruzar o conteúdo com as MP, fornecedores e origens do SIGA.</p></div><label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"><Upload className="mr-2 h-4 w-4" /> {manualBusy ? "A analisar…" : "Carregar ficheiro"}<input className="sr-only" type="file" accept=".csv,.json,.txt,.html,.htm,text/csv,application/json,text/plain,text/html" disabled={manualBusy} onChange={event => { handleManualFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label></CardHeader>
-          <CardContent>{manualFile ? <div className="space-y-4"><div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-emerald-900">{manualFile.name}</p><p className="mt-1 text-xs text-emerald-800">{manualFile.results.length} linhas/alertas analisados · {manualFile.results.filter(item => item.relevancia === "Direta").length} diretos · {manualFile.results.filter(item => item.relevancia === "Indireta").length} indiretos</p></div><Button variant="outline" size="sm" onClick={() => downloadMarkdown(manualSummary, `resumo-rasff-${manualFile.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`)}><Download className="mr-2 h-4 w-4" /> Descarregar resumo</Button></div><div className="max-h-80 space-y-2 overflow-y-auto">{manualFile.results.map((item, index) => <div key={`${index}-${item.linha}`} className="rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className={item.relevancia === "Direta" ? "border-red-200 bg-red-50 text-red-700" : item.relevancia === "Indireta" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-600"}>{item.relevancia}</Badge>{item.correspondencias.map(match => <Badge key={match} variant="secondary">MP: {match}</Badge>)}</div><p className="mt-2 break-words text-xs leading-5 text-slate-600">{item.linha}</p></div>)}</div><p className="text-xs leading-5 text-muted-foreground">Esta análise manual é uma triagem local e não cria uma decisão de conformidade. Confirme os resultados pela Qualidade e conserve o ficheiro original segundo o procedimento documental aplicável.</p></div> : <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Ainda não foi carregado um ficheiro. O processamento ocorre no navegador e limita-se a 5 MB.</div>}</CardContent>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Analisar ficheiro RASFF</CardTitle><p className="mt-1 text-sm text-muted-foreground">Carregue um CSV, JSON, TXT ou HTML exportado para obter um resumo local e cruzar o conteúdo com as MP, fornecedores e origens do SIGA.</p></div><label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"><Upload className="mr-2 h-4 w-4" /> {manualBusy ? "A analisar…" : "Carregar ficheiro"}<input className="sr-only" type="file" accept=".csv,.json,.txt,.html,.htm,.xlsx,.xls,.xlsm,.ods,text/csv,application/json,text/plain,text/html,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" disabled={manualBusy} onChange={event => { handleManualFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label></CardHeader>
+          <CardContent>{manualFile ? <div className="space-y-4"><div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-emerald-900">{manualFile.name}</p><p className="mt-1 text-xs text-emerald-800">{manualFile.results.length} linhas/alertas analisados · {manualFile.results.filter(item => item.relevancia === "Direta").length} diretos · {manualFile.results.filter(item => item.relevancia === "Indireta").length} indiretos</p></div><Button variant="outline" size="sm" onClick={() => downloadMarkdown(manualSummary, `resumo-rasff-${manualFile.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`)}><Download className="mr-2 h-4 w-4" /> Descarregar resumo</Button></div><div className="max-h-80 space-y-2 overflow-y-auto">{manualFile.results.map((item, index) => <div key={`${index}-${item.linha}`} className="rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className={item.relevancia === "Direta" ? "border-red-200 bg-red-50 text-red-700" : item.relevancia === "Indireta" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-600"}>{item.relevancia}</Badge>{item.correspondencias.map(match => <Badge key={match} variant="secondary">MP: {match}</Badge>)}</div><p className="mt-2 break-words text-xs leading-5 text-slate-600">{item.linha}</p></div>)}</div><p className="text-xs leading-5 text-muted-foreground">Esta análise manual é uma triagem local e não cria uma decisão de conformidade. Confirme os resultados pela Qualidade e conserve o ficheiro original segundo o procedimento documental aplicável.</p></div> : <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Ainda não foi carregado um ficheiro. O processamento ocorre no navegador, aceita CSV, JSON, TXT, HTML e folhas Excel, e limita-se a 5 MB.</div>}</CardContent>
         </Card>
 
         <Card>

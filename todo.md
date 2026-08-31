@@ -742,3 +742,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Classificar trigo, farinha e centeio por país de origem como vigilância de tendência
 - [x] Alinhar o agente, validar a apresentação e publicar
 
+
+## Correção — Parsing de ficheiros RASFF
+
+- [x] Detetar contentores binários/Office e impedir a apresentação de bytes ilegíveis
+- [x] Interpretar corretamente formatos suportados ou rejeitar formatos não reconhecidos
+- [x] Mostrar mensagens de erro úteis e validar testes/publicação
+
