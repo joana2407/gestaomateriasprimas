@@ -30,9 +30,26 @@ export function correspondeAoContextoMp(alertText: string, contexto: ContextoMpR
   });
 }
 
+export function correspondeAOrigemRasff(alertText: string, contexto: ContextoMpRasff): boolean {
+  const haystack = normalizarTermoRasff(alertText);
+  return [contexto.origem, contexto.paisOrigemFornecedor]
+    .filter((value): value is string => Boolean(value && value.trim()))
+    .some(value => {
+      const term = normalizarTermoRasff(value);
+      return term.length >= 3 && haystack.includes(term);
+    });
+}
+
 export function classificarLigacaoRasff(alertText: string, contexto: ContextoMpRasff): "direta" | "indireta" | "informativa" {
-  if (correspondeAoContextoMp(alertText, contexto)) return "direta";
+  const haystack = normalizarTermoRasff(alertText);
+  const termosDiretos = [contexto.nome, contexto.codigo, contexto.fornecedorNome]
+    .filter((value): value is string => Boolean(value && value.trim()));
+  if (termosDiretos.some(value => {
+    const term = normalizarTermoRasff(value);
+    return term.length >= 3 && haystack.includes(term);
+  })) return "direta";
+  if (correspondeAOrigemRasff(alertText, contexto)) return "indireta";
   const categoria = normalizarTermoRasff(contexto.nome);
-  if (categoria && ["farinha", "trigo", "centeio", "amendoa", "avelã", "noz", "chocolate", "cacau", "sultana", "leite", "ovo"].some(term => categoria.includes(normalizarTermoRasff(term)))) return "indireta";
+  if (categoria && ["farinha", "trigo", "centeio", "amendoa", "avela", "noz", "chocolate", "cacau", "sultana", "leite", "ovo"].some(term => categoria.includes(normalizarTermoRasff(term)))) return "indireta";
   return "informativa";
 }

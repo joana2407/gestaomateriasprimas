@@ -871,27 +871,36 @@ export async function atualizarDataValidacaoMp(mpId: number, dataValidacao: Date
 // ─── VIGILÂNCIA RASFF ──────────────────────────────────────────────────────────
 export const RASFF_CATEGORIAS_PADRAO = [
   "cereais e produtos de padaria",
-  "frutos de casca rija e sementes",
+  "frutos de casca rija",
+  "sementes",
   "frutas desidratadas",
-  "cacau e chocolate",
+  "cacau e produtos de chocolate",
   "leite e produtos lácteos",
   "ovos e ovoprodutos",
+  "gomas e espessantes",
   "aditivos alimentares e aromas",
   "materiais em contacto com alimentos",
 ] as const;
 
 export const RASFF_PERIGOS_PADRAO = [
   "micotoxinas (DON, ocratoxina A)",
+  "corpos estranhos",
+  "alergénios não declarados",
+  "infestação",
   "aflatoxinas",
   "Salmonella",
-  "alergénios não declarados",
+  "óxido de etileno",
+  "alcaloides opiáceos",
   "resíduos de pesticidas",
   "sulfitos não declarados",
-  "óxido de etileno",
-  "metais pesados",
-  "resíduos de medicamentos veterinários",
+  "metais pesados (cádmio)",
+  "Listeria monocytogenes",
+  "resíduos de antibióticos/medicamentos veterinários",
+  "cloratos",
+  "pureza/adulteração",
   "uso não autorizado ou excesso de dose",
-  "migração de materiais em contacto com alimentos",
+  "migração (formaldeído, MOSH/MOAH, bisfenóis)",
+  "embalagem defeituosa",
 ] as const;
 
 export async function getRasffVigilancia() {

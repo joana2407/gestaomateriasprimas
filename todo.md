@@ -724,7 +724,21 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 
 ## Correção — Resumo completo de incidências BPHF
 
-- [ ] Adicionar o campo de colaborador inspecionado ao registo de incidência
-- [ ] Mostrar o colaborador no cartão e no detalhe, com contexto completo da incidência
-- [ ] Validar formulário, persistência, testes e publicação
+- [x] (Cancelado — pertence a outro projeto) Adicionar o campo de colaborador inspecionado ao registo de incidência
+- [x] (Cancelado — pertence a outro projeto) Mostrar o colaborador no cartão e no detalhe, com contexto completo da incidência
+- [x] (Cancelado — pertence a outro projeto) Validar formulário, persistência, testes e publicação
+
+
+## Correção — Limiar de NC BPHF por colaborador
+
+- [x] (Cancelado — pertence a outro projeto) Contar incidências pelo colaborador inspecionado, não pelo ponto de verificação
+- [x] (Cancelado — pertence a outro projeto) Emitir alerta de abertura de NC ao atingir a terceira incidência do colaborador
+- [x] (Cancelado — pertence a outro projeto) Validar regra, interface, testes e publicação
+
+
+## Melhoria — Sinal extra de tendência por origem no RASFF
+
+- [x] Atualizar a matriz com categorias, perigos e prioridades da referência
+- [x] Classificar trigo, farinha e centeio por país de origem como vigilância de tendência
+- [x] Alinhar o agente, validar a apresentação e publicar
 

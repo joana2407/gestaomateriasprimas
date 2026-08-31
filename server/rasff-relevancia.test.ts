@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classificarLigacaoRasff, correspondeAoContextoMp, normalizarTermoRasff } from "../shared/rasff-relevancia";
+import { classificarLigacaoRasff, correspondeAoContextoMp, correspondeAOrigemRasff, normalizarTermoRasff } from "../shared/rasff-relevancia";
 
 describe("relevância RASFF", () => {
   it("normaliza acentos e separadores para comparação estável", () => {
@@ -11,6 +11,11 @@ describe("relevância RASFF", () => {
       nome: "Farinha de Trigo 65",
       paisOrigemFornecedor: "Portugal",
     })).toBe(true);
+  });
+
+  it("regista uma origem importada como sinal de tendência mesmo sem fornecedor direto", () => {
+    expect(correspondeAOrigemRasff("alerta sobre farinha proveniente de Espanha", { nome: "Farinha de Trigo 65", paisOrigemFornecedor: "Espanha" })).toBe(true);
+    expect(classificarLigacaoRasff("alerta sobre farinha proveniente de Espanha", { nome: "Farinha de Trigo 65", paisOrigemFornecedor: "Espanha" })).toBe("indireta");
   });
 
   it("classifica uma MP do setor sem correspondência textual como indireta", () => {
