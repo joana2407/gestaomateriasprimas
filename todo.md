@@ -808,3 +808,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Mostrar indicador visual e legenda de confiança por sugestão
 - [x] Validar testes, interface e publicação
 
+
+## Correção — Remover resumo Markdown da análise RASFF
+
+- [x] Remover botão e função de descarga Markdown
+- [x] Atualizar textos para indicar Excel como formato de exportação
+- [x] Validar filtros, exportação Excel, testes e publicação
+
