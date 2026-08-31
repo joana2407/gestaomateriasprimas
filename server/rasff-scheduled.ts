@@ -4,6 +4,7 @@ import { z } from "zod";
 import { rasffRelatorios } from "../drizzle/schema";
 import * as db from "./db";
 import { sdk } from "./_core/sdk";
+import { obterSemanaRasff } from "@shared/rasff-semana";
 
 const reportInput = z.object({
   periodoInicio: z.string().datetime(),
@@ -38,6 +39,9 @@ export async function handleRasffScheduled(req: Request, res: Response) {
     }
 
     const input = reportInput.parse(req.body);
+    const semana = obterSemanaRasff(input.periodoInicio);
+    const periodoInicio = semana.inicio;
+    const periodoFim = semana.fim;
     const database = await db.getDb();
     if (!database) throw new Error("Database unavailable");
 
@@ -46,15 +50,19 @@ export async function handleRasffScheduled(req: Request, res: Response) {
       .from(rasffRelatorios)
       .where(and(
         eq(rasffRelatorios.vigilanciaId, config.id),
-        eq(rasffRelatorios.periodoFim, new Date(input.periodoFim)),
+        eq(rasffRelatorios.codigoSemana, semana.codigo),
       ))
       .limit(1);
     if (existing[0]) return res.json({ ok: true, duplicate: true, reportId: existing[0].id });
 
     const report = await db.criarRasffRelatorio({
       vigilanciaId: config.id,
-      periodoInicio: new Date(input.periodoInicio),
-      periodoFim: new Date(input.periodoFim),
+      periodoInicio,
+      periodoFim,
+      anoSemana: semana.ano,
+      numeroSemana: semana.numero,
+      codigoSemana: semana.codigo,
+      nomeFicheiro: semana.nomeFicheiro,
       estado: input.estado,
       totalAvaliados: input.totalAvaliados,
       totalRelevantes: input.totalRelevantes,

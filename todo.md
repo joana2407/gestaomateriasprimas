@@ -690,3 +690,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Configurar execução recorrente às segundas-feiras às 07:00
 - [x] Validar testes, cobertura, limitações e publicação
 
+
+## Correção — Período civil e arquivo semanal RASFF
+
+- [x] Alterar o período analisado para domingo 00:00 até sábado 23:59
+- [x] Guardar e apresentar cada relatório com o número da semana
+- [x] Atualizar o agente, testar e publicar a alteração
+

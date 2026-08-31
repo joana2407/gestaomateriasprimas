@@ -15,12 +15,12 @@ const statusClass: Record<string, string> = {
   erro: "bg-red-50 text-red-700 border-red-200",
 };
 
-function downloadMarkdown(content: string, id: number) {
+function downloadMarkdown(content: string, fileName: string) {
   const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `relatorio-rasff-${id}.md`;
+  anchor.download = fileName;
   anchor.click();
   URL.revokeObjectURL(url);
 }
@@ -56,7 +56,7 @@ export default function VigilanciaRasff() {
             </div>
             <div className="flex shrink-0 flex-col gap-2 rounded-xl border border-white/80 bg-white/80 p-4 text-sm shadow-sm">
               <div className="flex items-center gap-2 font-semibold text-slate-800"><CalendarClock className="h-4 w-4 text-amber-700" /> Segunda-feira · 07:00</div>
-              <div className="text-xs text-slate-500">Agendamento técnico: 06:00 UTC no horário de verão de Portugal</div>
+              <div className="text-xs text-slate-500">Analisa sempre domingo 00:00 → sábado 23:59 · Europe/Lisbon</div>
               {config?.scheduleCronTaskUid ? <Badge className="w-fit bg-emerald-600 text-white hover:bg-emerald-600">Fluxo ativo</Badge> : <Badge variant="outline" className="w-fit">Ainda não ativado</Badge>}
             </div>
           </div>
@@ -69,7 +69,7 @@ export default function VigilanciaRasff() {
         </div>
 
         <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileSearch className="h-5 w-5 text-primary" /> Configuração do fluxo</CardTitle><p className="mt-1 text-sm text-muted-foreground">O agente usa a matriz do anexo e o contexto de MP/fornecedor existente no SIGA.</p></div>{isQualidade && <div className="flex gap-2">{!config?.id && <Button variant="outline" onClick={() => initMutation.mutate()} disabled={initMutation.isPending}><Play className="mr-2 h-4 w-4" /> Preparar</Button>}{config?.id && !config.scheduleCronTaskUid && <Button onClick={() => scheduleMutation.mutate({ cron: "0 0 6 * * 1" })} disabled={scheduleMutation.isPending}><CalendarClock className="mr-2 h-4 w-4" /> Ativar fluxo semanal</Button>}</div>}</CardHeader>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileSearch className="h-5 w-5 text-primary" /> Configuração do fluxo</CardTitle><p className="mt-1 text-sm text-muted-foreground">O agente usa a matriz do anexo e o contexto de MP/fornecedor existente no SIGA.</p></div>{isQualidade && <div className="flex gap-2">{!config?.id && <Button variant="outline" onClick={() => initMutation.mutate()} disabled={initMutation.isPending}><Play className="mr-2 h-4 w-4" /> Preparar</Button>}{config?.id && !config.scheduleCronTaskUid && <Button onClick={() => scheduleMutation.mutate({ cron: "0 0 7 * * 1" })} disabled={scheduleMutation.isPending}><CalendarClock className="mr-2 h-4 w-4" /> Ativar fluxo semanal</Button>}</div>}</CardHeader>
           <CardContent className="grid gap-4 md:grid-cols-2">
             <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Categorias monitorizadas</p><div className="flex flex-wrap gap-2">{categorias.map(category => <Badge key={String(category)} variant="secondary" className="font-normal">{String(category)}</Badge>)}</div></div>
             <div><p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Perigos prioritários</p><div className="flex flex-wrap gap-2">{perigos.slice(0, 7).map(hazard => <Badge key={String(hazard)} variant="outline" className="font-normal">{String(hazard)}</Badge>)}</div><p className="mt-3 text-xs text-muted-foreground">A consulta pública não expõe marcas ou operadores económicos; uma correspondência deve ser confirmada pela Qualidade.</p></div>
@@ -78,7 +78,7 @@ export default function VigilanciaRasff() {
 
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-700" /> Histórico de relatórios</CardTitle></CardHeader>
-          <CardContent>{reports.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Ainda não existe um relatório. O primeiro será guardado após a execução semanal do agente.</div> : <div className="space-y-3">{reports.map(report => <div key={report.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-semibold">Semana de {new Date(report.periodoInicio).toLocaleDateString("pt-PT")}</span><Badge variant="outline" className={statusClass[report.estado] ?? ""}>{report.estado === "sucesso" ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : null}{statusLabel[report.estado] ?? report.estado}</Badge></div><p className="mt-2 text-sm text-muted-foreground">{report.resumo}</p><p className="mt-2 text-xs text-muted-foreground">Gerado em {new Date(report.geradoEm).toLocaleString("pt-PT")} · {report.totalAvaliados} avaliados · {report.totalRelevantes} relevantes</p></div><Button variant="outline" size="sm" onClick={() => downloadMarkdown(report.conteudoMarkdown, report.id)}><Download className="mr-2 h-4 w-4" /> Descarregar</Button></div>)}</div>}</CardContent>
+          <CardContent>{reports.length === 0 ? <div className="rounded-xl border border-dashed p-8 text-center text-sm text-muted-foreground">Ainda não existe um relatório. O primeiro será guardado após a execução semanal do agente.</div> : <div className="space-y-3">{reports.map(report => <div key={report.id} className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{report.codigoSemana ?? `Semana ${report.numeroSemana ?? "—"}`}</span><Badge variant="outline" className={statusClass[report.estado] ?? ""}>{report.estado === "sucesso" ? <CheckCircle2 className="mr-1 h-3.5 w-3.5" /> : null}{statusLabel[report.estado] ?? report.estado}</Badge></div><p className="mt-2 text-sm text-muted-foreground">{report.resumo}</p><p className="mt-2 text-xs text-muted-foreground">Gerado em {new Date(report.geradoEm).toLocaleString("pt-PT")} · {report.totalAvaliados} avaliados · {report.totalRelevantes} relevantes</p></div><Button variant="outline" size="sm" onClick={() => downloadMarkdown(report.conteudoMarkdown, report.nomeFicheiro ?? `relatorio-rasff-${report.codigoSemana ?? report.id}.md`)}><Download className="mr-2 h-4 w-4" /> Descarregar</Button></div>)}</div>}</CardContent>
         </Card>
       </div>
     </SigaLayout>
