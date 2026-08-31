@@ -95,11 +95,11 @@ export const rasffRouter = router({
     ficheiro: z.string().min(1).max(255),
     periodoInicio: z.string().datetime().optional(),
     periodoFim: z.string().datetime().optional(),
-    totalAvaliados: z.number().int().nonnegative().max(5000),
-    totalRelevantes: z.number().int().nonnegative().max(5000),
+    totalAvaliados: z.number().int().nonnegative().max(10000),
+    totalRelevantes: z.number().int().nonnegative().max(10000),
     resumo: z.string().min(1).max(10000),
     ocorrencias: z.array(z.unknown()).max(10000).default([]),
-    fontes: z.array(z.string().url()).max(100).default([]),
+    fontes: z.array(z.string().url()).max(10000).default([]),
   })).mutation(async ({ ctx, input }) => {
     const agora = new Date();
     const inicio = input.periodoInicio ? new Date(input.periodoInicio) : new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);

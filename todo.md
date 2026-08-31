@@ -838,3 +838,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Corrigir a indicação “Ainda não ativado” no painel
 - [x] Validar atualização do estado, testes e publicação
 
+
+## Correção — Guardar relatório RASFF com muitas fontes
+
+- [x] Aumentar o limite de fontes sem truncar o relatório
+- [x] Testar o armazenamento com mais de 100 fontes
+- [x] Validar ocorrências, testes e publicação
+
