@@ -29,7 +29,8 @@ const MATRIZ_RELEVANCIA = [
   ["Materiais em contacto com alimentos", "Migração (formaldeído, MOSH/MOAH, bisfenóis), embalagem defeituosa", "Média"],
 ] as const;
 
-type ManualResultado = { linha: string; relevancia: "Direta" | "Indireta" | "Informativa"; correspondencias: string[] };
+type PrioridadeAlerta = "Alta" | "Média" | "Baixa" | "Informativa";
+type ManualResultado = { linha: string; relevancia: "Direta" | "Indireta" | "Informativa"; correspondencias: string[]; url?: string; prioridade: PrioridadeAlerta; dataAlerta?: string };
 
 function extrairLinhasFicheiro(texto: string): string[] {
   try {
@@ -41,6 +42,32 @@ function extrairLinhasFicheiro(texto: string): string[] {
   }
 }
 
+function extrairUrlOrigem(linha: string): string | undefined {
+  const encontrado = linha.match(/https?:\/\/[^\s<>"')]+/i)?.[0]?.replace(/[.,;:!?]+$/, "");
+  if (!encontrado) return undefined;
+  try {
+    const url = new URL(encontrado);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function extrairDataAlerta(linha: string): string | undefined {
+  const iso = linha.match(/\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})\b/);
+  if (iso) return `${iso[1]}-${iso[2].padStart(2, "0")}-${iso[3].padStart(2, "0")}`;
+  const pt = linha.match(/\b(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b/);
+  return pt ? `${pt[3]}-${pt[2].padStart(2, "0")}-${pt[1].padStart(2, "0")}` : undefined;
+}
+
+function extrairPrioridade(linha: string): PrioridadeAlerta {
+  const normalizada = linha.toLocaleLowerCase("pt-PT");
+  if (/\b(alta|high|critical|crítica|critica)\b/.test(normalizada)) return "Alta";
+  if (/\b(baixa|low)\b/.test(normalizada)) return "Baixa";
+  if (/\b(média|media|medium)\b/.test(normalizada)) return "Média";
+  return "Informativa";
+}
+
 function analisarFicheiro(texto: string, materiasPrimas: Array<Record<string, unknown>>): ManualResultado[] {
   return extrairLinhasFicheiro(texto).slice(0, 500).map(linha => {
     const normalizada = linha.toLocaleLowerCase("pt-PT");
@@ -49,7 +76,7 @@ function analisarFicheiro(texto: string, materiasPrimas: Array<Record<string, un
       return termos.some(termo => normalizada.includes(termo.toLocaleLowerCase("pt-PT"))) ? [String(mp.nome ?? mp.codigo ?? "MP") ] : [];
     }).filter((value, index, values) => values.indexOf(value) === index);
     const relevancia = correspondencias.some(Boolean) ? "Direta" : /farinha|trigo|centeio|pellet|chocolate|cacau|noz|amêndoa|amendoa|avelã|fruta|ovo|leite|alerg|salmonella|aflatox|micotox|pesticida|sulfito/i.test(normalizada) ? "Indireta" : "Informativa";
-    return { linha, relevancia, correspondencias };
+    return { linha, relevancia, correspondencias, url: extrairUrlOrigem(linha), prioridade: extrairPrioridade(linha), dataAlerta: extrairDataAlerta(linha) };
   });
 }
 
@@ -73,6 +100,23 @@ async function lerConteudoFicheiro(file: File): Promise<string> {
   const caracteresIlegiveis = (texto.match(/[\u0000-\u0008\u000B\u000C\u000E-\u001F�]/g) ?? []).length;
   if (caracteresIlegiveis > Math.max(3, texto.length * 0.01)) throw new Error("O formato do ficheiro não é reconhecido como texto de alertas.");
   return texto;
+}
+
+function downloadExcel(results: ManualResultado[], fileName: string) {
+  const rows = results.map((item, index) => ({
+    "Nº": index + 1,
+    "Prioridade": item.prioridade,
+    "Data do alerta": item.dataAlerta ?? "Não identificada",
+    "Relevância": item.relevancia,
+    "MP correspondentes": item.correspondencias.join(", "),
+    "Fonte original": item.url ?? "Não identificada",
+    "Conteúdo": item.linha,
+  }));
+  const worksheet = XLSX.utils.json_to_sheet(rows);
+  worksheet["!cols"] = [{ wch: 8 }, { wch: 14 }, { wch: 18 }, { wch: 14 }, { wch: 32 }, { wch: 60 }, { wch: 100 }];
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Resumo RASFF");
+  XLSX.writeFile(workbook, fileName);
 }
 
 function downloadMarkdown(content: string, fileName: string) {
@@ -105,13 +149,25 @@ export default function VigilanciaRasff() {
   const contextoQuery = trpc.rasff.contexto.useQuery(undefined, { staleTime: 60_000 });
   const [manualFile, setManualFile] = useState<{ name: string; results: ManualResultado[] } | null>(null);
   const [manualBusy, setManualBusy] = useState(false);
+  const [priorityFilter, setPriorityFilter] = useState<"Todas" | PrioridadeAlerta>("Todas");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const filteredResults = useMemo(() => {
+    if (!manualFile) return [];
+    return manualFile.results.filter(item => {
+      const matchesPriority = priorityFilter === "Todas" || item.prioridade === priorityFilter;
+      const matchesFrom = !dateFrom || (item.dataAlerta && item.dataAlerta >= dateFrom);
+      const matchesTo = !dateTo || (item.dataAlerta && item.dataAlerta <= dateTo);
+      return matchesPriority && Boolean(matchesFrom) && Boolean(matchesTo);
+    });
+  }, [manualFile, priorityFilter, dateFrom, dateTo]);
   const relevantCount = useMemo(() => reports.reduce((sum, report) => sum + (report.totalRelevantes ?? 0), 0), [reports]);
   const manualSummary = useMemo(() => {
     if (!manualFile) return "";
-    const diretas = manualFile.results.filter(item => item.relevancia === "Direta").length;
-    const indiretas = manualFile.results.filter(item => item.relevancia === "Indireta").length;
-    return `# Resumo de análise RASFF — ${manualFile.name}\n\n- Alertas/linhas analisados: ${manualFile.results.length}\n- Correspondências diretas com MP do SIGA: ${diretas}\n- Correspondências indiretas/setoriais: ${indiretas}\n- Período de análise: ficheiro fornecido pela Qualidade\n\n## Resultados\n\n${manualFile.results.map((item, index) => `${index + 1}. **${item.relevancia}** — ${item.linha}${item.correspondencias.length ? `\\n   - MP correspondentes: ${item.correspondencias.join(", ")}` : ""}`).join("\\n")}`;
-  }, [manualFile]);
+    const diretas = filteredResults.filter(item => item.relevancia === "Direta").length;
+    const indiretas = filteredResults.filter(item => item.relevancia === "Indireta").length;
+    return `# Resumo de análise RASFF — ${manualFile.name}\n\n- Alertas/linhas apresentados após filtros: ${filteredResults.length}\n- Correspondências diretas com MP do SIGA: ${diretas}\n- Correspondências indiretas/setoriais: ${indiretas}\n- Período de análise: ficheiro fornecido pela Qualidade\n\n## Resultados\n\n${filteredResults.map((item, index) => `${index + 1}. **${item.relevancia}** · ${item.prioridade} · ${item.dataAlerta ?? "data não identificada"} — ${item.linha}${item.correspondencias.length ? `\\n   - MP correspondentes: ${item.correspondencias.join(", ")}` : ""}${item.url ? `\\n   - [Abrir fonte original](${item.url})` : ""}`).join("\\n")}`;
+  }, [manualFile, filteredResults]);
 
   const handleManualFile = async (file: File | undefined) => {
     if (!file) return;
@@ -122,6 +178,9 @@ export default function VigilanciaRasff() {
       const materias = (contextoQuery.data?.materiasPrimas ?? []) as Array<Record<string, unknown>>;
       const results = analisarFicheiro(texto, materias);
       if (results.length === 0) throw new Error("Não foram encontrados alertas ou linhas analisáveis no ficheiro.");
+      setPriorityFilter("Todas");
+      setDateFrom("");
+      setDateTo("");
       setManualFile({ name: file.name, results });
       toast.success("Ficheiro analisado. Reveja as correspondências antes de tomar decisões.");
     } catch (error) {
@@ -165,8 +224,8 @@ export default function VigilanciaRasff() {
         </Card>
 
         <Card>
-          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Analisar ficheiro RASFF</CardTitle><p className="mt-1 text-sm text-muted-foreground">Carregue um CSV, JSON, TXT ou HTML exportado para obter um resumo local e cruzar o conteúdo com as MP, fornecedores e origens do SIGA.</p></div><label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"><Upload className="mr-2 h-4 w-4" /> {manualBusy ? "A analisar…" : "Carregar ficheiro"}<input className="sr-only" type="file" accept=".csv,.json,.txt,.html,.htm,.xlsx,.xls,.xlsm,.ods,text/csv,application/json,text/plain,text/html,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" disabled={manualBusy} onChange={event => { handleManualFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label></CardHeader>
-          <CardContent>{manualFile ? <div className="space-y-4"><div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-emerald-900">{manualFile.name}</p><p className="mt-1 text-xs text-emerald-800">{manualFile.results.length} linhas/alertas analisados · {manualFile.results.filter(item => item.relevancia === "Direta").length} diretos · {manualFile.results.filter(item => item.relevancia === "Indireta").length} indiretos</p></div><Button variant="outline" size="sm" onClick={() => downloadMarkdown(manualSummary, `resumo-rasff-${manualFile.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`)}><Download className="mr-2 h-4 w-4" /> Descarregar resumo</Button></div><div className="max-h-80 space-y-2 overflow-y-auto">{manualFile.results.map((item, index) => <div key={`${index}-${item.linha}`} className="rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className={item.relevancia === "Direta" ? "border-red-200 bg-red-50 text-red-700" : item.relevancia === "Indireta" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-600"}>{item.relevancia}</Badge>{item.correspondencias.map(match => <Badge key={match} variant="secondary">MP: {match}</Badge>)}</div><p className="mt-2 break-words text-xs leading-5 text-slate-600">{item.linha}</p></div>)}</div><p className="text-xs leading-5 text-muted-foreground">Esta análise manual é uma triagem local e não cria uma decisão de conformidade. Confirme os resultados pela Qualidade e conserve o ficheiro original segundo o procedimento documental aplicável.</p></div> : <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Ainda não foi carregado um ficheiro. O processamento ocorre no navegador, aceita CSV, JSON, TXT, HTML e folhas Excel, e limita-se a 5 MB.</div>}</CardContent>
+          <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5 text-primary" /> Analisar ficheiro RASFF</CardTitle><p className="mt-1 text-sm text-muted-foreground">Carregue um CSV, JSON, TXT, HTML ou Excel exportado para obter um resumo local, cruzar o conteúdo com as MP, fornecedores e origens do SIGA e abrir a fonte original de cada alerta quando existir uma URL.</p></div><label className="inline-flex cursor-pointer items-center justify-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm hover:opacity-90"><Upload className="mr-2 h-4 w-4" /> {manualBusy ? "A analisar…" : "Carregar ficheiro"}<input className="sr-only" type="file" accept=".csv,.json,.txt,.html,.htm,.xlsx,.xls,.xlsm,.ods,text/csv,application/json,text/plain,text/html,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" disabled={manualBusy} onChange={event => { handleManualFile(event.target.files?.[0]); event.currentTarget.value = ""; }} /></label></CardHeader>
+          <CardContent>{manualFile ? <div className="space-y-4"><div className="flex flex-col gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-sm font-semibold text-emerald-900">{manualFile.name}</p><p className="mt-1 text-xs text-emerald-800">{manualFile.results.length} linhas/alertas analisados · {filteredResults.length} apresentados · {filteredResults.filter(item => item.relevancia === "Direta").length} diretos · {filteredResults.filter(item => item.relevancia === "Indireta").length} indiretos</p></div><div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => downloadMarkdown(manualSummary, `resumo-rasff-${manualFile.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.md`)}><Download className="mr-2 h-4 w-4" /> Markdown</Button><Button size="sm" onClick={() => downloadExcel(filteredResults, `resumo-rasff-${manualFile.name.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.xlsx`)}><Download className="mr-2 h-4 w-4" /> Excel</Button></div></div><div className="grid gap-3 rounded-xl border bg-slate-50/70 p-4 sm:grid-cols-3"><label className="text-xs font-medium text-slate-700">Prioridade<select value={priorityFilter} onChange={event => setPriorityFilter(event.target.value as "Todas" | PrioridadeAlerta)} className="mt-1 block w-full rounded-md border bg-white px-3 py-2 text-sm"><option value="Todas">Todas</option><option value="Alta">Alta</option><option value="Média">Média</option><option value="Baixa">Baixa</option><option value="Informativa">Informativa</option></select></label><label className="text-xs font-medium text-slate-700">Data inicial<input type="date" value={dateFrom} onChange={event => setDateFrom(event.target.value)} className="mt-1 block w-full rounded-md border bg-white px-3 py-2 text-sm" /></label><label className="text-xs font-medium text-slate-700">Data final<input type="date" value={dateTo} onChange={event => setDateTo(event.target.value)} className="mt-1 block w-full rounded-md border bg-white px-3 py-2 text-sm" /></label></div><div className="max-h-80 space-y-2 overflow-y-auto">{filteredResults.map((item, index) => <div key={`${index}-${item.linha}`} className="rounded-lg border p-3"><div className="flex flex-wrap items-center gap-2"><Badge variant="outline" className={item.relevancia === "Direta" ? "border-red-200 bg-red-50 text-red-700" : item.relevancia === "Indireta" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-slate-200 bg-slate-50 text-slate-600"}>{item.relevancia}</Badge>{item.correspondencias.map(match => <Badge key={match} variant="secondary">MP: {match}</Badge>)}{item.url && <a href={item.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-md border border-primary/30 px-2 py-1 text-xs font-medium text-primary hover:bg-primary/5" aria-label={`Abrir fonte original do alerta ${index + 1}`}><ExternalLink className="h-3.5 w-3.5" /> Fonte original</a>}</div><p className="mt-2 break-words text-xs leading-5 text-slate-600">{item.linha}</p>{!item.url && <p className="mt-2 text-[11px] text-muted-foreground">Fonte original não identificada nesta linha.</p>}</div>)}</div><p className="text-xs leading-5 text-muted-foreground">Esta análise manual é uma triagem local e não cria uma decisão de conformidade. Confirme os resultados pela Qualidade e conserve o ficheiro original segundo o procedimento documental aplicável.</p></div> : <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">Ainda não foi carregado um ficheiro. O processamento ocorre no navegador, aceita CSV, JSON, TXT, HTML e folhas Excel, e limita-se a 5 MB.</div>}</CardContent>
         </Card>
 
         <Card>

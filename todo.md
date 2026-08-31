@@ -749,3 +749,18 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Interpretar corretamente formatos suportados ou rejeitar formatos não reconhecidos
 - [x] Mostrar mensagens de erro úteis e validar testes/publicação
 
+
+## Melhoria — Exportação Excel e filtros da análise RASFF
+
+- [x] Acrescentar filtro por prioridade
+- [x] Acrescentar filtros por data inicial e final do alerta
+- [x] Permitir descarregar o resumo filtrado em ficheiro Excel
+- [x] Validar testes, interface e publicação
+
+
+## Melhoria — Hiperligação da fonte original dos alertas RASFF
+
+- [x] Reconhecer e validar URLs de origem nas linhas/ocorrências analisadas
+- [x] Abrir a fonte original ao selecionar um alerta, em novo separador
+- [x] Indicar claramente quando não existe URL e validar testes/publicação
+
