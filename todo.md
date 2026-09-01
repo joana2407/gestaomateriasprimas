@@ -919,3 +919,9 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Adicionar filtros por data inicial e final
 - [x] Incluir a data no histórico e na exportação Excel
 - [x] Validar testes e publicar checkpoint
+
+## Melhoria v4.7 — Fontes oficiais Food Fraud
+- [x] Adicionar os três URLs oficiais à configuração da vigilância
+- [x] Atualizar o agente automático para consultar as fontes oficiais configuradas
+- [x] Apresentar as fontes como hiperligações no painel Food Fraud
+- [x] Validar testes e publicar checkpoint

@@ -883,8 +883,9 @@ export const FOOD_FRAUD_CATEGORIAS_PADRAO = [
 ] as const;
 
 export const FOOD_FRAUD_FONTES_PADRAO = [
-  "EU Agri-Food Fraud Network — Food Fraud and Quality Knowledge Centre",
-  "European Commission — Agri-Food Fraud Network reports",
+  "FFN monthly reports — European Commission — https://food.ec.europa.eu/food-safety/acn/ffn-monthly_en",
+  "JRC Knowledge Centre for Food Fraud and Quality — https://knowledge4policy.ec.europa.eu/food-fraud-quality_en",
+  "Subscribe to JRC Food Fraud Monthly Report — https://ec.europa.eu/newsroom/know4pol/user-subscriptions/2254/create",
 ] as const;
 
 export async function getFoodFraudVigilancia() {
