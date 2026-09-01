@@ -344,7 +344,7 @@ export type RececaoMateriaPrima = typeof rececoesMateriasPrimas.$inferSelect;
 // ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────
 export const notificacoesQualidade = mysqlTable("notificacoes_qualidade", {
   id: int("id").autoincrement().primaryKey(),
-  tipo: mysqlEnum("tipo", ["rececao_observacoes", "rececao_validacao_condicional", "rasff_relevante"]).default("rececao_observacoes").notNull(),
+  tipo: mysqlEnum("tipo", ["rececao_observacoes", "rececao_validacao_condicional", "rasff_relevante", "food_fraud_relevante"]).default("rececao_observacoes").notNull(),
   titulo: varchar("titulo", { length: 255 }).notNull(),
   mensagem: text("mensagem").notNull(),
   link: varchar("link", { length: 1000 }).notNull(),
@@ -425,3 +425,44 @@ export const rasffRelatorios = mysqlTable("rasff_relatorios", {
   geradoEm: timestamp("gerado_em").defaultNow().notNull(),
 });
 export type RasffRelatorio = typeof rasffRelatorios.$inferSelect;
+
+// ─── VIGILÂNCIA FOOD FRAUD ─────────────────────────────────────────────────────
+// Configuração mensal e histórico auditável dos relatórios de fraude alimentar.
+export const foodFraudVigilancias = mysqlTable("food_fraud_vigilancias", {
+  id: int("id").autoincrement().primaryKey(),
+  nome: varchar("nome", { length: 150 }).notNull(),
+  ativa: boolean("ativa").default(true).notNull(),
+  periodicidade: mysqlEnum("periodicidade", ["mensal"]).default("mensal").notNull(),
+  cronExpression: varchar("cron_expression", { length: 40 }).notNull(),
+  timezone: varchar("timezone", { length: 64 }).notNull().default("Europe/Lisbon"),
+  scheduleCronTaskUid: varchar("schedule_cron_task_uid", { length: 65 }),
+  categorias: json("categorias").notNull(),
+  fontes: json("fontes").notNull(),
+  createdBy: int("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().onUpdateNow().notNull(),
+}, table => ({
+  scheduleTaskUidIdx: uniqueIndex("food_fraud_vigilancias_schedule_uid_idx").on(table.scheduleCronTaskUid),
+}));
+export type FoodFraudVigilancia = typeof foodFraudVigilancias.$inferSelect;
+
+export const foodFraudRelatorios = mysqlTable("food_fraud_relatorios", {
+  id: int("id").autoincrement().primaryKey(),
+  vigilanciaId: int("vigilancia_id").notNull().references(() => foodFraudVigilancias.id),
+  periodoInicio: timestamp("periodo_inicio").notNull(),
+  periodoFim: timestamp("periodo_fim").notNull(),
+  anoMes: varchar("ano_mes", { length: 7 }).notNull(),
+  nomeFicheiro: varchar("nome_ficheiro", { length: 180 }).notNull(),
+  origem: mysqlEnum("origem", ["mensal", "manual"]).notNull().default("mensal"),
+  ficheiroOrigem: varchar("ficheiro_origem", { length: 255 }),
+  estado: mysqlEnum("estado", ["sucesso", "sem_dados", "erro"]).notNull(),
+  totalAvaliados: int("total_avaliados").default(0).notNull(),
+  totalRelevantes: int("total_relevantes").default(0).notNull(),
+  resumo: text("resumo").notNull(),
+  ocorrencias: json("ocorrencias"),
+  fontes: json("fontes").notNull(),
+  erro: text("erro"),
+  geradoPor: int("gerado_por").references(() => users.id),
+  geradoEm: timestamp("gerado_em").defaultNow().notNull(),
+});
+export type FoodFraudRelatorio = typeof foodFraudRelatorios.$inferSelect;

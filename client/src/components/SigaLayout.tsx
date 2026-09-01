@@ -28,6 +28,7 @@ const NAV_ITEMS = [
   { href: "/historico", icon: BarChart3, label: "Histórico", group: "documentos" },
   { href: "/notificacoes", icon: Bell, label: "Notificações", group: "documentos" },
   { href: "/vigilancia-rasff", icon: Radar, label: "Vigilância RASFF", group: "documentos" },
+  { href: "/vigilancia-food-fraud", icon: AlertTriangle, label: "Vigilância Food Fraud", group: "documentos" },
   { href: "/importacao", icon: Settings, label: "Importação", group: "config" },
   { href: "/configuracoes", icon: ShieldCheck, label: "Configurações", group: "config", requiresAccessManagement: true },
   { href: "/permissoes", icon: KeyRound, label: "Permissões", group: "config", requiresAccessManagement: true },

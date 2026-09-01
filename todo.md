@@ -859,3 +859,24 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Corrigir a validação, mutação ou persistência sem perder alertas
 - [x] Garantir feedback e atualização do histórico, com testes e publicação
 
+
+## Nova funcionalidade — Vigilância automática Food Fraud
+
+- [ ] Analisar o registo mensal e definir fontes públicas e periodicidade
+- [ ] Definir matriz de risco e correspondência com MP, fornecedores e origens
+- [ ] Criar painel, histórico e relatório descarregável de Food Fraud
+- [ ] Ligar agente automático, callback, notificações e agendamento
+- [ ] Validar testes, segurança, publicação e limitações
+
+
+## Decisão — Periodicidade da vigilância Food Fraud
+
+- [x] Periodicidade confirmada: mensal, alinhada com o Registo Mensal PQ-FF-01
+
+
+## Melhoria v4.0 — Vigilância Food Fraud
+- [x] Implementar API e persistência mensal Food Fraud
+- [x] Integrar página Food Fraud nas rotas e navegação global
+- [x] Montar callback mensal autenticado e idempotente em /api/scheduled/foodfraud
+- [x] Criar testes Vitest para cálculo de risco e persistência do relatório Food Fraud
+- [ ] Verificar visualmente o painel Food Fraud e guardar checkpoint publicado

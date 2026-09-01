@@ -22,6 +22,7 @@ import Utilizadores from "./pages/Utilizadores";
 import Notificacoes from "./pages/Notificacoes";
 import Permissoes from "./pages/Permissoes";
 import VigilanciaRasff from "./pages/VigilanciaRasff";
+import VigilanciaFoodFraud from "./pages/VigilanciaFoodFraud";
 import { useAuth } from "./_core/hooks/useAuth";
 import AcessoPin from "./pages/AcessoPin";
 
@@ -42,6 +43,7 @@ function QualidadeRoute({ component: Component }: { component: React.ComponentTy
     "/notificacoes": "Notificações",
     "/importacao": "Importação",
     "/vigilancia-rasff": "Vigilância RASFF",
+    "/vigilancia-food-fraud": "Vigilância Food Fraud",
   }[location] ?? "módulo selecionado";
   useEffect(() => {
     if (user?.role === "logistica") {
@@ -77,6 +79,7 @@ function Router() {
       <Route path="/notificacoes" component={() => <QualidadeRoute component={Notificacoes} />} />
       <Route path="/importacao" component={() => <QualidadeRoute component={Importacao} />} />
       <Route path="/vigilancia-rasff" component={() => <QualidadeRoute component={VigilanciaRasff} />} />
+      <Route path="/vigilancia-food-fraud" component={() => <QualidadeRoute component={VigilanciaFoodFraud} />} />
       <Route path="/utilizadores" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
       <Route path="/configuracoes" component={() => <GestaoAcessosRoute component={Utilizadores} />} />
       <Route path="/permissoes" component={() => <GestaoAcessosRoute component={Permissoes} />} />

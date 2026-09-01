@@ -21,6 +21,8 @@ import {
   users,
   rasffRelatorios,
   rasffVigilancias,
+  foodFraudRelatorios,
+  foodFraudVigilancias,
 } from "../drizzle/schema";
 import { documentosFornecedor } from "../drizzle/schema";
 import { calcularQuantidadeDisponivel } from "../shared/transferencia-stock";
@@ -869,6 +871,126 @@ export async function atualizarDataValidacaoMp(mpId: number, dataValidacao: Date
 }
 
 // ─── VIGILÂNCIA RASFF ──────────────────────────────────────────────────────────
+export const FOOD_FRAUD_CATEGORIAS_PADRAO = [
+  "cereais e farinhas",
+  "frutos de casca rija e sementes",
+  "frutas secas e cristalizadas",
+  "cacau e chocolate",
+  "especiarias e ervas",
+  "óleos e gorduras",
+  "aditivos e auxiliares tecnológicos",
+  "ingredientes compostos",
+] as const;
+
+export const FOOD_FRAUD_FONTES_PADRAO = [
+  "EU Agri-Food Fraud Network — Food Fraud and Quality Knowledge Centre",
+  "European Commission — Agri-Food Fraud Network reports",
+] as const;
+
+export async function getFoodFraudVigilancia() {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(foodFraudVigilancias).orderBy(foodFraudVigilancias.id).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function criarFoodFraudVigilancia(createdBy?: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const existente = await getFoodFraudVigilancia();
+  if (existente) return existente;
+  await db.insert(foodFraudVigilancias).values({
+    nome: "Vigilância Food Fraud — EU Agri-Food Fraud Network",
+    ativa: true,
+    periodicidade: "mensal",
+    cronExpression: "0 0 7 1 * *",
+    timezone: "Europe/Lisbon",
+    categorias: [...FOOD_FRAUD_CATEGORIAS_PADRAO],
+    fontes: [...FOOD_FRAUD_FONTES_PADRAO],
+    createdBy: createdBy ?? null,
+  });
+  return getFoodFraudVigilancia();
+}
+
+export async function getFoodFraudVigilanciaByTaskUid(taskUid: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.select().from(foodFraudVigilancias).where(eq(foodFraudVigilancias.scheduleCronTaskUid, taskUid)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function atualizarFoodFraudTaskUid(id: number, taskUid: string) {
+  const db = await getDb();
+  if (!db) return null;
+  await db.update(foodFraudVigilancias).set({ scheduleCronTaskUid: taskUid }).where(eq(foodFraudVigilancias.id, id));
+  return getFoodFraudVigilancia();
+}
+
+export async function listarFoodFraudRelatorios(limit = 24) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(foodFraudRelatorios).orderBy(desc(foodFraudRelatorios.geradoEm)).limit(limit);
+}
+
+export async function criarFoodFraudRelatorio(input: typeof foodFraudRelatorios.$inferInsert) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(foodFraudRelatorios).values(input);
+  const id = Number(result[0]?.insertId ?? 0);
+  if (!id) return null;
+  const rows = await db.select().from(foodFraudRelatorios).where(eq(foodFraudRelatorios.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function criarNotificacoesFoodFraudRelevantes(reportId: number, ocorrencias: unknown[], anoMes: string) {
+  const db = await getDb();
+  if (!db) return 0;
+  let criadas = 0;
+  for (const [index, raw] of Array.from(ocorrencias.entries())) {
+    if (!raw || typeof raw !== "object") continue;
+    const item = raw as Record<string, unknown>;
+    const score = Number(item.score ?? item.risco ?? 0);
+    const correspondencias = Array.isArray(item.materiasPrimas) ? item.materiasPrimas : (Array.isArray(item.correspondencias) ? item.correspondencias : []);
+    const relevante = item.relevante === true || score >= 6 || correspondencias.length > 0;
+    if (!relevante) continue;
+    const chave = String(item.chave ?? item.id ?? `${index}-${item.titulo ?? item.produto ?? "food-fraud"}`).slice(0, 180);
+    const existente = await db.select({ id: notificacoesQualidade.id }).from(notificacoesQualidade).where(and(eq(notificacoesQualidade.tipo, "food_fraud_relevante"), eq(notificacoesQualidade.rasffChave, chave))).limit(1);
+    if (existente[0]) continue;
+    const titulo = String(item.titulo ?? item.produto ?? "Ocorrência Food Fraud relevante").slice(0, 255);
+    const descricao = String(item.resumo ?? item.mensagem ?? item.pratica ?? "Foi identificada uma possível correspondência com matérias-primas do SIGA.").slice(0, 3000);
+    await db.insert(notificacoesQualidade).values({
+      tipo: "food_fraud_relevante",
+      titulo: `Food Fraud ${anoMes}: ${titulo}`.slice(0, 255),
+      mensagem: `${descricao}${correspondencias.length ? `\\n\\nMP afetadas: ${correspondencias.map(String).join(", ").slice(0, 1200)}` : ""}\\n\\nRever no histórico Food Fraud e confirmar pela Qualidade.`.slice(0, 5000),
+      link: `/vigilancia-food-fraud?foodFraudRelatorioId=${reportId}`,
+      rasffRelatorioId: null,
+      rasffChave: chave,
+      lida: false,
+      lidaEm: null,
+    });
+    criadas += 1;
+  }
+  return criadas;
+}
+
+export async function getFoodFraudContexto() {
+  const db = await getDb();
+  if (!db) return { materiasPrimas: [] };
+  const rows = await db.select({
+    id: materiasPrimas.id,
+    nome: materiasPrimas.nome,
+    codigo: materiasPrimas.codigo,
+    origem: materiasPrimas.paisOrigem,
+    fornecedorId: mpFornecedores.fornecedorId,
+    fornecedorNome: fornecedores.nome,
+    paisOrigemFornecedor: mpFornecedores.paisOrigem,
+  }).from(materiasPrimas)
+    .leftJoin(mpFornecedores, eq(mpFornecedores.materiaPrimaId, materiasPrimas.id))
+    .leftJoin(fornecedores, eq(fornecedores.id, mpFornecedores.fornecedorId))
+    .where(eq(materiasPrimas.ativa, true));
+  return { materiasPrimas: rows };
+}
+
 export const RASFF_CATEGORIAS_PADRAO = [
   "cereais e produtos de padaria",
   "frutos de casca rija",

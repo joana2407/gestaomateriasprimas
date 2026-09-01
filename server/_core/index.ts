@@ -9,6 +9,7 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { handleRasffScheduled } from "../rasff-scheduled";
+import { handleFoodFraudScheduled } from "../food-fraud-scheduled";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -40,6 +41,8 @@ async function startServer() {
   // Callback do job semanal RASFF; a autenticação cron é feita no handler.
   app.get("/api/scheduled/rasff/context", handleRasffScheduled);
   app.post("/api/scheduled/rasff", handleRasffScheduled);
+  app.get("/api/scheduled/foodfraud/context", handleFoodFraudScheduled);
+  app.post("/api/scheduled/foodfraud", handleFoodFraudScheduled);
   // tRPC API
   app.use(
     "/api/trpc",
