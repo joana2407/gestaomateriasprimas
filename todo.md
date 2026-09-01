@@ -895,10 +895,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Publicar checkpoint da correção
 
 ## Correção v4.3 — Mostrar apenas alertas reconhecidos
-- [ ] Filtrar cabeçalhos, metadados e texto auxiliar dos ficheiros Food Fraud
-- [ ] Apresentar apenas alertas/ocorrências reconhecidos na análise manual
-- [ ] Manter contagens e mensagens claras quando não forem encontrados alertas
-- [ ] Validar formatos, testes, interface e publicar checkpoint
+- [x] Filtrar cabeçalhos, metadados e texto auxiliar dos ficheiros Food Fraud
+- [x] Apresentar apenas alertas/ocorrências reconhecidos na análise manual
+- [x] Manter contagens e mensagens claras quando não forem encontrados alertas
+- [x] Validar formatos, testes, interface e publicar checkpoint
 
 ## Melhoria v4.4 — Cartões Food Fraud simplificados
 - [x] Remover cabeçalhos técnicos repetidos dos cartões de alerta
