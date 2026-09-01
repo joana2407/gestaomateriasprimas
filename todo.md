@@ -925,3 +925,8 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Atualizar o agente automático para consultar as fontes oficiais configuradas
 - [x] Apresentar as fontes como hiperligações no painel Food Fraud
 - [x] Validar testes e publicar checkpoint
+
+## Melhoria v4.8 — Fonte efetiva por relatório Food Fraud
+- [x] Confirmar a persistência da fonte específica utilizada em cada relatório
+- [x] Exibir no histórico as fontes efetivamente usadas como hiperligações
+- [x] Validar testes, interface e publicar checkpoint
