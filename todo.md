@@ -880,3 +880,11 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Montar callback mensal autenticado e idempotente em /api/scheduled/foodfraud
 - [x] Criar testes Vitest para cálculo de risco e persistência do relatório Food Fraud
 - [x] Verificar visualmente o painel Food Fraud e guardar checkpoint publicado
+
+## Melhoria v4.1 — Formatos adicionais na análise Food Fraud
+- [x] Suportar ficheiros Excel (.xlsx, .xls, .xlsm, .ods)
+- [x] Suportar ficheiros Word (.docx, .doc)
+- [x] Suportar ficheiros PDF
+- [x] Suportar imagens JPG/JPEG e PNG com extração de texto/OCR
+- [x] Atualizar validações, textos da interface e testes
+- [x] Verificar visualmente e publicar checkpoint
