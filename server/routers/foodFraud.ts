@@ -75,6 +75,12 @@ export const foodFraudRouter = router({
     await dbHelpers.criarNotificacoesFoodFraudRelevantes(report.id, input.ocorrencias, anoMes);
     return report;
   }),
+  eliminarRelatorio: qualidadeProcedure.input(z.object({ id: z.number().int().positive() })).mutation(async ({ input }) => {
+    const existente = await dbHelpers.listarFoodFraudRelatorios(10000);
+    if (!existente.some(report => report.id === input.id)) throw new Error("Relatório Food Fraud não encontrado.");
+    await dbHelpers.eliminarFoodFraudRelatorio(input.id);
+    return { ok: true, id: input.id };
+  }),
   relatorio: consultaGlobalProcedure.input(z.object({ id: z.number().int().positive() })).query(async ({ input }) => {
     const db = await dbHelpers.getDb(); if (!db) return null;
     const rows = await db.select().from(foodFraudRelatorios).where(eq(foodFraudRelatorios.id, input.id)).limit(1);

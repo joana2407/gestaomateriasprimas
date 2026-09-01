@@ -932,6 +932,13 @@ export async function listarFoodFraudRelatorios(limit = 24) {
   return db.select().from(foodFraudRelatorios).orderBy(desc(foodFraudRelatorios.geradoEm)).limit(limit);
 }
 
+export async function eliminarFoodFraudRelatorio(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.delete(foodFraudRelatorios).where(eq(foodFraudRelatorios.id, id));
+  return true;
+}
+
 export async function criarFoodFraudRelatorio(input: typeof foodFraudRelatorios.$inferInsert) {
   const db = await getDb();
   if (!db) return null;

@@ -905,3 +905,17 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Remover a linha de Probabilidade × Impacto da apresentação principal
 - [x] Manter nível de risco, título e resumo útil do alerta
 - [x] Validar e publicar checkpoint
+
+## Melhoria v4.5 — Gestão do histórico Food Fraud
+- [x] Remover da interface o bloco de informação sobre formatos aceites
+- [x] Criar eliminação segura de relatórios com autorização da Qualidade
+- [x] Adicionar confirmação e atualização imediata do histórico após eliminação
+- [x] Corrigir cartões para ocultar cabeçalhos técnicos de páginas
+- [x] Validar testes, interface e publicar checkpoint
+
+## Melhoria v4.6 — Datas das notificações Food Fraud
+- [x] Extrair e normalizar a data de cada notificação do relatório
+- [x] Apresentar a data nos cartões de alerta
+- [x] Adicionar filtros por data inicial e final
+- [x] Incluir a data no histórico e na exportação Excel
+- [x] Validar testes e publicar checkpoint
