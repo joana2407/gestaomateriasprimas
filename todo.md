@@ -893,3 +893,15 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Corrigir a configuração GlobalWorkerOptions.workerSrc no leitor PDF
 - [x] Validar carregamento de PDF, testes e build
 - [x] Publicar checkpoint da correção
+
+## Correção v4.3 — Mostrar apenas alertas reconhecidos
+- [ ] Filtrar cabeçalhos, metadados e texto auxiliar dos ficheiros Food Fraud
+- [ ] Apresentar apenas alertas/ocorrências reconhecidos na análise manual
+- [ ] Manter contagens e mensagens claras quando não forem encontrados alertas
+- [ ] Validar formatos, testes, interface e publicar checkpoint
+
+## Melhoria v4.4 — Cartões Food Fraud simplificados
+- [x] Remover cabeçalhos técnicos repetidos dos cartões de alerta
+- [x] Remover a linha de Probabilidade × Impacto da apresentação principal
+- [x] Manter nível de risco, título e resumo útil do alerta
+- [x] Validar e publicar checkpoint
