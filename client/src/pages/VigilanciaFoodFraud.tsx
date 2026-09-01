@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { AlertTriangle, CalendarClock, CheckCircle2, Download, FileSearch, Radar, Upload } from "lucide-react";
 import * as XLSX from "xlsx";
 import mammoth from "mammoth/mammoth.browser";
+import pdfWorkerUrl from "pdfjs-dist/legacy/build/pdf.worker.min.mjs?url";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,8 @@ const ACCEPTED_EXTENSIONS = ".xlsx,.xls,.xlsm,.ods,.docx,.doc,.pdf,.jpg,.jpeg,.p
 
 async function lerPdf(buffer: ArrayBuffer) {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const pdf = await pdfjs.getDocument({ data: buffer, disableWorker: true } as Parameters<typeof pdfjs.getDocument>[0]).promise;
+  pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+  const pdf = await pdfjs.getDocument({ data: buffer }).promise;
   const paginas: string[] = [];
   for (let pagina = 1; pagina <= pdf.numPages; pagina += 1) {
     const page = await pdf.getPage(pagina);

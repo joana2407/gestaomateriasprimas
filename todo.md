@@ -888,3 +888,8 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Suportar imagens JPG/JPEG e PNG com extração de texto/OCR
 - [x] Atualizar validações, textos da interface e testes
 - [x] Verificar visualmente e publicar checkpoint
+
+## Correção v4.2 — Worker PDF.js
+- [x] Corrigir a configuração GlobalWorkerOptions.workerSrc no leitor PDF
+- [x] Validar carregamento de PDF, testes e build
+- [x] Publicar checkpoint da correção
