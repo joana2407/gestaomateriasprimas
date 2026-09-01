@@ -172,6 +172,9 @@ export default function VigilanciaRasff() {
   const [regrasPrioridade, setRegrasPrioridade] = useState<RegrasPrioridade>(() => {
     try { return JSON.parse(localStorage.getItem("siga-rasff-regras-prioridade") ?? "{}"); } catch { return {}; }
   });
+  const [exemplosPrioridade, setExemplosPrioridade] = useState<Array<{ texto: string; prioridade: PrioridadeAlerta }>>(() => {
+    try { return JSON.parse(localStorage.getItem("siga-rasff-exemplos-prioridade") ?? "[]"); } catch { return []; }
+  });
   const [priorityFilter, setPriorityFilter] = useState<"Todas" | PrioridadeAlerta>("Todas");
   const [alertNumberFilter, setAlertNumberFilter] = useState("");
   const [freeSearch, setFreeSearch] = useState("");
@@ -205,11 +208,16 @@ export default function VigilanciaRasff() {
   const relevantCount = useMemo(() => reports.reduce((sum, report) => sum + (report.totalRelevantes ?? 0), 0), [reports]);
   const editarPrioridade = (item: ManualResultado, prioridade: PrioridadeAlerta) => {
     if (!isQualidade) { toast.error("A edição das prioridades está reservada à Qualidade."); return; }
-    const chaves = [chaveAprendizagem(item), ...termosParaAprendizagem(item).map(termo => `termo:${termo}`)];
+    const chave = chaveAprendizagem(item);
     setRegrasPrioridade(anterior => {
-      const seguinte = { ...anterior };
-      chaves.forEach(chave => { seguinte[chave] = prioridade; });
+      const seguinte = { ...anterior, [chave]: prioridade };
       localStorage.setItem("siga-rasff-regras-prioridade", JSON.stringify(seguinte));
+      return seguinte;
+    });
+    setExemplosPrioridade(anterior => {
+      const semDuplicado = anterior.filter(exemplo => exemplo.texto !== item.linha);
+      const seguinte = [...semDuplicado, { texto: item.linha, prioridade }].slice(-50);
+      localStorage.setItem("siga-rasff-exemplos-prioridade", JSON.stringify(seguinte));
       return seguinte;
     });
     setManualFile(anterior => anterior ? { ...anterior, results: anterior.results.map(registo => registo.id === item.id ? { ...registo, prioridade } : registo) } : anterior);
@@ -222,7 +230,7 @@ export default function VigilanciaRasff() {
     const key = chaveResultado(item);
     setIaBusyKey(key);
     try {
-      const exemplos = Object.entries(regrasPrioridade).filter(([chave]) => chave.startsWith("termo:")).slice(0, 20).map(([chave, prioridade]) => ({ texto: chave.replace("termo:", ""), prioridade }));
+      const exemplos = exemplosPrioridade.slice(-20);
       const sugestao = await sugerirPrioridadeMutation.mutateAsync({ linha: item.linha, prioridadeAtual: item.prioridade, exemplos });
       setSugestoesIa(anterior => ({ ...anterior, [key]: { prioridade: sugestao.prioridade as PrioridadeAlerta, fundamento: sugestao.fundamento, confianca: Math.round(sugestao.confianca) } }));
       toast.success("Sugestão IA gerada. A Qualidade deve confirmar a prioridade.");

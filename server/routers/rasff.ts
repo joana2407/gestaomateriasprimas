@@ -103,11 +103,14 @@ export const rasffRouter = router({
   })).mutation(async ({ ctx, input }) => {
     const agora = new Date();
     const inicio = input.periodoInicio ? new Date(input.periodoInicio) : new Date(agora.getTime() - 7 * 24 * 60 * 60 * 1000);
+    let vigilancia = await dbHelpers.getRasffVigilancia();
+    if (!vigilancia) vigilancia = await dbHelpers.criarRasffVigilancia(ctx.user.id);
+    if (!vigilancia) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Não existe uma configuração de Vigilância RASFF disponível para arquivar o relatório." });
     const fim = input.periodoFim ? new Date(input.periodoFim) : agora;
     const codigo = `MANUAL-${agora.getUTCFullYear()}${String(agora.getUTCMonth() + 1).padStart(2, "0")}${String(agora.getUTCDate()).padStart(2, "0")}-${String(agora.getUTCHours()).padStart(2, "0")}${String(agora.getUTCMinutes()).padStart(2, "0")}`;
     const nomeSeguro = input.ficheiro.replace(/[^a-zA-Z0-9._-]+/g, "-").slice(0, 120) || "ficheiro";
     const report = await dbHelpers.criarRasffRelatorio({
-      vigilanciaId: 1,
+      vigilanciaId: vigilancia.id,
       periodoInicio: inicio,
       periodoFim: fim,
       anoSemana: agora.getUTCFullYear(),

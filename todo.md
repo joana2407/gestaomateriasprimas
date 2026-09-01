@@ -852,3 +852,10 @@ A validade individual das FTs por fornecedor e a data da última validação da 
 - [x] Garantir que a edição de prioridade altera apenas o alerta selecionado
 - [x] Isolar aprendizagem/sugestão por alerta e validar testes/publicação
 
+
+## Correção — Gravação de análises manuais RASFF
+
+- [x] Reproduzir a falha de gravação e localizar a causa no fluxo completo
+- [x] Corrigir a validação, mutação ou persistência sem perder alertas
+- [x] Garantir feedback e atualização do histórico, com testes e publicação
+
