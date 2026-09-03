@@ -1,6 +1,11 @@
 # SIGA — Sistema Integrado de Gestão de Alergénios
 # TODO
 
+## Integração da matriz de triagem Food Fraud
+- [x] Localizar o módulo Food Fraud e mapear o fluxo de vigilância mensal existente.
+- [x] Integrar a versão FF-OC-1.0 com critérios P1–P3 e I1–I4.
+- [x] Validar a triagem, a exportação e o histórico num ambiente local antes de publicar.
+
 ## Fase 1: Base de Dados e Backend
 - [x] Esquema de BD: tabelas fabricas, fornecedores, materias_primas, fichas_tecnicas_fornecedor
 - [x] Esquema de BD: tabelas receitas, ingredientes_receita, produtos, perfil_alergenico_produto

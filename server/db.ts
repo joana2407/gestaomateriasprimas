@@ -51,18 +51,31 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   const updateSet: Record<string, unknown> = {};
   for (const field of ["name", "email", "loginMethod"] as const) {
     const value = user[field];
-    if (value !== undefined) { values[field] = value ?? null; updateSet[field] = value ?? null; }
+    if (value !== undefined) {
+      values[field] = value ?? null;
+      updateSet[field] = value ?? null;
+    }
   }
-  if (user.lastSignedIn !== undefined) { values.lastSignedIn = user.lastSignedIn; updateSet.lastSignedIn = user.lastSignedIn; }
+  if (user.lastSignedIn !== undefined) {
+    values.lastSignedIn = user.lastSignedIn;
+    updateSet.lastSignedIn = user.lastSignedIn;
+  }
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db
+    .insert(users)
+    .values(values)
+    .onDuplicateKeyUpdate({ set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(users).where(eq(users.openId, openId)).limit(1);
+  const result = await db
+    .select()
+    .from(users)
+    .where(eq(users.openId, openId))
+    .limit(1);
   return result[0];
 }
 
@@ -72,10 +85,16 @@ export async function getUtilizadores() {
   return db.select().from(users).orderBy(desc(users.lastSignedIn));
 }
 
-export async function atualizarPerfilUtilizador(id: number, role: PerfilAcesso) {
+export async function atualizarPerfilUtilizador(
+  id: number,
+  role: PerfilAcesso
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(users).set({ role, updatedAt: new Date() }).where(eq(users.id, id));
+  await db
+    .update(users)
+    .set({ role, updatedAt: new Date() })
+    .where(eq(users.id, id));
 }
 
 export async function getUserById(id: number) {
@@ -88,103 +107,188 @@ export async function getUserById(id: number) {
 export async function getOperadoresPinAtivos() {
   const db = await getDb();
   if (!db) return [];
-  return db.select({
-    operadorId: operadoresPin.id,
-    userId: users.id,
-    name: users.name,
-    role: users.role,
-  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(eq(operadoresPin.ativo, true)).orderBy(users.name);
+  return db
+    .select({
+      operadorId: operadoresPin.id,
+      userId: users.id,
+      name: users.name,
+      role: users.role,
+    })
+    .from(operadoresPin)
+    .innerJoin(users, eq(operadoresPin.userId, users.id))
+    .where(eq(operadoresPin.ativo, true))
+    .orderBy(users.name);
 }
 
 export async function getOperadoresPinGeriveis() {
   const db = await getDb();
   if (!db) return [];
-  return db.select({
-    operadorId: operadoresPin.id,
-    userId: users.id,
-    name: users.name,
-    role: users.role,
-    podeGerirAcessos: users.podeGerirAcessos,
-    ativo: operadoresPin.ativo,
-    ultimoAcessoEm: operadoresPin.ultimoAcessoEm,
-    criadoEm: operadoresPin.criadoEm,
-  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).orderBy(users.name);
+  return db
+    .select({
+      operadorId: operadoresPin.id,
+      userId: users.id,
+      name: users.name,
+      role: users.role,
+      podeGerirAcessos: users.podeGerirAcessos,
+      ativo: operadoresPin.ativo,
+      ultimoAcessoEm: operadoresPin.ultimoAcessoEm,
+      criadoEm: operadoresPin.criadoEm,
+    })
+    .from(operadoresPin)
+    .innerJoin(users, eq(operadoresPin.userId, users.id))
+    .orderBy(users.name);
 }
 
 export async function getOperadorPinGerivelPorId(operadorId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select({ operadorId: operadoresPin.id, userId: users.id, ativo: operadoresPin.ativo }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(eq(operadoresPin.id, operadorId)).limit(1);
+  const result = await db
+    .select({
+      operadorId: operadoresPin.id,
+      userId: users.id,
+      ativo: operadoresPin.ativo,
+    })
+    .from(operadoresPin)
+    .innerJoin(users, eq(operadoresPin.userId, users.id))
+    .where(eq(operadoresPin.id, operadorId))
+    .limit(1);
   return result[0];
 }
 
 export async function getUtilizadorComPinAtivo(userId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select({
-    id: users.id,
-    openId: users.openId,
-    name: users.name,
-    email: users.email,
-    loginMethod: users.loginMethod,
-    role: users.role,
-    podeGerirAcessos: users.podeGerirAcessos,
-    createdAt: users.createdAt,
-    updatedAt: users.updatedAt,
-    lastSignedIn: users.lastSignedIn,
-  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(and(eq(operadoresPin.userId, userId), eq(operadoresPin.ativo, true))).limit(1);
+  const result = await db
+    .select({
+      id: users.id,
+      openId: users.openId,
+      name: users.name,
+      email: users.email,
+      loginMethod: users.loginMethod,
+      role: users.role,
+      podeGerirAcessos: users.podeGerirAcessos,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(operadoresPin)
+    .innerJoin(users, eq(operadoresPin.userId, users.id))
+    .where(and(eq(operadoresPin.userId, userId), eq(operadoresPin.ativo, true)))
+    .limit(1);
   return result[0];
 }
 
-export async function criarOperadorPin(data: { openId: string; nome: string; role: PerfilAcesso; pinHash: string }) {
+export async function criarOperadorPin(data: {
+  openId: string;
+  nome: string;
+  role: PerfilAcesso;
+  pinHash: string;
+}) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const userResult = await db.insert(users).values({ openId: data.openId, name: data.nome, loginMethod: "pin", role: data.role });
+  const userResult = await db
+    .insert(users)
+    .values({
+      openId: data.openId,
+      name: data.nome,
+      loginMethod: "pin",
+      role: data.role,
+    });
   const userId = (userResult[0] as any).insertId as number;
-  const operadorResult = await db.insert(operadoresPin).values({ userId, pinHash: data.pinHash, ativo: true });
+  const operadorResult = await db
+    .insert(operadoresPin)
+    .values({ userId, pinHash: data.pinHash, ativo: true });
   return { operadorId: (operadorResult[0] as any).insertId as number, userId };
 }
 
-export async function atualizarOperadorPin(operadorId: number, data: { ativo?: boolean; role?: PerfilAcesso; pinHash?: string; podeGerirAcessos?: boolean }) {
+export async function atualizarOperadorPin(
+  operadorId: number,
+  data: {
+    ativo?: boolean;
+    role?: PerfilAcesso;
+    pinHash?: string;
+    podeGerirAcessos?: boolean;
+  }
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  const operador = await db.select().from(operadoresPin).where(eq(operadoresPin.id, operadorId)).limit(1);
+  const operador = await db
+    .select()
+    .from(operadoresPin)
+    .where(eq(operadoresPin.id, operadorId))
+    .limit(1);
   if (!operador[0]) throw new Error("Operador não encontrado");
   if (data.ativo !== undefined || data.pinHash !== undefined) {
-    await db.update(operadoresPin).set({
-      ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
-      ...(data.pinHash !== undefined ? { pinHash: data.pinHash } : {}),
-    }).where(eq(operadoresPin.id, operadorId));
+    await db
+      .update(operadoresPin)
+      .set({
+        ...(data.ativo !== undefined ? { ativo: data.ativo } : {}),
+        ...(data.pinHash !== undefined ? { pinHash: data.pinHash } : {}),
+      })
+      .where(eq(operadoresPin.id, operadorId));
   }
-  if (data.role || data.podeGerirAcessos !== undefined) await db.update(users).set({ ...(data.role ? { role: data.role } : {}), ...(data.podeGerirAcessos !== undefined ? { podeGerirAcessos: data.podeGerirAcessos } : {}), updatedAt: new Date() }).where(eq(users.id, operador[0].userId));
+  if (data.role || data.podeGerirAcessos !== undefined)
+    await db
+      .update(users)
+      .set({
+        ...(data.role ? { role: data.role } : {}),
+        ...(data.podeGerirAcessos !== undefined
+          ? { podeGerirAcessos: data.podeGerirAcessos }
+          : {}),
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, operador[0].userId));
   return operador[0].userId;
 }
 
-export async function getOperadorAtivoPorIdEPinHash(operadorId: number, pinHash: string) {
+export async function getOperadorAtivoPorIdEPinHash(
+  operadorId: number,
+  pinHash: string
+) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select({
-    operadorId: operadoresPin.id,
-    userId: users.id,
-    openId: users.openId,
-    name: users.name,
-    email: users.email,
-    loginMethod: users.loginMethod,
-    role: users.role,
-    podeGerirAcessos: users.podeGerirAcessos,
-    createdAt: users.createdAt,
-    updatedAt: users.updatedAt,
-    lastSignedIn: users.lastSignedIn,
-  }).from(operadoresPin).innerJoin(users, eq(operadoresPin.userId, users.id)).where(and(eq(operadoresPin.id, operadorId), eq(operadoresPin.pinHash, pinHash), eq(operadoresPin.ativo, true))).limit(1);
+  const result = await db
+    .select({
+      operadorId: operadoresPin.id,
+      userId: users.id,
+      openId: users.openId,
+      name: users.name,
+      email: users.email,
+      loginMethod: users.loginMethod,
+      role: users.role,
+      podeGerirAcessos: users.podeGerirAcessos,
+      createdAt: users.createdAt,
+      updatedAt: users.updatedAt,
+      lastSignedIn: users.lastSignedIn,
+    })
+    .from(operadoresPin)
+    .innerJoin(users, eq(operadoresPin.userId, users.id))
+    .where(
+      and(
+        eq(operadoresPin.id, operadorId),
+        eq(operadoresPin.pinHash, pinHash),
+        eq(operadoresPin.ativo, true)
+      )
+    )
+    .limit(1);
   return result[0];
 }
 
-export async function registarAcessoOperador(operadorId: number, userId: number) {
+export async function registarAcessoOperador(
+  operadorId: number,
+  userId: number
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const agora = new Date();
-  await db.update(operadoresPin).set({ ultimoAcessoEm: agora }).where(eq(operadoresPin.id, operadorId));
-  await db.update(users).set({ lastSignedIn: agora }).where(eq(users.id, userId));
+  await db
+    .update(operadoresPin)
+    .set({ ultimoAcessoEm: agora })
+    .where(eq(operadoresPin.id, operadorId));
+  await db
+    .update(users)
+    .set({ lastSignedIn: agora })
+    .where(eq(users.id, userId));
 }
 
 // ─── FÁBRICAS ─────────────────────────────────────────────────────────────────
@@ -197,7 +301,11 @@ export async function getFabricas() {
 export async function getFabricaById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(fabricas).where(eq(fabricas.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(fabricas)
+    .where(eq(fabricas.id, id))
+    .limit(1);
   return result[0];
 }
 
@@ -212,7 +320,10 @@ export async function upsertFornecedor(data: typeof fornecedores.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   if (data.id) {
-    await db.update(fornecedores).set({ ...data, updatedAt: new Date() }).where(eq(fornecedores.id, data.id));
+    await db
+      .update(fornecedores)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(fornecedores.id, data.id));
     return data.id;
   }
   const result = await db.insert(fornecedores).values(data);
@@ -224,11 +335,20 @@ export async function getDocumentosFornecedor(fornecedorId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (fornecedorId) {
-    return db.select().from(documentosFornecedor)
-      .where(and(eq(documentosFornecedor.fornecedorId, fornecedorId), eq(documentosFornecedor.ativo, true)))
+    return db
+      .select()
+      .from(documentosFornecedor)
+      .where(
+        and(
+          eq(documentosFornecedor.fornecedorId, fornecedorId),
+          eq(documentosFornecedor.ativo, true)
+        )
+      )
       .orderBy(documentosFornecedor.dataValidade);
   }
-  return db.select().from(documentosFornecedor)
+  return db
+    .select()
+    .from(documentosFornecedor)
     .where(eq(documentosFornecedor.ativo, true))
     .orderBy(documentosFornecedor.dataValidade);
 }
@@ -237,23 +357,38 @@ export async function getDocumentosComAlerta() {
   const db = await getDb();
   if (!db) return [];
   const em60Dias = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
-  return db.select().from(documentosFornecedor)
-    .where(and(eq(documentosFornecedor.ativo, true), lte(documentosFornecedor.dataValidade, em60Dias)))
+  return db
+    .select()
+    .from(documentosFornecedor)
+    .where(
+      and(
+        eq(documentosFornecedor.ativo, true),
+        lte(documentosFornecedor.dataValidade, em60Dias)
+      )
+    )
     .orderBy(documentosFornecedor.dataValidade);
 }
 
-export async function upsertDocumentoFornecedor(data: typeof documentosFornecedor.$inferInsert) {
+export async function upsertDocumentoFornecedor(
+  data: typeof documentosFornecedor.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const agora = new Date();
-  const dias = Math.floor((data.dataValidade.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
-  let estado: "valido" | "a_expirar_60" | "a_expirar_30" | "expirado" = "valido";
+  const dias = Math.floor(
+    (data.dataValidade.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  let estado: "valido" | "a_expirar_60" | "a_expirar_30" | "expirado" =
+    "valido";
   if (dias < 0) estado = "expirado";
   else if (dias <= 30) estado = "a_expirar_30";
   else if (dias <= 60) estado = "a_expirar_60";
   const payload = { ...data, estado };
   if (data.id) {
-    await db.update(documentosFornecedor).set({ ...payload, updatedAt: new Date() }).where(eq(documentosFornecedor.id, data.id!));
+    await db
+      .update(documentosFornecedor)
+      .set({ ...payload, updatedAt: new Date() })
+      .where(eq(documentosFornecedor.id, data.id!));
     return data.id;
   }
   const result = await db.insert(documentosFornecedor).values(payload);
@@ -263,29 +398,59 @@ export async function upsertDocumentoFornecedor(data: typeof documentosFornecedo
 export async function deleteDocumentoFornecedor(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(documentosFornecedor).set({ ativo: false }).where(eq(documentosFornecedor.id, id));
+  await db
+    .update(documentosFornecedor)
+    .set({ ativo: false })
+    .where(eq(documentosFornecedor.id, id));
 }
 
 // ─── MATÉRIAS-PRIMAS ──────────────────────────────────────────────────────────
 export async function getMateriasPrimas(fabricaId?: number) {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db.select().from(materiasPrimas).where(eq(materiasPrimas.ativa, true));
+  const rows = await db
+    .select()
+    .from(materiasPrimas)
+    .where(eq(materiasPrimas.ativa, true));
   const allMpFabricas = await db.select().from(materiasPrimasFabricas);
-  const fabricasMap = new Map<number, Array<{ fabricaId: number; estado: "ativa" | "para_testes" | "inativa" }>>();
+  const fabricasMap = new Map<
+    number,
+    Array<{ fabricaId: number; estado: "ativa" | "para_testes" | "inativa" }>
+  >();
   for (const rel of allMpFabricas) {
-    if (!fabricasMap.has(rel.materiaPrimaId)) fabricasMap.set(rel.materiaPrimaId, []);
-    fabricasMap.get(rel.materiaPrimaId)!.push({ fabricaId: rel.fabricaId, estado: rel.estado });
+    if (!fabricasMap.has(rel.materiaPrimaId))
+      fabricasMap.set(rel.materiaPrimaId, []);
+    fabricasMap
+      .get(rel.materiaPrimaId)!
+      .push({ fabricaId: rel.fabricaId, estado: rel.estado });
   }
-  const filtered = !fabricaId ? rows : rows.filter(mp =>
-    (fabricasMap.get(mp.id) ?? []).some(rel => rel.fabricaId === fabricaId)
-  );
+  const filtered = !fabricaId
+    ? rows
+    : rows.filter(mp =>
+        (fabricasMap.get(mp.id) ?? []).some(rel => rel.fabricaId === fabricaId)
+      );
   // Enriquecer com fornecedores associados (tabela mp_fornecedores)
-  const allMpFornecedores = await db.select().from(mpFornecedores).where(eq(mpFornecedores.ativo, true));
-  const fornMap = new Map<number, Array<{ fornecedorId: number; preferencial: boolean | null; validadeEstipuladaMeses: number | null }>>();
+  const allMpFornecedores = await db
+    .select()
+    .from(mpFornecedores)
+    .where(eq(mpFornecedores.ativo, true));
+  const fornMap = new Map<
+    number,
+    Array<{
+      fornecedorId: number;
+      preferencial: boolean | null;
+      validadeEstipuladaMeses: number | null;
+    }>
+  >();
   for (const rel of allMpFornecedores) {
     if (!fornMap.has(rel.materiaPrimaId)) fornMap.set(rel.materiaPrimaId, []);
-    fornMap.get(rel.materiaPrimaId)!.push({ fornecedorId: rel.fornecedorId, preferencial: rel.preferencial, validadeEstipuladaMeses: rel.validadeEstipuladaMeses });
+    fornMap
+      .get(rel.materiaPrimaId)!
+      .push({
+        fornecedorId: rel.fornecedorId,
+        preferencial: rel.preferencial,
+        validadeEstipuladaMeses: rel.validadeEstipuladaMeses,
+      });
   }
   return filtered.map(mp => ({
     ...mp,
@@ -299,15 +464,24 @@ export async function getMateriasPrimas(fabricaId?: number) {
 export async function getMateriaPrimaById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(materiasPrimas).where(eq(materiasPrimas.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(materiasPrimas)
+    .where(eq(materiasPrimas.id, id))
+    .limit(1);
   return result[0];
 }
 
-export async function upsertMateriaPrima(data: typeof materiasPrimas.$inferInsert) {
+export async function upsertMateriaPrima(
+  data: typeof materiasPrimas.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   if (data.id) {
-    await db.update(materiasPrimas).set({ ...data, updatedAt: new Date() }).where(eq(materiasPrimas.id, data.id));
+    await db
+      .update(materiasPrimas)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(materiasPrimas.id, data.id));
     return data.id;
   }
   const result = await db.insert(materiasPrimas).values(data);
@@ -317,17 +491,24 @@ export async function upsertMateriaPrima(data: typeof materiasPrimas.$inferInser
 export async function getMpFabricas(materiaPrimaId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(materiasPrimasFabricas)
+  return db
+    .select()
+    .from(materiasPrimasFabricas)
     .where(eq(materiasPrimasFabricas.materiaPrimaId, materiaPrimaId));
 }
 
 export async function setMpFabricas(
   materiaPrimaId: number,
-  fabricasEstado: Array<{ fabricaId: number; estado: "ativa" | "para_testes" | "inativa" }>
+  fabricasEstado: Array<{
+    fabricaId: number;
+    estado: "ativa" | "para_testes" | "inativa";
+  }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.delete(materiasPrimasFabricas).where(eq(materiasPrimasFabricas.materiaPrimaId, materiaPrimaId));
+  await db
+    .delete(materiasPrimasFabricas)
+    .where(eq(materiasPrimasFabricas.materiaPrimaId, materiaPrimaId));
   for (const rel of fabricasEstado) {
     await db.insert(materiasPrimasFabricas).values({
       materiaPrimaId,
@@ -350,31 +531,61 @@ export async function transferirMateriaPrimaEntreFabricas(data: {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   return db.transaction(async tx => {
-    const rececaoOrigem = await tx.select().from(rececoesMateriasPrimas)
-      .where(eq(rececoesMateriasPrimas.id, data.rececaoOrigemId)).limit(1);
+    const rececaoOrigem = await tx
+      .select()
+      .from(rececoesMateriasPrimas)
+      .where(eq(rececoesMateriasPrimas.id, data.rececaoOrigemId))
+      .limit(1);
     const rececao = rececaoOrigem[0];
     if (!rececao) throw new Error("A receção de origem não foi encontrada.");
-    if (!rececao.lote?.trim()) throw new Error("A transferência exige uma receção com lote identificado.");
-    if (rececao.fabricaId === data.fabricaDestinoId) throw new Error("A fábrica de destino deve ser diferente da origem.");
+    if (!rececao.lote?.trim())
+      throw new Error(
+        "A transferência exige uma receção com lote identificado."
+      );
+    if (rececao.fabricaId === data.fabricaDestinoId)
+      throw new Error("A fábrica de destino deve ser diferente da origem.");
 
-    const transferido = await tx.select({ total: sql<number>`COALESCE(SUM(${transferenciasMateriasPrimas.quantidade}), 0)` })
+    const transferido = await tx
+      .select({
+        total: sql<number>`COALESCE(SUM(${transferenciasMateriasPrimas.quantidade}), 0)`,
+      })
       .from(transferenciasMateriasPrimas)
       .where(eq(transferenciasMateriasPrimas.rececaoOrigemId, rececao.id));
-    const quantidadeDisponivel = calcularQuantidadeDisponivel(rececao.quantidade, Number(transferido[0]?.total ?? 0));
+    const quantidadeDisponivel = calcularQuantidadeDisponivel(
+      rececao.quantidade,
+      Number(transferido[0]?.total ?? 0)
+    );
     if (data.quantidade > quantidadeDisponivel + 0.000001) {
-      throw new Error(`Quantidade indisponível para este lote. Disponível: ${quantidadeDisponivel} ${rececao.unidade}.`);
+      throw new Error(
+        `Quantidade indisponível para este lote. Disponível: ${quantidadeDisponivel} ${rececao.unidade}.`
+      );
     }
 
-    const origem = await tx.select().from(materiasPrimasFabricas).where(and(
-      eq(materiasPrimasFabricas.materiaPrimaId, rececao.materiaPrimaId),
-      eq(materiasPrimasFabricas.fabricaId, rececao.fabricaId),
-    )).limit(1);
-    if (!origem[0]) throw new Error("A matéria-prima não está associada à fábrica de origem.");
+    const origem = await tx
+      .select()
+      .from(materiasPrimasFabricas)
+      .where(
+        and(
+          eq(materiasPrimasFabricas.materiaPrimaId, rececao.materiaPrimaId),
+          eq(materiasPrimasFabricas.fabricaId, rececao.fabricaId)
+        )
+      )
+      .limit(1);
+    if (!origem[0])
+      throw new Error(
+        "A matéria-prima não está associada à fábrica de origem."
+      );
 
-    const destino = await tx.select().from(materiasPrimasFabricas).where(and(
-      eq(materiasPrimasFabricas.materiaPrimaId, rececao.materiaPrimaId),
-      eq(materiasPrimasFabricas.fabricaId, data.fabricaDestinoId),
-    )).limit(1);
+    const destino = await tx
+      .select()
+      .from(materiasPrimasFabricas)
+      .where(
+        and(
+          eq(materiasPrimasFabricas.materiaPrimaId, rececao.materiaPrimaId),
+          eq(materiasPrimasFabricas.fabricaId, data.fabricaDestinoId)
+        )
+      )
+      .limit(1);
     const estadoDestino = destino[0]?.estado ?? origem[0].estado;
     if (!destino[0]) {
       await tx.insert(materiasPrimasFabricas).values({
@@ -406,7 +617,9 @@ export async function transferirMateriaPrimaEntreFabricas(data: {
 export async function getTransferenciasMateriaPrima(materiaPrimaId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(transferenciasMateriasPrimas)
+  return db
+    .select()
+    .from(transferenciasMateriasPrimas)
     .where(eq(transferenciasMateriasPrimas.materiaPrimaId, materiaPrimaId))
     .orderBy(desc(transferenciasMateriasPrimas.createdAt));
 }
@@ -414,7 +627,9 @@ export async function getTransferenciasMateriaPrima(materiaPrimaId: number) {
 export async function getTransferenciasStock() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(transferenciasMateriasPrimas)
+  return db
+    .select()
+    .from(transferenciasMateriasPrimas)
     .orderBy(desc(transferenciasMateriasPrimas.dataTransferencia));
 }
 
@@ -422,18 +637,34 @@ export async function getTransferenciasStock() {
 export async function getMpFornecedores(materiaPrimaId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(mpFornecedores)
-    .where(and(eq(mpFornecedores.materiaPrimaId, materiaPrimaId), eq(mpFornecedores.ativo, true)));
+  return db
+    .select()
+    .from(mpFornecedores)
+    .where(
+      and(
+        eq(mpFornecedores.materiaPrimaId, materiaPrimaId),
+        eq(mpFornecedores.ativo, true)
+      )
+    );
 }
 
 export async function setMpFornecedores(
   materiaPrimaId: number,
-  fornecedoresList: Array<{ fornecedorId: number; referenciaFornecedor?: string; paisOrigem?: string; validadeEstipuladaMeses?: number | null; preferencial?: boolean }>
+  fornecedoresList: Array<{
+    fornecedorId: number;
+    referenciaFornecedor?: string;
+    paisOrigem?: string;
+    validadeEstipuladaMeses?: number | null;
+    preferencial?: boolean;
+  }>
 ) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   // Soft-delete todos os existentes
-  await db.update(mpFornecedores).set({ ativo: false }).where(eq(mpFornecedores.materiaPrimaId, materiaPrimaId));
+  await db
+    .update(mpFornecedores)
+    .set({ ativo: false })
+    .where(eq(mpFornecedores.materiaPrimaId, materiaPrimaId));
   // Inserir os novos
   for (const f of fornecedoresList) {
     await db.insert(mpFornecedores).values({
@@ -451,7 +682,10 @@ export async function setMpFornecedores(
 export async function deleteMateriaPrima(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(materiasPrimas).set({ ativa: false, updatedAt: new Date() }).where(eq(materiasPrimas.id, id));
+  await db
+    .update(materiasPrimas)
+    .set({ ativa: false, updatedAt: new Date() })
+    .where(eq(materiasPrimas.id, id));
 }
 
 // ─── FICHAS TÉCNICAS DE FORNECEDOR ────────────────────────────────────────────
@@ -459,11 +693,16 @@ export async function getFichasTecnicasFornecedor(materiaPrimaId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (materiaPrimaId) {
-    return db.select().from(fichasTecnicasFornecedor)
+    return db
+      .select()
+      .from(fichasTecnicasFornecedor)
       .where(eq(fichasTecnicasFornecedor.materiaPrimaId, materiaPrimaId))
       .orderBy(desc(fichasTecnicasFornecedor.createdAt));
   }
-  return db.select().from(fichasTecnicasFornecedor).orderBy(desc(fichasTecnicasFornecedor.createdAt));
+  return db
+    .select()
+    .from(fichasTecnicasFornecedor)
+    .orderBy(desc(fichasTecnicasFornecedor.createdAt));
 }
 
 export async function getFichasTecnicasComAlerta() {
@@ -471,27 +710,39 @@ export async function getFichasTecnicasComAlerta() {
   if (!db) return [];
   const agora = new Date();
   const em60Dias = new Date(agora.getTime() + 60 * 24 * 60 * 60 * 1000);
-  return db.select().from(fichasTecnicasFornecedor)
+  return db
+    .select()
+    .from(fichasTecnicasFornecedor)
     .where(lte(fichasTecnicasFornecedor.dataValidade, em60Dias))
     .orderBy(fichasTecnicasFornecedor.dataValidade);
 }
 
-export async function upsertFichaTecnicaFornecedor(data: typeof fichasTecnicasFornecedor.$inferInsert) {
+export async function upsertFichaTecnicaFornecedor(
+  data: typeof fichasTecnicasFornecedor.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   // Calcular estado baseado na data de validade
   const agora = new Date();
-  const diasAteValidade = Math.floor((data.dataValidade.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24));
-  let estado: "valida" | "a_expirar_60" | "a_expirar_30" | "expirada" = "valida";
+  const diasAteValidade = Math.floor(
+    (data.dataValidade.getTime() - agora.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  let estado: "valida" | "a_expirar_60" | "a_expirar_30" | "expirada" =
+    "valida";
   if (diasAteValidade < 0) estado = "expirada";
   else if (diasAteValidade <= 30) estado = "a_expirar_30";
   else if (diasAteValidade <= 60) estado = "a_expirar_60";
   const dataComEstado = { ...data, estado };
   if (data.id) {
-    await db.update(fichasTecnicasFornecedor).set({ ...dataComEstado, updatedAt: new Date() }).where(eq(fichasTecnicasFornecedor.id, data.id));
+    await db
+      .update(fichasTecnicasFornecedor)
+      .set({ ...dataComEstado, updatedAt: new Date() })
+      .where(eq(fichasTecnicasFornecedor.id, data.id));
     return data.id;
   }
-  const result = await db.insert(fichasTecnicasFornecedor).values(dataComEstado);
+  const result = await db
+    .insert(fichasTecnicasFornecedor)
+    .values(dataComEstado);
   return (result[0] as any).insertId as number;
 }
 
@@ -501,10 +752,32 @@ export async function atualizarEstadosFichasTecnicas() {
   const agora = new Date();
   const em30 = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
   const em60 = new Date(agora.getTime() + 60 * 24 * 60 * 60 * 1000);
-  await db.update(fichasTecnicasFornecedor).set({ estado: "expirada" }).where(lte(fichasTecnicasFornecedor.dataValidade, agora));
-  await db.update(fichasTecnicasFornecedor).set({ estado: "a_expirar_30" }).where(and(gte(fichasTecnicasFornecedor.dataValidade, agora), lte(fichasTecnicasFornecedor.dataValidade, em30)));
-  await db.update(fichasTecnicasFornecedor).set({ estado: "a_expirar_60" }).where(and(gte(fichasTecnicasFornecedor.dataValidade, em30), lte(fichasTecnicasFornecedor.dataValidade, em60)));
-  await db.update(fichasTecnicasFornecedor).set({ estado: "valida" }).where(gte(fichasTecnicasFornecedor.dataValidade, em60));
+  await db
+    .update(fichasTecnicasFornecedor)
+    .set({ estado: "expirada" })
+    .where(lte(fichasTecnicasFornecedor.dataValidade, agora));
+  await db
+    .update(fichasTecnicasFornecedor)
+    .set({ estado: "a_expirar_30" })
+    .where(
+      and(
+        gte(fichasTecnicasFornecedor.dataValidade, agora),
+        lte(fichasTecnicasFornecedor.dataValidade, em30)
+      )
+    );
+  await db
+    .update(fichasTecnicasFornecedor)
+    .set({ estado: "a_expirar_60" })
+    .where(
+      and(
+        gte(fichasTecnicasFornecedor.dataValidade, em30),
+        lte(fichasTecnicasFornecedor.dataValidade, em60)
+      )
+    );
+  await db
+    .update(fichasTecnicasFornecedor)
+    .set({ estado: "valida" })
+    .where(gte(fichasTecnicasFornecedor.dataValidade, em60));
 }
 
 // ─── RECEITAS ─────────────────────────────────────────────────────────────────
@@ -512,7 +785,11 @@ export async function getReceitas(fabricaId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (fabricaId) {
-    return db.select().from(receitas).where(eq(receitas.fabricaId, fabricaId)).orderBy(desc(receitas.createdAt));
+    return db
+      .select()
+      .from(receitas)
+      .where(eq(receitas.fabricaId, fabricaId))
+      .orderBy(desc(receitas.createdAt));
   }
   return db.select().from(receitas).orderBy(desc(receitas.createdAt));
 }
@@ -520,7 +797,11 @@ export async function getReceitas(fabricaId?: number) {
 export async function getReceitaById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(receitas).where(eq(receitas.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(receitas)
+    .where(eq(receitas.id, id))
+    .limit(1);
   return result[0];
 }
 
@@ -528,7 +809,10 @@ export async function upsertReceita(data: typeof receitas.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   if (data.id) {
-    await db.update(receitas).set({ ...data, updatedAt: new Date() }).where(eq(receitas.id, data.id));
+    await db
+      .update(receitas)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(receitas.id, data.id));
     return data.id;
   }
   const result = await db.insert(receitas).values(data);
@@ -539,14 +823,22 @@ export async function upsertReceita(data: typeof receitas.$inferInsert) {
 export async function getIngredientesByReceita(receitaId: number) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(ingredientesReceita).where(eq(ingredientesReceita.receitaId, receitaId));
+  return db
+    .select()
+    .from(ingredientesReceita)
+    .where(eq(ingredientesReceita.receitaId, receitaId));
 }
 
-export async function upsertIngrediente(data: typeof ingredientesReceita.$inferInsert) {
+export async function upsertIngrediente(
+  data: typeof ingredientesReceita.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   if (data.id) {
-    await db.update(ingredientesReceita).set(data).where(eq(ingredientesReceita.id, data.id));
+    await db
+      .update(ingredientesReceita)
+      .set(data)
+      .where(eq(ingredientesReceita.id, data.id));
     return data.id;
   }
   const result = await db.insert(ingredientesReceita).values(data);
@@ -562,23 +854,33 @@ export async function deleteIngrediente(id: number) {
 export async function deleteIngredientesByReceita(receitaId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.delete(ingredientesReceita).where(eq(ingredientesReceita.receitaId, receitaId));
+  await db
+    .delete(ingredientesReceita)
+    .where(eq(ingredientesReceita.receitaId, receitaId));
 }
 
 export async function deleteReceita(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   // Desassociar produtos que referenciam esta receita (evitar FK violation)
-  await db.update(produtos).set({ receitaId: null, updatedAt: new Date() }).where(eq(produtos.receitaId, id));
+  await db
+    .update(produtos)
+    .set({ receitaId: null, updatedAt: new Date() })
+    .where(eq(produtos.receitaId, id));
   // Eliminar ingredientes e depois a receita
-  await db.delete(ingredientesReceita).where(eq(ingredientesReceita.receitaId, id));
+  await db
+    .delete(ingredientesReceita)
+    .where(eq(ingredientesReceita.receitaId, id));
   await db.delete(receitas).where(eq(receitas.id, id));
 }
 
 export async function deleteProduto(id: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(produtos).set({ ativo: false, updatedAt: new Date() }).where(eq(produtos.id, id));
+  await db
+    .update(produtos)
+    .set({ ativo: false, updatedAt: new Date() })
+    .where(eq(produtos.id, id));
 }
 
 // ─── PRODUTOS ─────────────────────────────────────────────────────────────────
@@ -586,7 +888,10 @@ export async function getProdutos(fabricaId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (fabricaId) {
-    return db.select().from(produtos).where(and(eq(produtos.fabricaId, fabricaId), eq(produtos.ativo, true)));
+    return db
+      .select()
+      .from(produtos)
+      .where(and(eq(produtos.fabricaId, fabricaId), eq(produtos.ativo, true)));
   }
   return db.select().from(produtos).where(eq(produtos.ativo, true));
 }
@@ -594,7 +899,11 @@ export async function getProdutos(fabricaId?: number) {
 export async function getProdutoById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(produtos).where(eq(produtos.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(produtos)
+    .where(eq(produtos.id, id))
+    .limit(1);
   return result[0];
 }
 
@@ -602,75 +911,117 @@ export async function upsertProduto(data: typeof produtos.$inferInsert) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   if (data.id) {
-    await db.update(produtos).set({ ...data, updatedAt: new Date() }).where(eq(produtos.id, data.id));
+    await db
+      .update(produtos)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(produtos.id, data.id));
     return data.id;
   }
   const result = await db.insert(produtos).values(data);
   return (result[0] as any).insertId as number;
 }
 
-export async function associarReceitaAoProduto(produtoId: number, receitaId: number | null) {
+export async function associarReceitaAoProduto(
+  produtoId: number,
+  receitaId: number | null
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(produtos).set({ receitaId, updatedAt: new Date() }).where(eq(produtos.id, produtoId));
-  await db.delete(perfilAlergenicoProduto).where(eq(perfilAlergenicoProduto.produtoId, produtoId));
+  await db
+    .update(produtos)
+    .set({ receitaId, updatedAt: new Date() })
+    .where(eq(produtos.id, produtoId));
+  await db
+    .delete(perfilAlergenicoProduto)
+    .where(eq(perfilAlergenicoProduto.produtoId, produtoId));
 }
 
 // ─── RECEÇÕES DE MATÉRIAS-PRIMAS ──────────────────────────────────────────────
-export async function getRececoesMateriasPrimas(filtros?: { fabricaId?: number; armazem?: string; conformidade?: string }) {
+export async function getRececoesMateriasPrimas(filtros?: {
+  fabricaId?: number;
+  armazem?: string;
+  conformidade?: string;
+}) {
   const db = await getDb();
   if (!db) return [];
   const condicoes = [];
-  if (filtros?.fabricaId) condicoes.push(eq(rececoesMateriasPrimas.fabricaId, filtros.fabricaId));
-  if (filtros?.armazem) condicoes.push(eq(rececoesMateriasPrimas.armazem, filtros.armazem as any));
-  if (filtros?.conformidade) condicoes.push(eq(rececoesMateriasPrimas.conformidade, filtros.conformidade as any));
-  const query = db.select({
-    id: rececoesMateriasPrimas.id,
-    fabricaId: rececoesMateriasPrimas.fabricaId,
-    armazem: rececoesMateriasPrimas.armazem,
-    dataRececao: rececoesMateriasPrimas.dataRececao,
-    fornecedorId: rececoesMateriasPrimas.fornecedorId,
-    fornecedorNome: fornecedores.nome,
-    materiaPrimaId: rececoesMateriasPrimas.materiaPrimaId,
-    materiaPrimaNome: materiasPrimas.nome,
-    validade: rececoesMateriasPrimas.validade,
-    lote: rececoesMateriasPrimas.lote,
-    quantidade: rececoesMateriasPrimas.quantidade,
-    unidade: rececoesMateriasPrimas.unidade,
-    controlos: rececoesMateriasPrimas.controlos,
-    conformidade: rececoesMateriasPrimas.conformidade,
-    estadoValidacao: rececoesMateriasPrimas.estadoValidacao,
-    motivoValidacaoCondicional: rececoesMateriasPrimas.motivoValidacaoCondicional,
-    validadoPor: rececoesMateriasPrimas.validadoPor,
-    validadoPorNome: rececoesMateriasPrimas.validadoPorNome,
-    validadoEm: rececoesMateriasPrimas.validadoEm,
-    numeroPaletesLpr: rececoesMateriasPrimas.numeroPaletesLpr,
-    responsavel: rececoesMateriasPrimas.responsavel,
-    numeroGuia: rececoesMateriasPrimas.numeroGuia,
-    observacoes: rececoesMateriasPrimas.observacoes,
-    motivoNaoConformidade: rececoesMateriasPrimas.motivoNaoConformidade,
-    tratamentoNaoConformidade: rececoesMateriasPrimas.tratamentoNaoConformidade,
-    registadoPor: rececoesMateriasPrimas.registadoPor,
-    createdAt: rececoesMateriasPrimas.createdAt,
-  }).from(rececoesMateriasPrimas)
-    .innerJoin(fornecedores, eq(rececoesMateriasPrimas.fornecedorId, fornecedores.id))
-    .innerJoin(materiasPrimas, eq(rececoesMateriasPrimas.materiaPrimaId, materiasPrimas.id));
-  if (condicoes.length) return query.where(and(...condicoes)).orderBy(desc(rececoesMateriasPrimas.dataRececao));
+  if (filtros?.fabricaId)
+    condicoes.push(eq(rececoesMateriasPrimas.fabricaId, filtros.fabricaId));
+  if (filtros?.armazem)
+    condicoes.push(eq(rececoesMateriasPrimas.armazem, filtros.armazem as any));
+  if (filtros?.conformidade)
+    condicoes.push(
+      eq(rececoesMateriasPrimas.conformidade, filtros.conformidade as any)
+    );
+  const query = db
+    .select({
+      id: rececoesMateriasPrimas.id,
+      fabricaId: rececoesMateriasPrimas.fabricaId,
+      armazem: rececoesMateriasPrimas.armazem,
+      dataRececao: rececoesMateriasPrimas.dataRececao,
+      fornecedorId: rececoesMateriasPrimas.fornecedorId,
+      fornecedorNome: fornecedores.nome,
+      materiaPrimaId: rececoesMateriasPrimas.materiaPrimaId,
+      materiaPrimaNome: materiasPrimas.nome,
+      validade: rececoesMateriasPrimas.validade,
+      lote: rececoesMateriasPrimas.lote,
+      quantidade: rececoesMateriasPrimas.quantidade,
+      unidade: rececoesMateriasPrimas.unidade,
+      controlos: rececoesMateriasPrimas.controlos,
+      conformidade: rececoesMateriasPrimas.conformidade,
+      estadoValidacao: rececoesMateriasPrimas.estadoValidacao,
+      motivoValidacaoCondicional:
+        rececoesMateriasPrimas.motivoValidacaoCondicional,
+      validadoPor: rececoesMateriasPrimas.validadoPor,
+      validadoPorNome: rececoesMateriasPrimas.validadoPorNome,
+      validadoEm: rececoesMateriasPrimas.validadoEm,
+      numeroPaletesLpr: rececoesMateriasPrimas.numeroPaletesLpr,
+      responsavel: rececoesMateriasPrimas.responsavel,
+      numeroGuia: rececoesMateriasPrimas.numeroGuia,
+      observacoes: rececoesMateriasPrimas.observacoes,
+      motivoNaoConformidade: rececoesMateriasPrimas.motivoNaoConformidade,
+      tratamentoNaoConformidade:
+        rececoesMateriasPrimas.tratamentoNaoConformidade,
+      registadoPor: rececoesMateriasPrimas.registadoPor,
+      createdAt: rececoesMateriasPrimas.createdAt,
+    })
+    .from(rececoesMateriasPrimas)
+    .innerJoin(
+      fornecedores,
+      eq(rececoesMateriasPrimas.fornecedorId, fornecedores.id)
+    )
+    .innerJoin(
+      materiasPrimas,
+      eq(rececoesMateriasPrimas.materiaPrimaId, materiasPrimas.id)
+    );
+  if (condicoes.length)
+    return query
+      .where(and(...condicoes))
+      .orderBy(desc(rececoesMateriasPrimas.dataRececao));
   return query.orderBy(desc(rececoesMateriasPrimas.dataRececao));
 }
 
 export async function getRececaoMateriaPrimaById(id: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id)).limit(1);
+  const result = await db
+    .select()
+    .from(rececoesMateriasPrimas)
+    .where(eq(rececoesMateriasPrimas.id, id))
+    .limit(1);
   return result[0];
 }
 
-export async function upsertRececaoMateriaPrima(data: typeof rececoesMateriasPrimas.$inferInsert) {
+export async function upsertRececaoMateriaPrima(
+  data: typeof rececoesMateriasPrimas.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   if (data.id) {
-    await db.update(rececoesMateriasPrimas).set({ ...data, updatedAt: new Date() }).where(eq(rececoesMateriasPrimas.id, data.id));
+    await db
+      .update(rececoesMateriasPrimas)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(rececoesMateriasPrimas.id, data.id));
     return data.id;
   }
   const result = await db.insert(rececoesMateriasPrimas).values(data);
@@ -692,14 +1043,17 @@ export async function decidirValidacaoRececaoMateriaPrima({
 }) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(rececoesMateriasPrimas).set({
-    estadoValidacao,
-    motivoValidacaoCondicional,
-    validadoPor,
-    validadoPorNome,
-    validadoEm: new Date(),
-    updatedAt: new Date(),
-  }).where(eq(rececoesMateriasPrimas.id, id));
+  await db
+    .update(rececoesMateriasPrimas)
+    .set({
+      estadoValidacao,
+      motivoValidacaoCondicional,
+      validadoPor,
+      validadoPorNome,
+      validadoEm: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(rececoesMateriasPrimas.id, id));
 }
 
 export async function deleteRececaoMateriaPrima(id: number) {
@@ -711,17 +1065,25 @@ export async function deleteRececaoMateriaPrima(id: number) {
     .from(transferenciasMateriasPrimas)
     .where(eq(transferenciasMateriasPrimas.rececaoOrigemId, id));
 
-  await db.transaction(async (tx) => {
-    await tx.delete(notificacoesQualidade).where(eq(notificacoesQualidade.rececaoId, id));
-    await tx.delete(transferenciasMateriasPrimas).where(eq(transferenciasMateriasPrimas.rececaoOrigemId, id));
-    await tx.delete(rececoesMateriasPrimas).where(eq(rececoesMateriasPrimas.id, id));
+  await db.transaction(async tx => {
+    await tx
+      .delete(notificacoesQualidade)
+      .where(eq(notificacoesQualidade.rececaoId, id));
+    await tx
+      .delete(transferenciasMateriasPrimas)
+      .where(eq(transferenciasMateriasPrimas.rececaoOrigemId, id));
+    await tx
+      .delete(rececoesMateriasPrimas)
+      .where(eq(rececoesMateriasPrimas.id, id));
   });
 
   return { transferenciasEliminadas: transferenciasAssociadas.length };
 }
 
 // ─── NOTIFICAÇÕES DE QUALIDADE ─────────────────────────────────────────────────
-export async function criarNotificacaoQualidade(data: typeof notificacoesQualidade.$inferInsert) {
+export async function criarNotificacaoQualidade(
+  data: typeof notificacoesQualidade.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const result = await db.insert(notificacoesQualidade).values(data);
@@ -731,30 +1093,43 @@ export async function criarNotificacaoQualidade(data: typeof notificacoesQualida
 export async function getNotificacoesQualidade() {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(notificacoesQualidade).orderBy(desc(notificacoesQualidade.criadaEm));
+  return db
+    .select()
+    .from(notificacoesQualidade)
+    .orderBy(desc(notificacoesQualidade.criadaEm));
 }
 
 export async function marcarNotificacaoQualidade(id: number, lida: boolean) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  await db.update(notificacoesQualidade).set({ lida, lidaEm: lida ? new Date() : null }).where(eq(notificacoesQualidade.id, id));
+  await db
+    .update(notificacoesQualidade)
+    .set({ lida, lidaEm: lida ? new Date() : null })
+    .where(eq(notificacoesQualidade.id, id));
 }
 
 // ─── PERFIL ALERGÉNICO ────────────────────────────────────────────────────────
 export async function getPerfilAlergenico(produtoId: number) {
   const db = await getDb();
   if (!db) return undefined;
-  const result = await db.select().from(perfilAlergenicoProduto)
+  const result = await db
+    .select()
+    .from(perfilAlergenicoProduto)
     .where(eq(perfilAlergenicoProduto.produtoId, produtoId))
-    .orderBy(desc(perfilAlergenicoProduto.calculadoEm)).limit(1);
+    .orderBy(desc(perfilAlergenicoProduto.calculadoEm))
+    .limit(1);
   return result[0];
 }
 
-export async function upsertPerfilAlergenico(data: typeof perfilAlergenicoProduto.$inferInsert) {
+export async function upsertPerfilAlergenico(
+  data: typeof perfilAlergenicoProduto.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   // Substituir perfil existente para o mesmo produto
-  await db.delete(perfilAlergenicoProduto).where(eq(perfilAlergenicoProduto.produtoId, data.produtoId));
+  await db
+    .delete(perfilAlergenicoProduto)
+    .where(eq(perfilAlergenicoProduto.produtoId, data.produtoId));
   const result = await db.insert(perfilAlergenicoProduto).values(data);
   return (result[0] as any).insertId as number;
 }
@@ -764,14 +1139,21 @@ export async function getFichasTecnicasProduto(produtoId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (produtoId) {
-    return db.select().from(fichasTecnicasProduto)
+    return db
+      .select()
+      .from(fichasTecnicasProduto)
       .where(eq(fichasTecnicasProduto.produtoId, produtoId))
       .orderBy(desc(fichasTecnicasProduto.geradoEm));
   }
-  return db.select().from(fichasTecnicasProduto).orderBy(desc(fichasTecnicasProduto.geradoEm));
+  return db
+    .select()
+    .from(fichasTecnicasProduto)
+    .orderBy(desc(fichasTecnicasProduto.geradoEm));
 }
 
-export async function upsertFichaTecnicaProduto(data: typeof fichasTecnicasProduto.$inferInsert) {
+export async function upsertFichaTecnicaProduto(
+  data: typeof fichasTecnicasProduto.$inferInsert
+) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
   const result = await db.insert(fichasTecnicasProduto).values(data);
@@ -789,11 +1171,23 @@ export async function getAuditLog(entidade?: string, entidadeId?: number) {
   const db = await getDb();
   if (!db) return [];
   if (entidade && entidadeId) {
-    return db.select().from(auditLog)
-      .where(and(eq(auditLog.entidade, entidade), eq(auditLog.entidadeId, entidadeId)))
-      .orderBy(desc(auditLog.createdAt)).limit(50);
+    return db
+      .select()
+      .from(auditLog)
+      .where(
+        and(
+          eq(auditLog.entidade, entidade),
+          eq(auditLog.entidadeId, entidadeId)
+        )
+      )
+      .orderBy(desc(auditLog.createdAt))
+      .limit(50);
   }
-  return db.select().from(auditLog).orderBy(desc(auditLog.createdAt)).limit(100);
+  return db
+    .select()
+    .from(auditLog)
+    .orderBy(desc(auditLog.createdAt))
+    .limit(100);
 }
 
 // ─── DASHBOARD ────────────────────────────────────────────────────────────────
@@ -801,12 +1195,22 @@ export async function getDashboardStats() {
   const db = await getDb();
   if (!db) return null;
   await atualizarEstadosFichasTecnicas();
-  const [totalMP, totalReceitas, totalProdutos, totalFornecedores] = await Promise.all([
-    db.select({ count: sql<number>`count(*)` }).from(materiasPrimas).where(eq(materiasPrimas.ativa, true)),
-    db.select({ count: sql<number>`count(*)` }).from(receitas),
-    db.select({ count: sql<number>`count(*)` }).from(produtos).where(eq(produtos.ativo, true)),
-    db.select({ count: sql<number>`count(*)` }).from(fornecedores).where(eq(fornecedores.ativo, true)),
-  ]);
+  const [totalMP, totalReceitas, totalProdutos, totalFornecedores] =
+    await Promise.all([
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(materiasPrimas)
+        .where(eq(materiasPrimas.ativa, true)),
+      db.select({ count: sql<number>`count(*)` }).from(receitas),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(produtos)
+        .where(eq(produtos.ativo, true)),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(fornecedores)
+        .where(eq(fornecedores.ativo, true)),
+    ]);
   const alertas = await getFichasTecnicasComAlerta();
   const alertasDocFornecedor = await getDocumentosComAlerta();
   return {
@@ -822,24 +1226,34 @@ export async function getDashboardStats() {
 export async function getMpPorFornecedor(fornecedorId: number) {
   const db = await getDb();
   if (!db) return [];
-  const rows = await db.select({
-    mpId: mpFornecedores.materiaPrimaId,
-    referenciaFornecedor: mpFornecedores.referenciaFornecedor,
-    paisOrigem: mpFornecedores.paisOrigem,
-    preferencial: mpFornecedores.preferencial,
-  }).from(mpFornecedores)
-    .where(and(eq(mpFornecedores.fornecedorId, fornecedorId), eq(mpFornecedores.ativo, true)));
+  const rows = await db
+    .select({
+      mpId: mpFornecedores.materiaPrimaId,
+      referenciaFornecedor: mpFornecedores.referenciaFornecedor,
+      paisOrigem: mpFornecedores.paisOrigem,
+      preferencial: mpFornecedores.preferencial,
+    })
+    .from(mpFornecedores)
+    .where(
+      and(
+        eq(mpFornecedores.fornecedorId, fornecedorId),
+        eq(mpFornecedores.ativo, true)
+      )
+    );
   if (rows.length === 0) return [];
   // Enriquecer com dados da MP
   const mpIds = rows.map(r => r.mpId);
-  const mps = await db.select().from(materiasPrimas)
+  const mps = await db
+    .select()
+    .from(materiasPrimas)
     .where(inArray(materiasPrimas.id, mpIds));
-  return rows.map(r => {
-    const mp = mps.find(m => m.id === r.mpId);
-    return { ...r, mp };
-  }).filter(r => r.mp);
+  return rows
+    .map(r => {
+      const mp = mps.find(m => m.id === r.mpId);
+      return { ...r, mp };
+    })
+    .filter(r => r.mp);
 }
-
 
 // ─── VALIDAÇÕES DE MP ──────────────────────────────────────────────────────────
 export async function getValidacoesMp(mpId: number) {
@@ -847,10 +1261,19 @@ export async function getValidacoesMp(mpId: number) {
   if (!db) return [];
   const { desc, eq } = await import("drizzle-orm");
   const { validacoesMp } = await import("../drizzle/schema");
-  return db.select().from(validacoesMp).where(eq(validacoesMp.mpId, mpId)).orderBy(desc(validacoesMp.criadoEm));
+  return db
+    .select()
+    .from(validacoesMp)
+    .where(eq(validacoesMp.mpId, mpId))
+    .orderBy(desc(validacoesMp.criadoEm));
 }
 
-export async function criarValidacaoMp(mpId: number, dataValidacao: Date, notas?: string, usuarioId?: number) {
+export async function criarValidacaoMp(
+  mpId: number,
+  dataValidacao: Date,
+  notas?: string,
+  usuarioId?: number
+) {
   const db = await getDb();
   if (!db) return null;
   const { validacoesMp } = await import("../drizzle/schema");
@@ -863,11 +1286,17 @@ export async function criarValidacaoMp(mpId: number, dataValidacao: Date, notas?
   return result;
 }
 
-export async function atualizarDataValidacaoMp(mpId: number, dataValidacao: Date) {
+export async function atualizarDataValidacaoMp(
+  mpId: number,
+  dataValidacao: Date
+) {
   const db = await getDb();
   if (!db) return null;
   const { eq } = await import("drizzle-orm");
-  return db.update(materiasPrimas).set({ dataValidacao }).where(eq(materiasPrimas.id, mpId));
+  return db
+    .update(materiasPrimas)
+    .set({ dataValidacao })
+    .where(eq(materiasPrimas.id, mpId));
 }
 
 // ─── VIGILÂNCIA RASFF ──────────────────────────────────────────────────────────
@@ -891,7 +1320,11 @@ export const FOOD_FRAUD_FONTES_PADRAO = [
 export async function getFoodFraudVigilancia() {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(foodFraudVigilancias).orderBy(foodFraudVigilancias.id).limit(1);
+  const rows = await db
+    .select()
+    .from(foodFraudVigilancias)
+    .orderBy(foodFraudVigilancias.id)
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -916,21 +1349,32 @@ export async function criarFoodFraudVigilancia(createdBy?: number) {
 export async function getFoodFraudVigilanciaByTaskUid(taskUid: string) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(foodFraudVigilancias).where(eq(foodFraudVigilancias.scheduleCronTaskUid, taskUid)).limit(1);
+  const rows = await db
+    .select()
+    .from(foodFraudVigilancias)
+    .where(eq(foodFraudVigilancias.scheduleCronTaskUid, taskUid))
+    .limit(1);
   return rows[0] ?? null;
 }
 
 export async function atualizarFoodFraudTaskUid(id: number, taskUid: string) {
   const db = await getDb();
   if (!db) return null;
-  await db.update(foodFraudVigilancias).set({ scheduleCronTaskUid: taskUid }).where(eq(foodFraudVigilancias.id, id));
+  await db
+    .update(foodFraudVigilancias)
+    .set({ scheduleCronTaskUid: taskUid })
+    .where(eq(foodFraudVigilancias.id, id));
   return getFoodFraudVigilancia();
 }
 
 export async function listarFoodFraudRelatorios(limit = 24) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(foodFraudRelatorios).orderBy(desc(foodFraudRelatorios.geradoEm)).limit(limit);
+  return db
+    .select()
+    .from(foodFraudRelatorios)
+    .orderBy(desc(foodFraudRelatorios.geradoEm))
+    .limit(limit);
 }
 
 export async function eliminarFoodFraudRelatorio(id: number) {
@@ -940,36 +1384,78 @@ export async function eliminarFoodFraudRelatorio(id: number) {
   return true;
 }
 
-export async function criarFoodFraudRelatorio(input: typeof foodFraudRelatorios.$inferInsert) {
+export async function criarFoodFraudRelatorio(
+  input: typeof foodFraudRelatorios.$inferInsert
+) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.insert(foodFraudRelatorios).values(input);
   const id = Number(result[0]?.insertId ?? 0);
   if (!id) return null;
-  const rows = await db.select().from(foodFraudRelatorios).where(eq(foodFraudRelatorios.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(foodFraudRelatorios)
+    .where(eq(foodFraudRelatorios.id, id))
+    .limit(1);
   return rows[0] ?? null;
 }
 
-export async function criarNotificacoesFoodFraudRelevantes(reportId: number, ocorrencias: unknown[], anoMes: string) {
+export async function criarNotificacoesFoodFraudRelevantes(
+  reportId: number,
+  ocorrencias: unknown[],
+  anoMes: string
+) {
   const db = await getDb();
   if (!db) return 0;
   let criadas = 0;
   for (const [index, raw] of Array.from(ocorrencias.entries())) {
     if (!raw || typeof raw !== "object") continue;
     const item = raw as Record<string, unknown>;
-    const score = Number(item.score ?? item.risco ?? 0);
-    const correspondencias = Array.isArray(item.materiasPrimas) ? item.materiasPrimas : (Array.isArray(item.correspondencias) ? item.correspondencias : []);
-    const relevante = item.relevante === true || score >= 6 || correspondencias.length > 0;
+    const correspondencias = Array.isArray(item.materiasPrimas)
+      ? item.materiasPrimas
+      : Array.isArray(item.correspondencias)
+        ? item.correspondencias
+        : [];
+    const tipoRelacao = String(item.tipoRelacao ?? "");
+    const estadoTriagem = String(item.estadoTriagem ?? "");
+    const requerValidacao =
+      (tipoRelacao === "direta" || tipoRelacao === "indireta") &&
+      estadoTriagem === "por_validar";
+    const relevante = item.acaoRequerida === true || requerValidacao;
     if (!relevante) continue;
-    const chave = String(item.chave ?? item.id ?? `${index}-${item.titulo ?? item.produto ?? "food-fraud"}`).slice(0, 180);
-    const existente = await db.select({ id: notificacoesQualidade.id }).from(notificacoesQualidade).where(and(eq(notificacoesQualidade.tipo, "food_fraud_relevante"), eq(notificacoesQualidade.rasffChave, chave))).limit(1);
+    const chave = String(
+      item.chave ??
+        item.id ??
+        `${index}-${item.titulo ?? item.produto ?? "food-fraud"}`
+    ).slice(0, 180);
+    const existente = await db
+      .select({ id: notificacoesQualidade.id })
+      .from(notificacoesQualidade)
+      .where(
+        and(
+          eq(notificacoesQualidade.tipo, "food_fraud_relevante"),
+          eq(notificacoesQualidade.rasffChave, chave)
+        )
+      )
+      .limit(1);
     if (existente[0]) continue;
-    const titulo = String(item.titulo ?? item.produto ?? "Ocorrência Food Fraud relevante").slice(0, 255);
-    const descricao = String(item.resumo ?? item.mensagem ?? item.pratica ?? "Foi identificada uma possível correspondência com matérias-primas do SIGA.").slice(0, 3000);
+    const titulo = String(
+      item.titulo ?? item.produto ?? "Ocorrência Food Fraud relevante"
+    ).slice(0, 255);
+    const descricao = String(
+      item.resumo ??
+        item.mensagem ??
+        item.pratica ??
+        "Foi identificada uma possível correspondência com matérias-primas do SIGA."
+    ).slice(0, 3000);
     await db.insert(notificacoesQualidade).values({
       tipo: "food_fraud_relevante",
       titulo: `Food Fraud ${anoMes}: ${titulo}`.slice(0, 255),
-      mensagem: `${descricao}${correspondencias.length ? `\\n\\nMP afetadas: ${correspondencias.map(String).join(", ").slice(0, 1200)}` : ""}\\n\\nRever no histórico Food Fraud e confirmar pela Qualidade.`.slice(0, 5000),
+      mensagem:
+        `${descricao}${correspondencias.length ? `\\n\\nMP afetadas: ${correspondencias.map(String).join(", ").slice(0, 1200)}` : ""}\\n\\nRever no histórico Food Fraud e confirmar pela Qualidade.`.slice(
+          0,
+          5000
+        ),
       link: `/vigilancia-food-fraud?foodFraudRelatorioId=${reportId}`,
       rasffRelatorioId: null,
       rasffChave: chave,
@@ -984,16 +1470,21 @@ export async function criarNotificacoesFoodFraudRelevantes(reportId: number, oco
 export async function getFoodFraudContexto() {
   const db = await getDb();
   if (!db) return { materiasPrimas: [] };
-  const rows = await db.select({
-    id: materiasPrimas.id,
-    nome: materiasPrimas.nome,
-    codigo: materiasPrimas.codigo,
-    origem: materiasPrimas.paisOrigem,
-    fornecedorId: mpFornecedores.fornecedorId,
-    fornecedorNome: fornecedores.nome,
-    paisOrigemFornecedor: mpFornecedores.paisOrigem,
-  }).from(materiasPrimas)
-    .leftJoin(mpFornecedores, eq(mpFornecedores.materiaPrimaId, materiasPrimas.id))
+  const rows = await db
+    .select({
+      id: materiasPrimas.id,
+      nome: materiasPrimas.nome,
+      codigo: materiasPrimas.codigo,
+      origem: materiasPrimas.paisOrigem,
+      fornecedorId: mpFornecedores.fornecedorId,
+      fornecedorNome: fornecedores.nome,
+      paisOrigemFornecedor: mpFornecedores.paisOrigem,
+    })
+    .from(materiasPrimas)
+    .leftJoin(
+      mpFornecedores,
+      eq(mpFornecedores.materiaPrimaId, materiasPrimas.id)
+    )
     .leftJoin(fornecedores, eq(fornecedores.id, mpFornecedores.fornecedorId))
     .where(eq(materiasPrimas.ativa, true));
   return { materiasPrimas: rows };
@@ -1036,7 +1527,11 @@ export const RASFF_PERIGOS_PADRAO = [
 export async function getRasffVigilancia() {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(rasffVigilancias).orderBy(rasffVigilancias.id).limit(1);
+  const rows = await db
+    .select()
+    .from(rasffVigilancias)
+    .orderBy(rasffVigilancias.id)
+    .limit(1);
   return rows[0] ?? null;
 }
 
@@ -1060,67 +1555,132 @@ export async function criarRasffVigilancia(createdBy?: number) {
 export async function getRasffVigilanciaByTaskUid(taskUid: string) {
   const db = await getDb();
   if (!db) return null;
-  const rows = await db.select().from(rasffVigilancias).where(eq(rasffVigilancias.scheduleCronTaskUid, taskUid)).limit(1);
+  const rows = await db
+    .select()
+    .from(rasffVigilancias)
+    .where(eq(rasffVigilancias.scheduleCronTaskUid, taskUid))
+    .limit(1);
   return rows[0] ?? null;
 }
 
 export async function atualizarRasffTaskUid(id: number, taskUid: string) {
   const db = await getDb();
   if (!db) return null;
-  await db.update(rasffVigilancias).set({ scheduleCronTaskUid: taskUid }).where(eq(rasffVigilancias.id, id));
+  await db
+    .update(rasffVigilancias)
+    .set({ scheduleCronTaskUid: taskUid })
+    .where(eq(rasffVigilancias.id, id));
   return getRasffVigilancia();
 }
 
 export async function listarRasffRelatorios(limit = 20) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(rasffRelatorios).orderBy(desc(rasffRelatorios.geradoEm)).limit(limit);
+  return db
+    .select()
+    .from(rasffRelatorios)
+    .orderBy(desc(rasffRelatorios.geradoEm))
+    .limit(limit);
 }
 
-export async function criarRasffRelatorio(input: typeof rasffRelatorios.$inferInsert) {
+export async function criarRasffRelatorio(
+  input: typeof rasffRelatorios.$inferInsert
+) {
   const db = await getDb();
   if (!db) return null;
   const result = await db.insert(rasffRelatorios).values(input);
   const id = Number(result[0]?.insertId ?? 0);
   if (!id) return null;
-  const rows = await db.select().from(rasffRelatorios).where(eq(rasffRelatorios.id, id)).limit(1);
+  const rows = await db
+    .select()
+    .from(rasffRelatorios)
+    .where(eq(rasffRelatorios.id, id))
+    .limit(1);
   return rows[0] ?? null;
 }
 
-export async function criarNotificacoesRasffRelevantes(reportId: number, ocorrencias: unknown[], codigoSemana: string) {
+export async function criarNotificacoesRasffRelevantes(
+  reportId: number,
+  ocorrencias: unknown[],
+  codigoSemana: string
+) {
   const db = await getDb();
   if (!db) return 0;
   let criadas = 0;
   for (const [index, raw] of Array.from(ocorrencias.entries())) {
     if (!raw || typeof raw !== "object") continue;
     const ocorrencia = raw as Record<string, unknown>;
-    const classificacao = String(ocorrencia.classificacao ?? ocorrencia.relevancia ?? ocorrencia.nivel ?? "").trim().toLowerCase();
-    const correspondencias = Array.isArray(ocorrencia.correspondencias) ? ocorrencia.correspondencias : [];
-    const relevante = ocorrencia.relevante === true
-      || ocorrencia.potencialmenteRelevante === true
-      || ["direta", "indireta", "alta", "média", "media", "potencialmente relevante"].includes(classificacao)
-      || correspondencias.length > 0;
+    const classificacao = String(
+      ocorrencia.classificacao ??
+        ocorrencia.relevancia ??
+        ocorrencia.nivel ??
+        ""
+    )
+      .trim()
+      .toLowerCase();
+    const correspondencias = Array.isArray(ocorrencia.correspondencias)
+      ? ocorrencia.correspondencias
+      : [];
+    const relevante =
+      ocorrencia.relevante === true ||
+      ocorrencia.potencialmenteRelevante === true ||
+      [
+        "direta",
+        "indireta",
+        "alta",
+        "média",
+        "media",
+        "potencialmente relevante",
+      ].includes(classificacao) ||
+      correspondencias.length > 0;
     if (!relevante || classificacao === "informativa") continue;
 
-    const chaveBase = ocorrencia.chave ?? ocorrencia.id ?? ocorrencia.numeroNotificacao ?? ocorrencia.numero ?? `${index}-${ocorrencia.titulo ?? ocorrencia.produto ?? "rasff"}`;
+    const chaveBase =
+      ocorrencia.chave ??
+      ocorrencia.id ??
+      ocorrencia.numeroNotificacao ??
+      ocorrencia.numero ??
+      `${index}-${ocorrencia.titulo ?? ocorrencia.produto ?? "rasff"}`;
     const chave = String(chaveBase).slice(0, 180);
-    const existing = await db.select({ id: notificacoesQualidade.id })
+    const existing = await db
+      .select({ id: notificacoesQualidade.id })
       .from(notificacoesQualidade)
-      .where(and(
-        eq(notificacoesQualidade.tipo, "rasff_relevante"),
-        eq(notificacoesQualidade.rasffRelatorioId, reportId),
-        eq(notificacoesQualidade.rasffChave, chave),
-      ))
+      .where(
+        and(
+          eq(notificacoesQualidade.tipo, "rasff_relevante"),
+          eq(notificacoesQualidade.rasffRelatorioId, reportId),
+          eq(notificacoesQualidade.rasffChave, chave)
+        )
+      )
       .limit(1);
     if (existing[0]) continue;
 
-    const titulo = String(ocorrencia.titulo ?? ocorrencia.produto ?? "Alerta RASFF potencialmente relevante").slice(0, 255);
-    const descricao = String(ocorrencia.resumo ?? ocorrencia.mensagem ?? ocorrencia.perigo ?? "Foi identificada uma possível correspondência com o contexto de matérias-primas do SIGA.").slice(0, 3000);
-    const matches = correspondencias.length > 0 ? `\n\nCorrespondências: ${correspondencias.map(item => String(item)).join(", ").slice(0, 1200)}` : "";
+    const titulo = String(
+      ocorrencia.titulo ??
+        ocorrencia.produto ??
+        "Alerta RASFF potencialmente relevante"
+    ).slice(0, 255);
+    const descricao = String(
+      ocorrencia.resumo ??
+        ocorrencia.mensagem ??
+        ocorrencia.perigo ??
+        "Foi identificada uma possível correspondência com o contexto de matérias-primas do SIGA."
+    ).slice(0, 3000);
+    const matches =
+      correspondencias.length > 0
+        ? `\n\nCorrespondências: ${correspondencias
+            .map(item => String(item))
+            .join(", ")
+            .slice(0, 1200)}`
+        : "";
     await db.insert(notificacoesQualidade).values({
       tipo: "rasff_relevante",
       titulo: `RASFF ${codigoSemana}: ${titulo}`.slice(0, 255),
-      mensagem: `${descricao}${matches}\n\nRever no relatório semanal e confirmar pela Qualidade.`.slice(0, 5000),
+      mensagem:
+        `${descricao}${matches}\n\nRever no relatório semanal e confirmar pela Qualidade.`.slice(
+          0,
+          5000
+        ),
       link: `/vigilancia-rasff?rasffRelatorioId=${reportId}`,
       rasffRelatorioId: reportId,
       rasffChave: chave,
@@ -1135,16 +1695,21 @@ export async function criarNotificacoesRasffRelevantes(reportId: number, ocorren
 export async function getRasffContexto() {
   const db = await getDb();
   if (!db) return { materiasPrimas: [] };
-  const rows = await db.select({
-    id: materiasPrimas.id,
-    nome: materiasPrimas.nome,
-    codigo: materiasPrimas.codigo,
-    origem: materiasPrimas.paisOrigem,
-    fornecedorId: mpFornecedores.fornecedorId,
-    fornecedorNome: fornecedores.nome,
-    paisOrigemFornecedor: mpFornecedores.paisOrigem,
-  }).from(materiasPrimas)
-    .leftJoin(mpFornecedores, eq(mpFornecedores.materiaPrimaId, materiasPrimas.id))
+  const rows = await db
+    .select({
+      id: materiasPrimas.id,
+      nome: materiasPrimas.nome,
+      codigo: materiasPrimas.codigo,
+      origem: materiasPrimas.paisOrigem,
+      fornecedorId: mpFornecedores.fornecedorId,
+      fornecedorNome: fornecedores.nome,
+      paisOrigemFornecedor: mpFornecedores.paisOrigem,
+    })
+    .from(materiasPrimas)
+    .leftJoin(
+      mpFornecedores,
+      eq(mpFornecedores.materiaPrimaId, materiasPrimas.id)
+    )
     .leftJoin(fornecedores, eq(fornecedores.id, mpFornecedores.fornecedorId))
     .where(eq(materiasPrimas.ativa, true));
   return { materiasPrimas: rows };
